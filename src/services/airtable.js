@@ -14,7 +14,7 @@ export async function sendToAirtable(applicationData) {
   }
 
   try {
-    const response = await fetch(AIRTABLE_WEBHOOK_URL, {
+    const response = await fetch('/api/airtable', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
