@@ -6,26 +6,115 @@ import { importFromGitHub, isValidGitHubUsername } from '../services/github';
 import { useNavigate } from 'react-router-dom';
 
 const SKILL_OPTIONS = [
-  { id: 1, name: 'React', category: 'frontend' },
-  { id: 2, name: 'Node.js', category: 'backend' },
-  { id: 3, name: 'Python', category: 'language' },
-  { id: 4, name: 'PostgreSQL', category: 'database' },
-  { id: 5, name: 'MongoDB', category: 'database' },
-  { id: 6, name: 'Express', category: 'backend' },
-  { id: 7, name: 'JavaScript', category: 'language' },
-  { id: 8, name: 'TypeScript', category: 'language' },
-  { id: 9, name: 'Git', category: 'tools' },
-  { id: 10, name: 'Docker', category: 'devops' },
-  { id: 11, name: 'AWS', category: 'devops' },
-  { id: 12, name: 'REST APIs', category: 'backend' },
-  { id: 13, name: 'GraphQL', category: 'backend' },
-  { id: 14, name: 'TailwindCSS', category: 'frontend' },
-  { id: 15, name: 'Vue.js', category: 'frontend' },
-  { id: 16, name: 'Django', category: 'backend' },
-  { id: 17, name: 'Flask', category: 'backend' },
-  { id: 18, name: 'Java', category: 'language' },
-  { id: 19, name: 'Spring Boot', category: 'backend' },
-  { id: 20, name: 'Kotlin', category: 'language' }
+  // Languages
+   { id: 'sk-001', name: 'JavaScript', category: 'language' },
+   { id: 'sk-002', name: 'Python', category: 'language' },
+   { id: 'sk-003', name: 'Java', category: 'language' },
+   { id: 'sk-004', name: 'PHP', category: 'language' },
+   { id: 'sk-005', name: 'TypeScript', category: 'language' },
+   { id: 'sk-006', name: 'C Programming', category: 'language' },
+   { id: 'sk-007', name: 'C++', category: 'language' },
+   { id: 'sk-008', name: 'Kotlin', category: 'language' },
+   { id: 'sk-009', name: 'Dart', category: 'language' },
+   { id: 'sk-010', name: 'Rust', category: 'language' },
+   { id: 'sk-011', name: 'Golang', category: 'language' },
+   { id: 'sk-012', name: 'SQL', category: 'language' },
+ 
+   // Frontend
+   { id: 'sk-013', name: 'React', category: 'frontend' },
+   { id: 'sk-014', name: 'React Native', category: 'frontend' },
+   { id: 'sk-015', name: 'Next.js', category: 'frontend' },
+   { id: 'sk-016', name: 'HTML', category: 'frontend' },
+   { id: 'sk-017', name: 'CSS', category: 'frontend' },
+   { id: 'sk-018', name: 'Bootstrap', category: 'frontend' },
+   { id: 'sk-019', name: 'Tailwind CSS', category: 'frontend' },
+   { id: 'sk-020', name: 'jQuery', category: 'frontend' },
+   { id: 'sk-021', name: 'AngularJS', category: 'frontend' },
+   { id: 'sk-022', name: 'Redux', category: 'frontend' },
+ 
+   // Mobile
+   { id: 'sk-023', name: 'Flutter', category: 'mobile' },
+   { id: 'sk-050', name: 'Android Development', category: 'mobile' },
+   { id: 'sk-051', name: 'iOS Development', category: 'mobile' },
+   { id: 'sk-052', name: 'Jetpack Compose', category: 'mobile' },
+ 
+   // Backend
+   { id: 'sk-024', name: 'Node.js', category: 'backend' },
+   { id: 'sk-025', name: 'Express.js', category: 'backend' },
+   { id: 'sk-026', name: 'NestJS', category: 'backend' },
+   { id: 'sk-027', name: 'Django', category: 'backend' },
+   { id: 'sk-028', name: 'Flask', category: 'backend' },
+   { id: 'sk-029', name: 'FastAPI', category: 'backend' },
+   { id: 'sk-030', name: 'Spring MVC', category: 'backend' },
+   { id: 'sk-031', name: 'REST API', category: 'backend' },
+   { id: 'sk-032', name: 'GraphQL', category: 'backend' },
+   { id: 'sk-033', name: '.NET', category: 'backend' },
+   { id: 'sk-034', name: 'PHP (Laravel)', category: 'backend' },
+ 
+   // Database
+   { id: 'sk-035', name: 'MySQL', category: 'database' },
+   { id: 'sk-036', name: 'PostgreSQL', category: 'database' },
+   { id: 'sk-037', name: 'MongoDB', category: 'database' },
+   { id: 'sk-038', name: 'Firebase', category: 'database' },
+   { id: 'sk-039', name: 'Redis', category: 'database' },
+   { id: 'sk-040', name: 'SQLite', category: 'database' },
+ 
+   // Data Science
+   { id: 'sk-041', name: 'Machine Learning', category: 'data_science' },
+   { id: 'sk-042', name: 'Deep Learning', category: 'data_science' },
+   { id: 'sk-043', name: 'Data Analysis', category: 'data_science' },
+   { id: 'sk-044', name: 'Scikit-learn', category: 'data_science' },
+   { id: 'sk-045', name: 'TensorFlow', category: 'data_science' },
+   { id: 'sk-046', name: 'PyTorch', category: 'data_science' },
+   { id: 'sk-047', name: 'Pandas', category: 'data_science' },
+   { id: 'sk-048', name: 'NumPy', category: 'data_science' },
+   { id: 'sk-049', name: 'Statistics', category: 'data_science' },
+ 
+   // DevOps / Cloud
+   { id: 'sk-053', name: 'Docker', category: 'devops' },
+   { id: 'sk-055', name: 'Linux', category: 'devops' },
+   { id: 'sk-056', name: 'AWS', category: 'devops' },
+   { id: 'sk-057', name: 'CI/CD', category: 'devops' },
+   { id: 'sk-058', name: 'Computer Networking', category: 'devops' },
+   { id: 'sk-059', name: 'Firewall Configuration', category: 'devops' },
+ 
+   // Tools
+   { id: 'sk-054', name: 'Git', category: 'tools' },
+   { id: 'sk-074', name: 'Advanced Excel', category: 'tools' },
+ 
+   // QA / Testing
+   { id: 'sk-060', name: 'Manual Testing', category: 'qa' },
+   { id: 'sk-061', name: 'Selenium', category: 'qa' },
+   { id: 'sk-062', name: 'Test Automation', category: 'qa' },
+   { id: 'sk-063', name: 'Software Testing', category: 'qa' },
+ 
+   // Security
+   { id: 'sk-064', name: 'VAPT', category: 'security' },
+   { id: 'sk-065', name: 'Ethical Hacking', category: 'security' },
+ 
+   // Embedded
+   { id: 'sk-066', name: 'Embedded Systems', category: 'embedded' },
+   { id: 'sk-067', name: 'Arduino', category: 'embedded' },
+   { id: 'sk-068', name: 'Raspberry Pi', category: 'embedded' },
+   { id: 'sk-069', name: 'Embedded C', category: 'embedded' },
+ 
+   // Design
+   { id: 'sk-070', name: 'Figma', category: 'design' },
+ 
+   // Marketing
+   { id: 'sk-072', name: 'SEO', category: 'marketing' },
+   { id: 'sk-073', name: 'Google Analytics', category: 'marketing' },
+ 
+   // CMS
+   { id: 'sk-071', name: 'WordPress', category: 'cms' },
+ 
+   // Emerging
+   { id: 'sk-075', name: 'Blockchain', category: 'emerging' },
+   { id: 'sk-076', name: 'Unreal Engine', category: 'emerging' },
+   { id: 'sk-077', name: 'AR/VR', category: 'emerging' },
+   { id: 'sk-078', name: 'No-code Development', category: 'emerging' },
+   { id: 'sk-079', name: 'Prompt Engineering', category: 'emerging' },
+   { id: 'sk-080', name: 'LangChain', category: 'emerging' }
 ];
 
 const ROLE_OPTIONS = [
@@ -36,7 +125,10 @@ const ROLE_OPTIONS = [
   'DevOps Engineer',
   'Data Analyst',
   'ML Engineer',
-  'UI/UX Designer'
+  'UI/UX Designer',
+  'Security / Pen Tester',
+  'Embedded Systems Engineer',
+  'QA / Testing Engineer'
 ];
 
 export default function StudentOnboarding() {
