@@ -144,7 +144,7 @@ export default function LandingPage() {
             transformOrigin: 'center bottom',
             pointerEvents: 'none',
           }}>
-            <svg width="210" height="210" viewBox="0 0 72 72" xmlns="http://www.w3.org/2000/svg">
+            <svg width="320" height="320" viewBox="0 0 72 72" xmlns="http://www.w3.org/2000/svg">
               <path d="M8 8 L22 28 L14 28 Q12 36 20 42 Q28 50 36 50 Q44 50 52 42 Q60 36 58 28 L50 28 L62 8 L48 20 Q42 14 36 14 Q30 14 24 20 Z" fill="#0a0a0a"/>
               <path d="M8 8 L22 28 L20 16 Z" fill="#16a34a"/>
               <path d="M62 8 L50 28 L52 16 Z" fill="#16a34a"/>
