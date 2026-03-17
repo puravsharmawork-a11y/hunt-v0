@@ -106,7 +106,7 @@ export default function LandingPage() {
         </nav>
 
         {/* ── HERO ────────────────────────────────────────────────────────── */}
-        <section style={{ padding: 'clamp(60px, 8vw, 100px) clamp(20px, 4vw, 48px) 80px', maxWidth: 1100, margin: '0 auto' }}>
+        <section style={{ padding: 'clamp(60px, 8vw, 100px) clamp(20px, 4vw, 48px) 80px', maxWidth: 1100, margin: '0 auto', position: 'relative', overflow: 'hidden' }}>
           <div style={{ display: 'inline-flex', alignItems: 'center', gap: 8, fontSize: 12, fontWeight: 400, letterSpacing: '0.08em', textTransform: 'uppercase', color: t.gray600, marginBottom: 32 }}>
             <span style={{ display: 'inline-block', width: 20, height: 1, background: t.gray400 }} />
             Skill-first internship matching
@@ -131,6 +131,34 @@ export default function LandingPage() {
               <GoogleIcon /> Start your hunt — it's free
             </button>
             <span style={{ fontSize: 12, color: t.gray400, fontWeight: 300 }}>No resume needed to start</span>
+          </div>
+          {/* Mascot */}
+          <div style={{
+            position: 'absolute',
+            bottom: '-10px',
+            right: '80px',
+            width: '210px',
+            height: '210px',
+            opacity: 0.18,
+            animation: 'mascotFloat 7s ease-in-out infinite',
+            transformOrigin: 'center bottom',
+            pointerEvents: 'none',
+          }}>
+            <svg width="210" height="210" viewBox="0 0 72 72" xmlns="http://www.w3.org/2000/svg">
+              <path d="M8 8 L22 28 L14 28 Q12 36 20 42 Q28 50 36 50 Q44 50 52 42 Q60 36 58 28 L50 28 L62 8 L48 20 Q42 14 36 14 Q30 14 24 20 Z" fill="#0a0a0a"/>
+              <path d="M8 8 L22 28 L20 16 Z" fill="#16a34a"/>
+              <path d="M62 8 L50 28 L52 16 Z" fill="#16a34a"/>
+              <circle cx="27" cy="34" r="4" fill="#f5f0e8"/>
+              <circle cx="45" cy="34" r="4" fill="#f5f0e8"/>
+              <circle className="mascot-pupil-left" cx="27" cy="34" r="2" fill="#0a0a0a"/>
+              <circle className="mascot-pupil-right" cx="45" cy="34" r="2" fill="#0a0a0a"/>
+              <circle cx="27.8" cy="33.2" r="0.7" fill="white" opacity="0.9"/>
+              <circle cx="45.8" cy="33.2" r="0.7" fill="white" opacity="0.9"/>
+              <rect className="mascot-blink-left" x="23" y="30" width="8" height="4" rx="1" fill="#0a0a0a"/>
+              <rect className="mascot-blink-right" x="41" y="30" width="8" height="4" rx="1" fill="#0a0a0a"/>
+              <ellipse cx="36" cy="41" rx="3" ry="2" fill="#f5f0e8"/>
+              <ellipse cx="36" cy="47" rx="8" ry="4" fill="white"/>
+            </svg>
           </div>
         </section>
 
