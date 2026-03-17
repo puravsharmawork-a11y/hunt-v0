@@ -536,7 +536,6 @@ export default function StudentOnboarding() {
   );
 
   const steps = [Step1, Step2, Step3, Step4];
-  const CurrentStep = steps[currentStep - 1];
 
   return (
     <div className="min-h-screen transition-colors duration-300"
@@ -591,7 +590,7 @@ export default function StudentOnboarding() {
         {/* Card */}
         <div className="rounded-xl border p-6 md:p-10 mb-8"
           style={{ background: 'var(--bg-card)', borderColor: 'var(--border)' }}>
-          <CurrentStep />
+          {steps[currentStep - 1]()}
         </div>
 
         {/* Navigation */}
