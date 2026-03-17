@@ -1,833 +1,642 @@
 // src/components/StudentOnboarding.jsx
-import React, { useState } from 'react';
-import { User, Briefcase, Code, Rocket, CheckCircle2, ArrowRight, Plus, X, Github, Loader } from 'lucide-react';
+import React, { useState, useEffect } from 'react';
+import { User, Briefcase, Code, Rocket, CheckCircle2, ArrowRight, Plus, X, Github, Loader, Sun, Moon } from 'lucide-react';
 import { createStudentProfile, uploadResume } from '../services/supabase';
 import { importFromGitHub, isValidGitHubUsername } from '../services/github';
 import { useNavigate } from 'react-router-dom';
 
+// ─── Design tokens (mirrors landing page CSS variables) ───────────────────────
+const tokens = {
+  light: {
+    '--bg':         '#FAFAF8',
+    '--bg-card':    '#FFFFFF',
+    '--bg-subtle':  '#F5F5F2',
+    '--border':     '#EBEBEA',
+    '--border-mid': '#D6D6D3',
+    '--text':       '#0A0A0A',
+    '--text-mid':   '#5A5A56',
+    '--text-dim':   '#9B9B97',
+    '--green':      '#1A7A4A',
+    '--green-tint': '#E8F5EE',
+    '--green-text': '#1A7A4A',
+    '--focus':      '#1A7A4A',
+  },
+  dark: {
+    '--bg':         '#0A0A0A',
+    '--bg-card':    '#111110',
+    '--bg-subtle':  '#1A1A18',
+    '--border':     '#2A2A28',
+    '--border-mid': '#3A3A38',
+    '--text':       '#FAFAF8',
+    '--text-mid':   '#9B9B97',
+    '--text-dim':   '#5A5A56',
+    '--green':      '#2EAD6A',
+    '--green-tint': '#0D2B1A',
+    '--green-text': '#2EAD6A',
+    '--focus':      '#2EAD6A',
+  }
+};
+
+function applyTokens(theme) {
+  const root = document.documentElement;
+  Object.entries(tokens[theme]).forEach(([k, v]) => root.style.setProperty(k, v));
+}
+
+// ─── Data ─────────────────────────────────────────────────────────────────────
+
 const SKILL_OPTIONS = [
-  // Languages
-   { id: 'sk-001', name: 'JavaScript', category: 'language' },
-   { id: 'sk-002', name: 'Python', category: 'language' },
-   { id: 'sk-003', name: 'Java', category: 'language' },
-   { id: 'sk-004', name: 'PHP', category: 'language' },
-   { id: 'sk-005', name: 'TypeScript', category: 'language' },
-   { id: 'sk-006', name: 'C Programming', category: 'language' },
-   { id: 'sk-007', name: 'C++', category: 'language' },
-   { id: 'sk-008', name: 'Kotlin', category: 'language' },
-   { id: 'sk-009', name: 'Dart', category: 'language' },
-   { id: 'sk-010', name: 'Rust', category: 'language' },
-   { id: 'sk-011', name: 'Golang', category: 'language' },
-   { id: 'sk-012', name: 'SQL', category: 'language' },
- 
-   // Frontend
-   { id: 'sk-013', name: 'React', category: 'frontend' },
-   { id: 'sk-014', name: 'React Native', category: 'frontend' },
-   { id: 'sk-015', name: 'Next.js', category: 'frontend' },
-   { id: 'sk-016', name: 'HTML', category: 'frontend' },
-   { id: 'sk-017', name: 'CSS', category: 'frontend' },
-   { id: 'sk-018', name: 'Bootstrap', category: 'frontend' },
-   { id: 'sk-019', name: 'Tailwind CSS', category: 'frontend' },
-   { id: 'sk-020', name: 'jQuery', category: 'frontend' },
-   { id: 'sk-021', name: 'AngularJS', category: 'frontend' },
-   { id: 'sk-022', name: 'Redux', category: 'frontend' },
- 
-   // Mobile
-   { id: 'sk-023', name: 'Flutter', category: 'mobile' },
-   { id: 'sk-050', name: 'Android Development', category: 'mobile' },
-   { id: 'sk-051', name: 'iOS Development', category: 'mobile' },
-   { id: 'sk-052', name: 'Jetpack Compose', category: 'mobile' },
- 
-   // Backend
-   { id: 'sk-024', name: 'Node.js', category: 'backend' },
-   { id: 'sk-025', name: 'Express.js', category: 'backend' },
-   { id: 'sk-026', name: 'NestJS', category: 'backend' },
-   { id: 'sk-027', name: 'Django', category: 'backend' },
-   { id: 'sk-028', name: 'Flask', category: 'backend' },
-   { id: 'sk-029', name: 'FastAPI', category: 'backend' },
-   { id: 'sk-030', name: 'Spring MVC', category: 'backend' },
-   { id: 'sk-031', name: 'REST API', category: 'backend' },
-   { id: 'sk-032', name: 'GraphQL', category: 'backend' },
-   { id: 'sk-033', name: '.NET', category: 'backend' },
-   { id: 'sk-034', name: 'PHP (Laravel)', category: 'backend' },
- 
-   // Database
-   { id: 'sk-035', name: 'MySQL', category: 'database' },
-   { id: 'sk-036', name: 'PostgreSQL', category: 'database' },
-   { id: 'sk-037', name: 'MongoDB', category: 'database' },
-   { id: 'sk-038', name: 'Firebase', category: 'database' },
-   { id: 'sk-039', name: 'Redis', category: 'database' },
-   { id: 'sk-040', name: 'SQLite', category: 'database' },
- 
-   // Data Science
-   { id: 'sk-041', name: 'Machine Learning', category: 'data_science' },
-   { id: 'sk-042', name: 'Deep Learning', category: 'data_science' },
-   { id: 'sk-043', name: 'Data Analysis', category: 'data_science' },
-   { id: 'sk-044', name: 'Scikit-learn', category: 'data_science' },
-   { id: 'sk-045', name: 'TensorFlow', category: 'data_science' },
-   { id: 'sk-046', name: 'PyTorch', category: 'data_science' },
-   { id: 'sk-047', name: 'Pandas', category: 'data_science' },
-   { id: 'sk-048', name: 'NumPy', category: 'data_science' },
-   { id: 'sk-049', name: 'Statistics', category: 'data_science' },
- 
-   // DevOps / Cloud
-   { id: 'sk-053', name: 'Docker', category: 'devops' },
-   { id: 'sk-055', name: 'Linux', category: 'devops' },
-   { id: 'sk-056', name: 'AWS', category: 'devops' },
-   { id: 'sk-057', name: 'CI/CD', category: 'devops' },
-   { id: 'sk-058', name: 'Computer Networking', category: 'devops' },
-   { id: 'sk-059', name: 'Firewall Configuration', category: 'devops' },
- 
-   // Tools
-   { id: 'sk-054', name: 'Git', category: 'tools' },
-   { id: 'sk-074', name: 'Advanced Excel', category: 'tools' },
- 
-   // QA / Testing
-   { id: 'sk-060', name: 'Manual Testing', category: 'qa' },
-   { id: 'sk-061', name: 'Selenium', category: 'qa' },
-   { id: 'sk-062', name: 'Test Automation', category: 'qa' },
-   { id: 'sk-063', name: 'Software Testing', category: 'qa' },
- 
-   // Security
-   { id: 'sk-064', name: 'VAPT', category: 'security' },
-   { id: 'sk-065', name: 'Ethical Hacking', category: 'security' },
- 
-   // Embedded
-   { id: 'sk-066', name: 'Embedded Systems', category: 'embedded' },
-   { id: 'sk-067', name: 'Arduino', category: 'embedded' },
-   { id: 'sk-068', name: 'Raspberry Pi', category: 'embedded' },
-   { id: 'sk-069', name: 'Embedded C', category: 'embedded' },
- 
-   // Design
-   { id: 'sk-070', name: 'Figma', category: 'design' },
- 
-   // Marketing
-   { id: 'sk-072', name: 'SEO', category: 'marketing' },
-   { id: 'sk-073', name: 'Google Analytics', category: 'marketing' },
- 
-   // CMS
-   { id: 'sk-071', name: 'WordPress', category: 'cms' },
- 
-   // Emerging
-   { id: 'sk-075', name: 'Blockchain', category: 'emerging' },
-   { id: 'sk-076', name: 'Unreal Engine', category: 'emerging' },
-   { id: 'sk-077', name: 'AR/VR', category: 'emerging' },
-   { id: 'sk-078', name: 'No-code Development', category: 'emerging' },
-   { id: 'sk-079', name: 'Prompt Engineering', category: 'emerging' },
-   { id: 'sk-080', name: 'LangChain', category: 'emerging' }
+  { id: 'sk-001', name: 'JavaScript', category: 'Language' },
+  { id: 'sk-002', name: 'Python', category: 'Language' },
+  { id: 'sk-003', name: 'Java', category: 'Language' },
+  { id: 'sk-004', name: 'TypeScript', category: 'Language' },
+  { id: 'sk-005', name: 'C / C++', category: 'Language' },
+  { id: 'sk-006', name: 'Golang', category: 'Language' },
+  { id: 'sk-007', name: 'Rust', category: 'Language' },
+  { id: 'sk-008', name: 'SQL', category: 'Language' },
+  { id: 'sk-013', name: 'React', category: 'Frontend' },
+  { id: 'sk-014', name: 'React Native', category: 'Frontend' },
+  { id: 'sk-015', name: 'Next.js', category: 'Frontend' },
+  { id: 'sk-019', name: 'Tailwind CSS', category: 'Frontend' },
+  { id: 'sk-021', name: 'AngularJS', category: 'Frontend' },
+  { id: 'sk-022', name: 'Redux', category: 'Frontend' },
+  { id: 'sk-023', name: 'Flutter', category: 'Mobile' },
+  { id: 'sk-050', name: 'Android Dev', category: 'Mobile' },
+  { id: 'sk-051', name: 'iOS Dev', category: 'Mobile' },
+  { id: 'sk-024', name: 'Node.js', category: 'Backend' },
+  { id: 'sk-025', name: 'Express.js', category: 'Backend' },
+  { id: 'sk-027', name: 'Django', category: 'Backend' },
+  { id: 'sk-028', name: 'Flask', category: 'Backend' },
+  { id: 'sk-029', name: 'FastAPI', category: 'Backend' },
+  { id: 'sk-031', name: 'REST API', category: 'Backend' },
+  { id: 'sk-032', name: 'GraphQL', category: 'Backend' },
+  { id: 'sk-035', name: 'MySQL', category: 'Database' },
+  { id: 'sk-036', name: 'PostgreSQL', category: 'Database' },
+  { id: 'sk-037', name: 'MongoDB', category: 'Database' },
+  { id: 'sk-038', name: 'Firebase', category: 'Database' },
+  { id: 'sk-039', name: 'Redis', category: 'Database' },
+  { id: 'sk-041', name: 'Machine Learning', category: 'Data Science' },
+  { id: 'sk-043', name: 'Data Analysis', category: 'Data Science' },
+  { id: 'sk-045', name: 'TensorFlow', category: 'Data Science' },
+  { id: 'sk-046', name: 'PyTorch', category: 'Data Science' },
+  { id: 'sk-047', name: 'Pandas', category: 'Data Science' },
+  { id: 'sk-053', name: 'Docker', category: 'DevOps' },
+  { id: 'sk-055', name: 'Linux', category: 'DevOps' },
+  { id: 'sk-056', name: 'AWS', category: 'DevOps' },
+  { id: 'sk-057', name: 'CI/CD', category: 'DevOps' },
+  { id: 'sk-054', name: 'Git', category: 'Tools' },
+  { id: 'sk-070', name: 'Figma', category: 'Design' },
+  { id: 'sk-072', name: 'SEO', category: 'Marketing' },
+  { id: 'sk-064', name: 'Ethical Hacking', category: 'Security' },
+  { id: 'sk-066', name: 'Embedded Systems', category: 'Embedded' },
+  { id: 'sk-075', name: 'Blockchain', category: 'Emerging' },
+  { id: 'sk-079', name: 'Prompt Engineering', category: 'Emerging' },
+  { id: 'sk-080', name: 'LangChain', category: 'Emerging' },
 ];
 
+const SKILL_CATEGORIES = [...new Set(SKILL_OPTIONS.map(s => s.category))];
+
 const ROLE_OPTIONS = [
-  'Full Stack Developer',
-  'Backend Developer',
-  'Frontend Developer',
-  'Mobile Developer',
-  'DevOps Engineer',
-  'Data Analyst',
-  'ML Engineer',
-  'UI/UX Designer',
-  'Security / Pen Tester',
-  'Embedded Systems Engineer',
-  'QA / Testing Engineer'
+  'Full Stack Developer', 'Backend Developer', 'Frontend Developer',
+  'Mobile Developer', 'DevOps Engineer', 'Data Analyst',
+  'ML Engineer', 'UI/UX Designer', 'Security / Pen Tester',
+  'Embedded Systems Engineer', 'QA / Testing Engineer'
 ];
+
+const LEVEL_LABELS = ['', 'Beginner', 'Elementary', 'Intermediate', 'Advanced', 'Expert'];
+
+const STEPS = [
+  { num: 1, label: 'Basics',   icon: User },
+  { num: 2, label: 'Skills',   icon: Code },
+  { num: 3, label: 'Projects', icon: Briefcase },
+  { num: 4, label: 'Finish',   icon: Rocket },
+];
+
+// ─── Shared style helpers ──────────────────────────────────────────────────────
+
+const inputCls = `
+  w-full px-4 py-3 rounded-lg text-sm font-normal
+  transition-colors duration-150 outline-none
+  bg-[var(--bg-subtle)] border border-[var(--border)]
+  text-[var(--text)] placeholder:text-[var(--text-dim)]
+  focus:border-[var(--focus)]
+`.replace(/\s+/g, ' ').trim();
+
+const labelCls = 'block text-xs font-medium tracking-widest uppercase text-[var(--text-dim)] mb-2';
+
+// ─── Component ────────────────────────────────────────────────────────────────
 
 export default function StudentOnboarding() {
   const navigate = useNavigate();
+  const [theme, setTheme] = useState('light');
   const [currentStep, setCurrentStep] = useState(1);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [githubImporting, setGithubImporting] = useState(false);
   const [githubUsername, setGithubUsername] = useState('');
-  
+  const [activeCategory, setActiveCategory] = useState(SKILL_CATEGORIES[0]);
+
   const [formData, setFormData] = useState({
-    fullName: '',
-    college: '',
-    year: 3,
-    phone: '',
-    email: '',
-    skills: [],
-    projects: [],
-    preferredRoles: [],
-    availability: 'Immediate',
-    workPreference: 'remote',
-    resume: null,
-    githubUrl: '',
-    linkedinUrl: '',
-    portfolioUrl: ''
+    fullName: '', college: '', year: 3, phone: '', email: '',
+    skills: [], projects: [], preferredRoles: [],
+    availability: 'Immediate', workPreference: 'remote',
+    resume: null, githubUrl: '', linkedinUrl: '', portfolioUrl: ''
   });
 
   const [newProject, setNewProject] = useState({
-    title: '',
-    description: '',
-    techStack: '',
-    projectUrl: '',
-    githubUrl: ''
+    title: '', description: '', techStack: '', projectUrl: '', githubUrl: ''
   });
+
+  useEffect(() => {
+    applyTokens(theme);
+  }, [theme]);
+
+  const toggleTheme = () => setTheme(t => t === 'light' ? 'dark' : 'light');
 
   const totalSteps = 4;
   const progress = (currentStep / totalSteps) * 100;
 
-  // GitHub Import Handler
+  // ── Handlers ────────────────────────────────────────────────────────────────
+
   const handleGitHubImport = async () => {
-    if (!githubUsername.trim()) {
-      alert('Please enter a GitHub username');
-      return;
+    if (!githubUsername.trim() || !isValidGitHubUsername(githubUsername)) {
+      alert('Enter a valid GitHub username'); return;
     }
-
-    if (!isValidGitHubUsername(githubUsername)) {
-      alert('Invalid GitHub username format');
-      return;
-    }
-
     setGithubImporting(true);
-
     try {
       const result = await importFromGitHub(githubUsername);
-
-      if (!result.success) {
-        alert(result.error || 'Failed to import from GitHub');
-        return;
-      }
-
+      if (!result.success) { alert(result.error || 'Import failed'); return; }
       const { data } = result;
-
-      // Merge with existing form data
       setFormData(prev => ({
         ...prev,
         fullName: prev.fullName || data.name,
-        skills: [...prev.skills, ...data.skills.map((s, idx) => ({ ...s, id: Date.now() + idx }))],
-        projects: [...prev.projects, ...data.projects.map((p, idx) => ({ ...p, id: Date.now() + idx }))],
-        tools: [...new Set([...(prev.tools || []), ...(data.tools || [])])],
+        skills: [...prev.skills, ...data.skills.map((s, i) => ({ ...s, id: Date.now() + i }))],
+        projects: [...prev.projects, ...data.projects.map((p, i) => ({ ...p, id: Date.now() + i }))],
         githubUrl: data.githubUrl
       }));
-
-      alert('✅ Successfully imported from GitHub!');
       setGithubUsername('');
-    } catch (error) {
-      alert('Error importing from GitHub: ' + error.message);
-    } finally {
-      setGithubImporting(false);
-    }
+    } catch (e) { alert('Error: ' + e.message); }
+    finally { setGithubImporting(false); }
   };
 
-  const handleInputChange = (field, value) => {
-    setFormData(prev => ({ ...prev, [field]: value }));
+  const hi = (field, value) => setFormData(prev => ({ ...prev, [field]: value }));
+
+  const addSkill = (skill) => {
+    if (formData.skills.find(s => s.name === skill.name)) return;
+    setFormData(prev => ({ ...prev, skills: [...prev.skills, { id: Date.now(), name: skill.name, level: 3, category: skill.category }] }));
   };
 
-  const addSkill = (skillOption) => {
-    if (!formData.skills.find(s => s.name === skillOption.name)) {
-      setFormData(prev => ({
-        ...prev,
-        skills: [...prev.skills, { 
-          id: Date.now(), 
-          name: skillOption.name, 
-          level: 3,
-          category: skillOption.category 
-        }]
-      }));
-    }
-  };
-
-  const removeSkill = (skillId) => {
-    setFormData(prev => ({
-      ...prev,
-      skills: prev.skills.filter(s => s.id !== skillId)
-    }));
-  };
-
-  const updateSkillLevel = (skillId, level) => {
-    setFormData(prev => ({
-      ...prev,
-      skills: prev.skills.map(s => 
-        s.id === skillId ? { ...s, level: parseInt(level) } : s
-      )
-    }));
-  };
+  const removeSkill = (id) => setFormData(prev => ({ ...prev, skills: prev.skills.filter(s => s.id !== id) }));
+  const updateLevel = (id, level) => setFormData(prev => ({ ...prev, skills: prev.skills.map(s => s.id === id ? { ...s, level } : s) }));
 
   const addProject = () => {
-    if (newProject.title && newProject.techStack) {
-      setFormData(prev => ({
-        ...prev,
-        projects: [...prev.projects, {
-          ...newProject,
-          techStack: newProject.techStack.split(',').map(t => t.trim()),
-          id: Date.now()
-        }]
-      }));
-      setNewProject({
-        title: '',
-        description: '',
-        techStack: '',
-        projectUrl: '',
-        githubUrl: ''
-      });
-    }
-  };
-
-  const removeProject = (projectId) => {
+    if (!newProject.title || !newProject.techStack) return;
     setFormData(prev => ({
       ...prev,
-      projects: prev.projects.filter(p => p.id !== projectId)
+      projects: [...prev.projects, { ...newProject, techStack: newProject.techStack.split(',').map(t => t.trim()), id: Date.now() }]
     }));
+    setNewProject({ title: '', description: '', techStack: '', projectUrl: '', githubUrl: '' });
   };
 
-  const toggleRole = (role) => {
-    if (formData.preferredRoles.includes(role)) {
-      setFormData(prev => ({
-        ...prev,
-        preferredRoles: prev.preferredRoles.filter(r => r !== role)
-      }));
-    } else {
-      setFormData(prev => ({
-        ...prev,
-        preferredRoles: [...prev.preferredRoles, role]
-      }));
-    }
-  };
+  const removeProject = (id) => setFormData(prev => ({ ...prev, projects: prev.projects.filter(p => p.id !== id) }));
+
+  const toggleRole = (role) => setFormData(prev => ({
+    ...prev,
+    preferredRoles: prev.preferredRoles.includes(role)
+      ? prev.preferredRoles.filter(r => r !== role)
+      : [...prev.preferredRoles, role]
+  }));
 
   const handleNext = () => {
-    if (currentStep === 1) {
-      if (!formData.fullName || !formData.college) {
-        alert('Please fill in all required fields');
-        return;
-      }
+    if (currentStep === 1 && (!formData.fullName || !formData.college)) {
+      alert('Please fill in name and college'); return;
     }
-    
-    if (currentStep < totalSteps) {
-      setCurrentStep(currentStep + 1);
-    }
+    if (currentStep < totalSteps) setCurrentStep(s => s + 1);
   };
 
-  const handleBack = () => {
-    if (currentStep > 1) {
-      setCurrentStep(currentStep - 1);
-    }
+  const handleBack = () => { if (currentStep > 1) setCurrentStep(s => s - 1); };
+
+  const calculateCompleteness = () => {
+    let s = 0;
+    if (formData.fullName) s += 10; if (formData.college) s += 10;
+    if (formData.phone) s += 5;     if (formData.email) s += 5;
+    if (formData.skills.length >= 3) s += 25;
+    if (formData.projects.length >= 1) s += 20;
+    if (formData.preferredRoles.length > 0) s += 10;
+    if (formData.githubUrl) s += 5; if (formData.linkedinUrl) s += 5;
+    if (formData.resume) s += 5;
+    return s;
   };
 
   const handleSubmit = async () => {
     setIsSubmitting(true);
-
     try {
       let resumeUrl = null;
-      if (formData.resume) {
-        resumeUrl = await uploadResume(formData.resume);
-      }
-
-      const profileData = {
-        full_name: formData.fullName,
-        college: formData.college,
-        year: formData.year,
-        phone: formData.phone,
-        skills: formData.skills,
-        tools: formData.tools || [],
-        projects: formData.projects,
-        preferred_roles: formData.preferredRoles,
-        availability: formData.availability,
-        work_preference: formData.workPreference,
-        github_url: formData.githubUrl,
-        linkedin_url: formData.linkedinUrl,
-        portfolio_url: formData.portfolioUrl,
-        resume_url: resumeUrl,
+      if (formData.resume) resumeUrl = await uploadResume(formData.resume);
+      await createStudentProfile({
+        full_name: formData.fullName, college: formData.college,
+        year: formData.year, phone: formData.phone,
+        skills: formData.skills, tools: formData.tools || [],
+        projects: formData.projects, preferred_roles: formData.preferredRoles,
+        availability: formData.availability, work_preference: formData.workPreference,
+        github_url: formData.githubUrl, linkedin_url: formData.linkedinUrl,
+        portfolio_url: formData.portfolioUrl, resume_url: resumeUrl,
         profile_completeness: calculateCompleteness(),
-      };
-
-      await createStudentProfile(profileData);
+      });
       navigate('/swipe');
-    } catch (error) {
-      console.error('Profile creation error:', error);
-      alert('Failed to create profile: ' + error.message);
-    } finally {
-      setIsSubmitting(false);
-    }
-  };
-
-  const calculateCompleteness = () => {
-    let score = 0;
-    if (formData.fullName) score += 10;
-    if (formData.college) score += 10;
-    if (formData.phone) score += 5;
-    if (formData.email) score += 5;
-    if (formData.skills.length >= 3) score += 25;
-    if (formData.projects.length >= 1) score += 20;
-    if (formData.preferredRoles.length > 0) score += 10;
-    if (formData.githubUrl) score += 5;
-    if (formData.linkedinUrl) score += 5;
-    if (formData.resume) score += 5;
-    return score;
+    } catch (e) {
+      alert('Failed: ' + e.message);
+    } finally { setIsSubmitting(false); }
   };
 
   const completeness = calculateCompleteness();
+  const catSkills = SKILL_OPTIONS.filter(s => s.category === activeCategory);
 
-  const renderStep = () => {
-    switch (currentStep) {
-      case 1:
-        return (
-          <div className="space-y-6">
-            <div className="text-center mb-8">
-              <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-blue-500/20 mb-4">
-                <User className="w-8 h-8 text-blue-400" />
-              </div>
-              <h2 className="text-3xl font-black text-white mb-2">Basic Information</h2>
-              <p className="text-zinc-400">Tell us about yourself</p>
-            </div>
+  // ── Step renderers ──────────────────────────────────────────────────────────
 
-            <div className="grid md:grid-cols-2 gap-4">
-              <div>
-                <label className="block text-sm font-semibold text-zinc-300 mb-2">Full Name *</label>
-                <input
-                  type="text"
-                  value={formData.fullName}
-                  onChange={(e) => handleInputChange('fullName', e.target.value)}
-                  className="w-full px-4 py-3 bg-zinc-800 border border-zinc-700 rounded-lg text-white focus:border-blue-500 focus:outline-none"
-                  placeholder="Enter your full name"
-                />
-              </div>
-
-              <div>
-                <label className="block text-sm font-semibold text-zinc-300 mb-2">College *</label>
-                <input
-                  type="text"
-                  value={formData.college}
-                  onChange={(e) => handleInputChange('college', e.target.value)}
-                  className="w-full px-4 py-3 bg-zinc-800 border border-zinc-700 rounded-lg text-white focus:border-blue-500 focus:outline-none"
-                  placeholder="e.g., VJTI Mumbai"
-                />
-              </div>
-
-              <div>
-                <label className="block text-sm font-semibold text-zinc-300 mb-2">Year</label>
-                <select
-                  value={formData.year}
-                  onChange={(e) => handleInputChange('year', parseInt(e.target.value))}
-                  className="w-full px-4 py-3 bg-zinc-800 border border-zinc-700 rounded-lg text-white focus:border-blue-500 focus:outline-none"
-                >
-                  <option value={1}>1st Year</option>
-                  <option value={2}>2nd Year</option>
-                  <option value={3}>3rd Year</option>
-                  <option value={4}>4th Year</option>
-                </select>
-              </div>
-
-              <div>
-                <label className="block text-sm font-semibold text-zinc-300 mb-2">Phone</label>
-                <input
-                  type="tel"
-                  value={formData.phone}
-                  onChange={(e) => handleInputChange('phone', e.target.value)}
-                  className="w-full px-4 py-3 bg-zinc-800 border border-zinc-700 rounded-lg text-white focus:border-blue-500 focus:outline-none"
-                  placeholder="+91 98765 43210"
-                />
-              </div>
-            </div>
+  const Step1 = () => (
+    <div>
+      <StepHeader
+        label="01 — Basics"
+        title={<>Tell us who<br /><em>you are.</em></>}
+        sub="We only show recruiters what matters — your work, not your college name."
+      />
+      <div className="grid md:grid-cols-2 gap-4">
+        {[
+          { f: 'fullName', label: 'Full Name', req: true, placeholder: 'Priya Sharma' },
+          { f: 'college',  label: 'College',   req: true, placeholder: 'VJTI Mumbai' },
+          { f: 'phone',    label: 'Phone',      type: 'tel', placeholder: '+91 98765 43210' },
+          { f: 'email',    label: 'Email',      type: 'email', placeholder: 'priya@email.com' },
+        ].map(({ f, label, req, placeholder, type }) => (
+          <div key={f}>
+            <label className={labelCls}>{label}{req && <span className="text-[var(--green)] ml-1">*</span>}</label>
+            <input type={type || 'text'} value={formData[f]} onChange={e => hi(f, e.target.value)}
+              placeholder={placeholder} className={inputCls} />
           </div>
-        );
-
-      case 2:
-        return (
-          <div className="space-y-6">
-            <div className="text-center mb-8">
-              <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-green-500/20 mb-4">
-                <Code className="w-6 h-6 text-green-400" />
-              </div>
-              <h2 className="text-3xl font-black text-white mb-2">Your Skills</h2>
-              <p className="text-zinc-400">Add your technical skills</p>
-            </div>
-
-            {/* GitHub Import */}
-            <div className="bg-gradient-to-r from-purple-500/10 to-blue-500/10 border border-purple-500/30 rounded-lg p-4">
-              <div className="flex items-start gap-3">
-                <Github className="w-6 h-6 text-purple-400 flex-shrink-0 mt-1" />
-                <div className="flex-1">
-                  <h3 className="font-bold text-white mb-2">Import from GitHub</h3>
-                  <p className="text-sm text-zinc-400 mb-3">
-                    Auto-fill your skills and projects from your GitHub repos
-                  </p>
-                  <div className="flex gap-2">
-                    <input
-                      type="text"
-                      value={githubUsername}
-                      onChange={(e) => setGithubUsername(e.target.value)}
-                      placeholder="GitHub username"
-                      className="flex-1 px-3 py-2 bg-zinc-800 border border-zinc-700 rounded-lg text-white text-sm focus:border-purple-500 focus:outline-none"
-                    />
-                    <button
-                      onClick={handleGitHubImport}
-                      disabled={githubImporting}
-                      className="px-4 py-2 bg-purple-600 hover:bg-purple-500 rounded-lg text-sm font-semibold disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
-                    >
-                      {githubImporting ? (
-                        <>
-                          <Loader className="w-4 h-4 animate-spin" />
-                          Importing...
-                        </>
-                      ) : (
-                        'Import'
-                      )}
-                    </button>
-                  </div>
-                </div>
-              </div>
-            </div>
-
-            {/* Skill Selector */}
-            <div>
-              <label className="block text-sm font-semibold text-zinc-300 mb-3">Select Skills</label>
-              <div className="grid grid-cols-2 sm:grid-cols-3 gap-2 mb-4">
-                {SKILL_OPTIONS.map(skill => (
-                  <button
-                    key={skill.id}
-                    onClick={() => addSkill(skill)}
-                    disabled={formData.skills.some(s => s.name === skill.name)}
-                    className={`px-3 py-2 rounded-lg text-sm font-medium transition-all ${
-                      formData.skills.some(s => s.name === skill.name)
-                        ? 'bg-green-500/20 border border-green-500 text-green-300 cursor-not-allowed'
-                        : 'bg-zinc-800 border border-zinc-700 text-zinc-300 hover:border-zinc-600'
-                    }`}
-                  >
-                    {skill.name}
-                    {formData.skills.some(s => s.name === skill.name) && ' ✓'}
-                  </button>
-                ))}
-              </div>
-            </div>
-
-            {/* Selected Skills */}
-            {formData.skills.length > 0 && (
-              <div>
-                <label className="block text-sm font-semibold text-zinc-300 mb-3">
-                  Your Skills ({formData.skills.length})
-                </label>
-                <div className="space-y-3">
-                  {formData.skills.map(skill => (
-                    <div key={skill.id} className="bg-zinc-800 border border-zinc-700 rounded-lg p-4">
-                      <div className="flex items-center justify-between mb-2">
-                        <span className="font-semibold text-white">{skill.name}</span>
-                        <button
-                          onClick={() => removeSkill(skill.id)}
-                          className="text-red-400 hover:text-red-300"
-                        >
-                          <X className="w-5 h-5" />
-                        </button>
-                      </div>
-                      <div className="flex items-center gap-3">
-                        <span className="text-sm text-zinc-400">Level:</span>
-                        <div className="flex gap-1">
-                          {[1, 2, 3, 4, 5].map(level => (
-                            <button
-                              key={level}
-                              onClick={() => updateSkillLevel(skill.id, level)}
-                              className={`w-8 h-8 rounded ${
-                                skill.level >= level
-                                  ? 'bg-green-500 text-white'
-                                  : 'bg-zinc-700 text-zinc-500'
-                              } text-sm font-bold`}
-                            >
-                              {level}
-                            </button>
-                          ))}
-                        </div>
-                        <span className="text-sm text-zinc-500">
-                          {skill.level === 1 ? 'Beginner' :
-                           skill.level === 2 ? 'Elementary' :
-                           skill.level === 3 ? 'Intermediate' :
-                           skill.level === 4 ? 'Advanced' : 'Expert'}
-                        </span>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            )}
-          </div>
-        );
-
-      case 3:
-        return (
-          <div className="space-y-6">
-            <div className="text-center mb-8">
-              <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-purple-500/20 mb-4">
-                <Briefcase className="w-8 h-8 text-purple-400" />
-              </div>
-              <h2 className="text-3xl font-black text-white mb-2">Your Projects</h2>
-              <p className="text-zinc-400">Showcase your work</p>
-            </div>
-
-            <div className="bg-zinc-800 border border-zinc-700 rounded-lg p-4 space-y-3">
-              <input
-                type="text"
-                value={newProject.title}
-                onChange={(e) => setNewProject({ ...newProject, title: e.target.value })}
-                placeholder="Project title"
-                className="w-full px-3 py-2 bg-zinc-900 border border-zinc-700 rounded text-white text-sm focus:border-purple-500 focus:outline-none"
-              />
-              <textarea
-                value={newProject.description}
-                onChange={(e) => setNewProject({ ...newProject, description: e.target.value })}
-                placeholder="Brief description"
-                rows={2}
-                className="w-full px-3 py-2 bg-zinc-900 border border-zinc-700 rounded text-white text-sm focus:border-purple-500 focus:outline-none"
-              />
-              <input
-                type="text"
-                value={newProject.techStack}
-                onChange={(e) => setNewProject({ ...newProject, techStack: e.target.value })}
-                placeholder="Tech stack (comma separated: React, Node.js, MongoDB)"
-                className="w-full px-3 py-2 bg-zinc-900 border border-zinc-700 rounded text-white text-sm focus:border-purple-500 focus:outline-none"
-              />
-              <div className="grid grid-cols-2 gap-2">
-                <input
-                  type="url"
-                  value={newProject.projectUrl}
-                  onChange={(e) => setNewProject({ ...newProject, projectUrl: e.target.value })}
-                  placeholder="Live URL (optional)"
-                  className="px-3 py-2 bg-zinc-900 border border-zinc-700 rounded text-white text-sm focus:border-purple-500 focus:outline-none"
-                />
-                <input
-                  type="url"
-                  value={newProject.githubUrl}
-                  onChange={(e) => setNewProject({ ...newProject, githubUrl: e.target.value })}
-                  placeholder="GitHub URL (optional)"
-                  className="px-3 py-2 bg-zinc-900 border border-zinc-700 rounded text-white text-sm focus:border-purple-500 focus:outline-none"
-                />
-              </div>
-              <button
-                onClick={addProject}
-                className="w-full px-4 py-2 bg-purple-600 hover:bg-purple-500 rounded-lg text-sm font-semibold flex items-center justify-center gap-2"
-              >
-                <Plus className="w-4 h-4" />
-                Add Project
-              </button>
-            </div>
-
-            {formData.projects.length > 0 && (
-              <div className="space-y-3">
-                {formData.projects.map(project => (
-                  <div key={project.id} className="bg-zinc-800 border border-zinc-700 rounded-lg p-4">
-                    <div className="flex items-start justify-between mb-2">
-                      <h3 className="font-bold text-white">{project.title || project.name}</h3>
-                      <button
-                        onClick={() => removeProject(project.id)}
-                        className="text-red-400 hover:text-red-300"
-                      >
-                        <X className="w-5 h-5" />
-                      </button>
-                    </div>
-                    <p className="text-sm text-zinc-400 mb-2">{project.description}</p>
-                    <div className="flex flex-wrap gap-2">
-                      {(Array.isArray(project.techStack) ? project.techStack : [project.techStack]).map((tech, idx) => (
-                        <span key={idx} className="text-xs px-2 py-1 bg-zinc-900 rounded border border-zinc-700 text-zinc-300">
-                          {tech}
-                        </span>
-                      ))}
-                    </div>
-                  </div>
-                ))}
-              </div>
-            )}
-          </div>
-        );
-
-      case 4:
-        return (
-          <div className="space-y-6">
-            <div className="text-center mb-8">
-              <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-orange-500/20 mb-4">
-                <Rocket className="w-8 h-8 text-orange-400" />
-              </div>
-              <h2 className="text-3xl font-black text-white mb-2">Final Touches</h2>
-              <p className="text-zinc-400">Set your preferences</p>
-            </div>
-
-            <div className="space-y-6">
-              <div>
-                <label className="block text-sm font-semibold text-zinc-300 mb-3">Preferred Roles</label>
-                <div className="grid grid-cols-2 gap-2">
-                  {ROLE_OPTIONS.map(role => (
-                    <button
-                      key={role}
-                      onClick={() => toggleRole(role)}
-                      className={`px-4 py-3 rounded-lg text-sm font-medium transition-all ${
-                        formData.preferredRoles.includes(role)
-                          ? 'bg-orange-500/20 border-2 border-orange-500 text-orange-300'
-                          : 'bg-zinc-800 border border-zinc-700 text-zinc-300 hover:border-zinc-600'
-                      }`}
-                    >
-                      {role}
-                    </button>
-                  ))}
-                </div>
-              </div>
-
-              <div className="grid md:grid-cols-2 gap-4">
-                <div>
-                  <label className="block text-sm font-semibold text-zinc-300 mb-2">Availability</label>
-                  <select
-                    value={formData.availability}
-                    onChange={(e) => handleInputChange('availability', e.target.value)}
-                    className="w-full px-4 py-3 bg-zinc-800 border border-zinc-700 rounded-lg text-white focus:border-orange-500 focus:outline-none"
-                  >
-                    <option value="Immediate">Immediate</option>
-                    <option value="After exams">After exams</option>
-                    <option value="Next semester">Next semester</option>
-                  </select>
-                </div>
-
-                <div>
-                  <label className="block text-sm font-semibold text-zinc-300 mb-2">Work Preference</label>
-                  <select
-                    value={formData.workPreference}
-                    onChange={(e) => handleInputChange('workPreference', e.target.value)}
-                    className="w-full px-4 py-3 bg-zinc-800 border border-zinc-700 rounded-lg text-white focus:border-orange-500 focus:outline-none"
-                  >
-                    <option value="remote">Remote</option>
-                    <option value="onsite">On-site</option>
-                    <option value="hybrid">Hybrid</option>
-                    <option value="any">Any</option>
-                  </select>
-                </div>
-              </div>
-
-              <div>
-                <label className="block text-sm font-semibold text-zinc-300 mb-2">GitHub URL</label>
-                <input
-                  type="url"
-                  value={formData.githubUrl}
-                  onChange={(e) => handleInputChange('githubUrl', e.target.value)}
-                  placeholder="https://github.com/yourusername"
-                  className="w-full px-4 py-3 bg-zinc-800 border border-zinc-700 rounded-lg text-white focus:border-orange-500 focus:outline-none"
-                />
-              </div>
-
-              <div>
-                <label className="block text-sm font-semibold text-zinc-300 mb-2">LinkedIn URL</label>
-                <input
-                  type="url"
-                  value={formData.linkedinUrl}
-                  onChange={(e) => handleInputChange('linkedinUrl', e.target.value)}
-                  placeholder="https://linkedin.com/in/yourprofile"
-                  className="w-full px-4 py-3 bg-zinc-800 border border-zinc-700 rounded-lg text-white focus:border-orange-500 focus:outline-none"
-                />
-              </div>
-
-              <div>
-                <label className="block text-sm font-semibold text-zinc-300 mb-2">Resume Upload (PDF)</label>
-                <input
-                  type="file"
-                  accept=".pdf"
-                  onChange={(e) => handleInputChange('resume', e.target.files[0])}
-                  className="w-full px-4 py-3 bg-zinc-800 border border-zinc-700 rounded-lg text-white file:mr-4 file:py-2 file:px-4 file:rounded file:border-0 file:bg-purple-600 file:text-white hover:file:bg-purple-500"
-                />
-              </div>
-
-              <div className="bg-gradient-to-r from-blue-500/10 to-purple-500/10 border border-blue-500/30 rounded-lg p-4">
-                <div className="flex items-center justify-between mb-2">
-                  <span className="text-sm font-bold text-white">Profile Completeness</span>
-                  <span className="text-2xl font-black text-blue-400">{completeness}%</span>
-                </div>
-                <div className="h-2 bg-zinc-800 rounded-full overflow-hidden">
-                  <div 
-                    className="h-full bg-gradient-to-r from-blue-500 to-purple-600 transition-all duration-500"
-                    style={{ width: `${completeness}%` }}
-                  />
-                </div>
-                <p className="text-xs text-zinc-400 mt-2">
-                  {completeness >= 80 ? '✨ Ready to start swiping!' : 'Add more details to improve match scores'}
-                </p>
-              </div>
-            </div>
-          </div>
-        );
-
-      default:
-        return null;
-    }
-  };
-
-  return (
-    <div className="min-h-screen bg-zinc-950 text-white p-4 md:p-8">
-      <div className="max-w-4xl mx-auto">
-        <div className="text-center mb-8">
-          <h1 className="text-4xl md:text-5xl font-black mb-2">
-            <span className="bg-gradient-to-r from-blue-400 to-purple-600 bg-clip-text text-transparent">
-              HUNT
-            </span>
-          </h1>
-          <p className="text-zinc-400">Build your profile in 4 simple steps</p>
+        ))}
+        <div>
+          <label className={labelCls}>Year</label>
+          <select value={formData.year} onChange={e => hi('year', parseInt(e.target.value))} className={inputCls}>
+            {[1,2,3,4].map(y => <option key={y} value={y}>{y}{['st','nd','rd','th'][y-1]} Year</option>)}
+          </select>
         </div>
+      </div>
+    </div>
+  );
 
-        <div className="mb-8">
-          <div className="flex items-center justify-between mb-2">
-            <span className="text-sm font-semibold text-zinc-400">Step {currentStep} of {totalSteps}</span>
-            <span className="text-sm font-semibold text-zinc-400">{Math.round(progress)}%</span>
-          </div>
-          <div className="h-2 bg-zinc-800 rounded-full overflow-hidden">
-            <div 
-              className="h-full bg-gradient-to-r from-blue-500 to-purple-600 transition-all duration-500"
-              style={{ width: `${progress}%` }}
-            />
-          </div>
+  const Step2 = () => (
+    <div>
+      <StepHeader
+        label="02 — Skills"
+        title={<>What can you<br /><em>actually build?</em></>}
+        sub="Pick your skills and set an honest level. Recruiters see exactly this."
+      />
+
+      {/* GitHub import */}
+      <div className="mb-6 p-4 rounded-lg border border-[var(--border)] bg-[var(--bg-subtle)]">
+        <div className="flex items-center gap-3 mb-3">
+          <Github className="w-4 h-4 text-[var(--text-mid)]" />
+          <span className="text-sm font-medium text-[var(--text)]">Import from GitHub</span>
+          <span className="text-xs text-[var(--text-dim)]">— auto-fill skills & projects</span>
         </div>
+        <div className="flex gap-2">
+          <input type="text" value={githubUsername} onChange={e => setGithubUsername(e.target.value)}
+            placeholder="username" className={inputCls + ' flex-1'} />
+          <button onClick={handleGitHubImport} disabled={githubImporting}
+            className="px-5 py-3 text-sm font-medium rounded-lg transition-opacity bg-[var(--text)] text-[var(--bg)] hover:opacity-80 disabled:opacity-40 flex items-center gap-2 whitespace-nowrap">
+            {githubImporting ? <><Loader className="w-4 h-4 animate-spin" />Importing…</> : 'Import'}
+          </button>
+        </div>
+      </div>
 
-        <div className="flex items-center justify-between mb-12">
-          {[1, 2, 3, 4].map(step => (
-            <div key={step} className="flex flex-col items-center">
-              <div className={`w-10 h-10 rounded-full flex items-center justify-center font-bold transition-all ${
-                step === currentStep 
-                  ? 'bg-gradient-to-r from-blue-500 to-purple-600 text-white scale-110' 
-                  : step < currentStep
-                  ? 'bg-green-500 text-white'
-                  : 'bg-zinc-800 text-zinc-500'
+      {/* Category tabs */}
+      <div className="flex flex-wrap gap-2 mb-4">
+        {SKILL_CATEGORIES.map(cat => (
+          <button key={cat} onClick={() => setActiveCategory(cat)}
+            className={`px-3 py-1.5 text-xs font-medium rounded-full border transition-colors duration-150 ${
+              activeCategory === cat
+                ? 'bg-[var(--text)] text-[var(--bg)] border-[var(--text)]'
+                : 'bg-transparent text-[var(--text-mid)] border-[var(--border)] hover:border-[var(--border-mid)]'
+            }`}>
+            {cat}
+          </button>
+        ))}
+      </div>
+
+      {/* Skill pills */}
+      <div className="flex flex-wrap gap-2 mb-6 pb-5 border-b border-[var(--border)]">
+        {catSkills.map(skill => {
+          const added = formData.skills.some(s => s.name === skill.name);
+          return (
+            <button key={skill.id} onClick={() => addSkill(skill)}
+              className={`px-3 py-1.5 text-sm rounded-lg border transition-all duration-150 ${
+                added
+                  ? 'bg-[var(--green-tint)] border-[var(--green)] text-[var(--green-text)] cursor-default'
+                  : 'bg-transparent border-[var(--border)] text-[var(--text-mid)] hover:border-[var(--border-mid)] hover:text-[var(--text)]'
               }`}>
-                {step < currentStep ? <CheckCircle2 className="w-5 h-5" /> : step}
+              {skill.name}{added && ' ✓'}
+            </button>
+          );
+        })}
+      </div>
+
+      {/* Selected skills */}
+      {formData.skills.length > 0 && (
+        <div>
+          <p className={labelCls}>Selected — {formData.skills.length} skill{formData.skills.length !== 1 && 's'}</p>
+          <div className="space-y-2">
+            {formData.skills.map(skill => (
+              <div key={skill.id} className="flex items-center gap-3 px-4 py-3 rounded-lg border border-[var(--border)] bg-[var(--bg-subtle)]">
+                <span className="text-sm font-medium text-[var(--text)] flex-1">{skill.name}</span>
+                <div className="flex gap-1">
+                  {[1,2,3,4,5].map(lv => (
+                    <button key={lv} onClick={() => updateLevel(skill.id, lv)}
+                      className={`w-7 h-7 rounded text-xs font-medium transition-colors duration-100 ${
+                        skill.level >= lv
+                          ? 'bg-[var(--green)] text-white'
+                          : 'bg-[var(--bg)] border border-[var(--border)] text-[var(--text-dim)]'
+                      }`}>
+                      {lv}
+                    </button>
+                  ))}
+                </div>
+                <span className="text-xs text-[var(--text-dim)] w-20 text-right">{LEVEL_LABELS[skill.level]}</span>
+                <button onClick={() => removeSkill(skill.id)} className="text-[var(--text-dim)] hover:text-[var(--text)] ml-1">
+                  <X className="w-4 h-4" />
+                </button>
               </div>
-              <span className="text-xs text-zinc-500 mt-2 hidden md:block">
-                {step === 1 ? 'Basic' : step === 2 ? 'Skills' : step === 3 ? 'Projects' : 'Finish'}
-              </span>
+            ))}
+          </div>
+        </div>
+      )}
+    </div>
+  );
+
+  const Step3 = () => (
+    <div>
+      <StepHeader
+        label="03 — Projects"
+        title={<>Show what<br /><em>you've built.</em></>}
+        sub="Projects are your proof of work. Recruiters weight these heavily."
+      />
+
+      {/* Add form */}
+      <div className="p-4 rounded-lg border border-[var(--border)] bg-[var(--bg-subtle)] space-y-3 mb-6">
+        <div className="grid md:grid-cols-2 gap-3">
+          <div>
+            <label className={labelCls}>Project title <span className="text-[var(--green)]">*</span></label>
+            <input type="text" value={newProject.title}
+              onChange={e => setNewProject({ ...newProject, title: e.target.value })}
+              placeholder="E-commerce Dashboard" className={inputCls} />
+          </div>
+          <div>
+            <label className={labelCls}>Tech stack <span className="text-[var(--green)]">*</span></label>
+            <input type="text" value={newProject.techStack}
+              onChange={e => setNewProject({ ...newProject, techStack: e.target.value })}
+              placeholder="React, Node.js, PostgreSQL" className={inputCls} />
+          </div>
+        </div>
+        <div>
+          <label className={labelCls}>Description</label>
+          <textarea value={newProject.description} rows={2}
+            onChange={e => setNewProject({ ...newProject, description: e.target.value })}
+            placeholder="What does this project do?" className={inputCls + ' resize-none'} />
+        </div>
+        <div className="grid md:grid-cols-2 gap-3">
+          <div>
+            <label className={labelCls}>Live URL</label>
+            <input type="url" value={newProject.projectUrl}
+              onChange={e => setNewProject({ ...newProject, projectUrl: e.target.value })}
+              placeholder="https://" className={inputCls} />
+          </div>
+          <div>
+            <label className={labelCls}>GitHub URL</label>
+            <input type="url" value={newProject.githubUrl}
+              onChange={e => setNewProject({ ...newProject, githubUrl: e.target.value })}
+              placeholder="https://github.com/…" className={inputCls} />
+          </div>
+        </div>
+        <button onClick={addProject}
+          className="w-full py-3 rounded-lg text-sm font-medium border border-dashed border-[var(--border-mid)] text-[var(--text-mid)] hover:border-[var(--text)] hover:text-[var(--text)] transition-colors flex items-center justify-center gap-2">
+          <Plus className="w-4 h-4" /> Add project
+        </button>
+      </div>
+
+      {formData.projects.length > 0 && (
+        <div className="space-y-3">
+          {formData.projects.map(p => (
+            <div key={p.id} className="p-4 rounded-lg border border-[var(--border)] bg-[var(--bg-card)]">
+              <div className="flex items-start justify-between mb-1">
+                <span className="font-medium text-[var(--text)] text-sm">{p.title || p.name}</span>
+                <button onClick={() => removeProject(p.id)} className="text-[var(--text-dim)] hover:text-[var(--text)] ml-3">
+                  <X className="w-4 h-4" />
+                </button>
+              </div>
+              {p.description && <p className="text-xs text-[var(--text-dim)] mb-2">{p.description}</p>}
+              <div className="flex flex-wrap gap-1.5">
+                {(Array.isArray(p.techStack) ? p.techStack : [p.techStack]).map((t, i) => (
+                  <span key={i} className="px-2 py-0.5 text-xs rounded border border-[var(--border)] text-[var(--text-mid)]">{t}</span>
+                ))}
+              </div>
             </div>
           ))}
         </div>
+      )}
+    </div>
+  );
 
-        <div className="bg-zinc-900 rounded-2xl border border-zinc-800 p-6 md:p-8 mb-8">
-          {renderStep()}
+  const Step4 = () => (
+    <div>
+      <StepHeader
+        label="04 — Finish"
+        title={<>Almost there.<br /><em>Set preferences.</em></>}
+        sub="What kind of roles and setup works best for you?"
+      />
+
+      <div className="space-y-6">
+        {/* Roles */}
+        <div>
+          <label className={labelCls}>Preferred roles</label>
+          <div className="grid grid-cols-2 gap-2">
+            {ROLE_OPTIONS.map(role => (
+              <button key={role} onClick={() => toggleRole(role)}
+                className={`px-4 py-3 rounded-lg text-sm text-left transition-all border ${
+                  formData.preferredRoles.includes(role)
+                    ? 'bg-[var(--green-tint)] border-[var(--green)] text-[var(--green-text)] font-medium'
+                    : 'bg-transparent border-[var(--border)] text-[var(--text-mid)] hover:border-[var(--border-mid)]'
+                }`}>
+                {role}
+              </button>
+            ))}
+          </div>
         </div>
 
-        <div className="flex items-center justify-between gap-4">
-          <button
-            onClick={handleBack}
-            disabled={currentStep === 1}
-            className="px-6 py-3 bg-zinc-800 hover:bg-zinc-700 disabled:bg-zinc-900 disabled:cursor-not-allowed text-white font-bold rounded-lg transition-all"
-          >
+        {/* Selects */}
+        <div className="grid md:grid-cols-2 gap-4">
+          <div>
+            <label className={labelCls}>Availability</label>
+            <select value={formData.availability} onChange={e => hi('availability', e.target.value)} className={inputCls}>
+              <option value="Immediate">Immediate</option>
+              <option value="After exams">After exams</option>
+              <option value="Next semester">Next semester</option>
+            </select>
+          </div>
+          <div>
+            <label className={labelCls}>Work preference</label>
+            <select value={formData.workPreference} onChange={e => hi('workPreference', e.target.value)} className={inputCls}>
+              <option value="remote">Remote</option>
+              <option value="onsite">On-site</option>
+              <option value="hybrid">Hybrid</option>
+              <option value="any">Any</option>
+            </select>
+          </div>
+        </div>
+
+        {/* Links */}
+        {[
+          { f: 'githubUrl',    label: 'GitHub URL',    placeholder: 'https://github.com/yourname' },
+          { f: 'linkedinUrl',  label: 'LinkedIn URL',  placeholder: 'https://linkedin.com/in/yourname' },
+          { f: 'portfolioUrl', label: 'Portfolio URL', placeholder: 'https://yoursite.com' },
+        ].map(({ f, label, placeholder }) => (
+          <div key={f}>
+            <label className={labelCls}>{label}</label>
+            <input type="url" value={formData[f]} onChange={e => hi(f, e.target.value)}
+              placeholder={placeholder} className={inputCls} />
+          </div>
+        ))}
+
+        {/* Resume */}
+        <div>
+          <label className={labelCls}>Resume (PDF)</label>
+          <label className="flex items-center gap-3 px-4 py-3 rounded-lg border border-[var(--border)] bg-[var(--bg-subtle)] cursor-pointer hover:border-[var(--border-mid)] transition-colors">
+            <span className="text-sm text-[var(--text-dim)]">
+              {formData.resume ? formData.resume.name : 'Choose file…'}
+            </span>
+            <input type="file" accept=".pdf" onChange={e => hi('resume', e.target.files[0])} className="sr-only" />
+            <span className="ml-auto text-xs px-3 py-1.5 rounded border border-[var(--border)] text-[var(--text-mid)]">Browse</span>
+          </label>
+        </div>
+
+        {/* Completeness */}
+        <div className="p-4 rounded-lg border border-[var(--border)] bg-[var(--bg-subtle)]">
+          <div className="flex items-center justify-between mb-3">
+            <span className="text-sm font-medium text-[var(--text)]">Profile completeness</span>
+            <span className="font-serif text-2xl text-[var(--green)]" style={{ fontFamily: "'Editorial New', Georgia, serif" }}>
+              {completeness}%
+            </span>
+          </div>
+          <div className="h-1.5 rounded-full bg-[var(--border)] overflow-hidden">
+            <div className="h-full rounded-full bg-[var(--green)] transition-all duration-500"
+              style={{ width: `${completeness}%` }} />
+          </div>
+          <p className="text-xs text-[var(--text-dim)] mt-2">
+            {completeness >= 80 ? 'Ready to start swiping — strong profile.' : 'Add more to improve your match scores.'}
+          </p>
+        </div>
+      </div>
+    </div>
+  );
+
+  const steps = [Step1, Step2, Step3, Step4];
+  const CurrentStep = steps[currentStep - 1];
+
+  return (
+    <div className="min-h-screen transition-colors duration-300"
+      style={{ background: 'var(--bg)', color: 'var(--text)', fontFamily: "'DM Sans', system-ui, sans-serif" }}>
+
+      {/* Nav */}
+      <nav style={{ borderBottom: '1px solid var(--border)', background: 'var(--bg)' }}
+        className="sticky top-0 z-50 flex items-center justify-between px-6 md:px-12 py-4">
+        <span style={{ fontFamily: "'DM Sans', system-ui, sans-serif", letterSpacing: '0.12em' }}
+          className="text-base font-medium">HUNT</span>
+        <span className="text-xs tracking-widest uppercase" style={{ color: 'var(--text-dim)' }}>
+          Build your profile
+        </span>
+        <button onClick={toggleTheme}
+          className="w-9 h-9 rounded-full flex items-center justify-center border border-[var(--border)] transition-colors hover:border-[var(--border-mid)]"
+          style={{ background: 'var(--bg-subtle)', color: 'var(--text-mid)' }}>
+          {theme === 'light' ? <Moon className="w-4 h-4" /> : <Sun className="w-4 h-4" />}
+        </button>
+      </nav>
+
+      <div className="max-w-2xl mx-auto px-6 py-12">
+
+        {/* Progress line */}
+        <div className="mb-12">
+          <div className="flex items-center justify-between mb-4">
+            {STEPS.map((s, i) => {
+              const done = currentStep > s.num;
+              const active = currentStep === s.num;
+              return (
+                <React.Fragment key={s.num}>
+                  <div className="flex flex-col items-center gap-1.5">
+                    <div className={`w-8 h-8 rounded-full flex items-center justify-center text-xs font-medium transition-all duration-200 border ${
+                      active  ? 'border-[var(--text)] bg-[var(--text)] text-[var(--bg)]'
+                      : done  ? 'border-[var(--green)] bg-[var(--green-tint)] text-[var(--green-text)]'
+                               : 'border-[var(--border)] text-[var(--text-dim)]'
+                    }`} style={{ background: active ? 'var(--text)' : done ? 'var(--green-tint)' : 'var(--bg)' }}>
+                      {done ? <CheckCircle2 className="w-4 h-4" /> : s.num}
+                    </div>
+                    <span className="text-xs hidden md:block" style={{ color: active ? 'var(--text)' : 'var(--text-dim)' }}>
+                      {s.label}
+                    </span>
+                  </div>
+                  {i < STEPS.length - 1 && (
+                    <div className="flex-1 mx-2 h-px" style={{ background: currentStep > s.num ? 'var(--green)' : 'var(--border)' }} />
+                  )}
+                </React.Fragment>
+              );
+            })}
+          </div>
+        </div>
+
+        {/* Card */}
+        <div className="rounded-xl border p-6 md:p-10 mb-8"
+          style={{ background: 'var(--bg-card)', borderColor: 'var(--border)' }}>
+          <CurrentStep />
+        </div>
+
+        {/* Navigation */}
+        <div className="flex items-center justify-between">
+          <button onClick={handleBack} disabled={currentStep === 1}
+            className="px-6 py-3 text-sm font-medium rounded-lg border transition-colors disabled:opacity-30"
+            style={{ borderColor: 'var(--border)', color: 'var(--text-mid)', background: 'transparent' }}>
             Back
           </button>
-
+          <span className="text-xs" style={{ color: 'var(--text-dim)' }}>{currentStep} / {totalSteps}</span>
           {currentStep < totalSteps ? (
-            <button
-              onClick={handleNext}
-              className="px-6 py-3 bg-gradient-to-r from-blue-500 to-purple-600 hover:from-blue-400 hover:to-purple-500 text-white font-bold rounded-lg transition-all flex items-center gap-2"
-            >
-              Next
-              <ArrowRight className="w-5 h-5" />
+            <button onClick={handleNext}
+              className="px-6 py-3 text-sm font-medium rounded-lg flex items-center gap-2 transition-opacity hover:opacity-80"
+              style={{ background: 'var(--text)', color: 'var(--bg)' }}>
+              Continue <ArrowRight className="w-4 h-4" />
             </button>
           ) : (
-            <button
-              onClick={handleSubmit}
-              disabled={isSubmitting}
-              className="px-6 py-3 bg-gradient-to-r from-green-500 to-emerald-600 hover:from-green-400 hover:to-emerald-500 text-white font-bold rounded-lg transition-all flex items-center gap-2 disabled:opacity-50"
-            >
-              {isSubmitting ? (
-                <>
-                  <Loader className="w-5 h-5 animate-spin" />
-                  Creating Profile...
-                </>
-              ) : (
-                <>
-                  <CheckCircle2 className="w-5 h-5" />
-                  Complete Profile
-                </>
-              )}
+            <button onClick={handleSubmit} disabled={isSubmitting}
+              className="px-6 py-3 text-sm font-medium rounded-lg flex items-center gap-2 transition-opacity hover:opacity-80 disabled:opacity-40"
+              style={{ background: 'var(--green)', color: '#fff' }}>
+              {isSubmitting
+                ? <><Loader className="w-4 h-4 animate-spin" /> Creating…</>
+                : <><CheckCircle2 className="w-4 h-4" /> Complete profile</>}
             </button>
           )}
         </div>
       </div>
+    </div>
+  );
+}
+
+// ── Sub-component ──────────────────────────────────────────────────────────────
+function StepHeader({ label, title, sub }) {
+  return (
+    <div className="mb-8">
+      <p className="text-xs font-medium tracking-widest uppercase mb-4" style={{ color: 'var(--text-dim)' }}>
+        {label}
+      </p>
+      <h2 className="text-4xl md:text-5xl font-normal leading-none mb-4 tracking-tight"
+        style={{ fontFamily: "'Editorial New', Georgia, serif", color: 'var(--text)' }}>
+        {title}
+      </h2>
+      <p className="text-sm font-light leading-relaxed" style={{ color: 'var(--text-mid)', maxWidth: '380px' }}>
+        {sub}
+      </p>
     </div>
   );
 }
