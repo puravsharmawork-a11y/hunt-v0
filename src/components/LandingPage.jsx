@@ -1,9 +1,64 @@
 // src/components/LandingPage.jsx
 import React from 'react';
-import { Zap, Target, TrendingUp, Award } from 'lucide-react';
 import { signInWithGoogle } from '../services/supabase';
 
+// ─── Google icon (inline so no extra dependency) ─────────────────────────────
+const GoogleIcon = () => (
+  <svg width="14" height="14" viewBox="0 0 18 18" fill="none">
+    <path d="M17.64 9.2c0-.637-.057-1.251-.164-1.84H9v3.481h4.844c-.209 1.125-.843 2.078-1.796 2.716v2.259h2.908c1.702-1.567 2.684-3.875 2.684-6.615z" fill="currentColor" opacity=".9"/>
+    <path d="M9 18c2.43 0 4.467-.806 5.956-2.184l-2.908-2.259c-.806.54-1.837.86-3.048.86-2.344 0-4.328-1.584-5.036-3.711H.957v2.332C2.438 15.983 5.482 18 9 18z" fill="currentColor" opacity=".9"/>
+    <path d="M3.964 10.706c-.18-.54-.282-1.117-.282-1.706 0-.59.102-1.166.282-1.706V4.962H.957C.347 6.175 0 7.55 0 9c0 1.45.348 2.826.957 4.038l3.007-2.332z" fill="currentColor" opacity=".9"/>
+    <path d="M9 3.58c1.321 0 2.508.454 3.44 1.345l2.582-2.58C13.463.891 11.426 0 9 0 5.482 0 2.438 2.017.957 4.962L3.964 6.294C4.672 4.167 6.656 3.58 9 3.58z" fill="currentColor" opacity=".9"/>
+  </svg>
+);
+
+const CheckIcon = () => (
+  <svg style={{ width: 18, height: 18, flexShrink: 0, marginTop: 1 }} viewBox="0 0 20 20" fill="none" stroke="#1A7A4A" strokeWidth="1.5">
+    <circle cx="10" cy="10" r="8"/>
+    <path d="M6.5 10l3 3 4-5"/>
+  </svg>
+);
+
+const CrossIcon = () => (
+  <svg style={{ width: 18, height: 18, flexShrink: 0, marginTop: 1 }} viewBox="0 0 20 20" fill="none" stroke="#9B9B97" strokeWidth="1.5">
+    <circle cx="10" cy="10" r="8"/>
+    <path d="M13 7l-6 6M7 7l6 6"/>
+  </svg>
+);
+
+// ─── Design tokens ────────────────────────────────────────────────────────────
+const t = {
+  black:      '#0A0A0A',
+  white:      '#FAFAF8',
+  gray50:     '#F5F5F2',
+  gray100:    '#EBEBEA',
+  gray400:    '#9B9B97',
+  gray600:    '#5A5A56',
+  green:      '#1A7A4A',
+  greenLight: '#E8F5EE',
+  serif:      "'Editorial New', Georgia, serif",
+  sans:       "'DM Sans', system-ui, sans-serif",
+};
+
+// ─── Shared button styles ─────────────────────────────────────────────────────
+const btnPrimary = {
+  display:        'inline-flex',
+  alignItems:     'center',
+  gap:            10,
+  background:     t.black,
+  color:          t.white,
+  padding:        '14px 28px',
+  borderRadius:   6,
+  fontSize:       14,
+  fontWeight:     400,
+  cursor:         'pointer',
+  border:         'none',
+  fontFamily:     t.sans,
+  transition:     'opacity 0.15s',
+};
+
 export default function LandingPage() {
+  // ─── Auth — unchanged from your original ───────────────────────────────────
   const handleSignIn = async () => {
     try {
       await signInWithGoogle();
@@ -14,199 +69,214 @@ export default function LandingPage() {
   };
 
   return (
-    <div className="min-h-screen bg-zinc-950 text-white">
-      {/* Hero Section */}
-      <div className="relative overflow-hidden">
-        {/* Gradient Background */}
-        <div className="absolute inset-0 bg-gradient-to-br from-blue-600/20 via-purple-600/20 to-pink-600/20 blur-3xl"></div>
-        
-        <div className="relative max-w-7xl mx-auto px-4 py-20 md:py-32">
-          <div className="text-center space-y-8">
-            {/* Logo */}
-            <div className="inline-block">
-              <h1 className="text-6xl md:text-8xl font-black tracking-tighter">
-                <span className="bg-gradient-to-r from-blue-400 via-purple-500 to-pink-500 bg-clip-text text-transparent">
-                  HUNT
-                </span>
-              </h1>
-              <p className="text-zinc-400 text-sm md:text-base mt-2">
-                Internships. Not noise.
-              </p>
-            </div>
+    <>
+      {/* Google Fonts */}
+      <link
+        href="https://fonts.googleapis.com/css2?family=Editorial+New:ital@0;1&family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;1,9..40,300&display=swap"
+        rel="stylesheet"
+      />
 
-            {/* Headline */}
-            <div className="max-w-3xl mx-auto space-y-4">
-              <h2 className="text-3xl md:text-5xl font-bold leading-tight">
-                Fewer Applications.
-                <br />
-                <span className="text-transparent bg-clip-text bg-gradient-to-r from-green-400 to-emerald-500">
-                  More Interviews.
-                </span>
-              </h2>
-              <p className="text-lg md:text-xl text-zinc-400 max-w-2xl mx-auto">
-                Swipe through matched internships. Apply to 5 best-fit roles per week. 
-                Get interviews, not rejections.
-              </p>
-            </div>
+      <div style={{ fontFamily: t.sans, background: t.white, color: t.black, minHeight: '100vh', WebkitFontSmoothing: 'antialiased', overflowX: 'hidden' }}>
 
-            {/* CTA */}
-            <div className="flex flex-col sm:flex-row gap-4 justify-center items-center">
-              <button
-                onClick={handleSignIn}
-                className="group px-8 py-4 bg-gradient-to-r from-blue-500 to-purple-600 rounded-xl font-bold text-lg hover:from-blue-400 hover:to-purple-500 transition-all shadow-lg shadow-blue-500/25 hover:shadow-blue-500/40 hover:scale-105"
-              >
-                <div className="flex items-center gap-3">
-                  <svg className="w-6 h-6" viewBox="0 0 24 24">
-                    <path fill="currentColor" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/>
-                    <path fill="currentColor" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/>
-                    <path fill="currentColor" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z"/>
-                    <path fill="currentColor" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"/>
-                  </svg>
-                  <span>Sign in with Google</span>
+        {/* ── NAV ─────────────────────────────────────────────────────────── */}
+        <nav style={{
+          display:         'flex',
+          alignItems:      'center',
+          justifyContent:  'space-between',
+          padding:         '20px 48px',
+          borderBottom:    `1px solid ${t.gray100}`,
+          position:        'sticky',
+          top:             0,
+          background:      'rgba(250,250,248,0.95)',
+          backdropFilter:  'blur(8px)',
+          zIndex:          100,
+        }}>
+          <span style={{ fontSize: 18, fontWeight: 500, letterSpacing: '0.12em', color: t.black }}>HUNT</span>
+          <span style={{ fontSize: 11, fontWeight: 400, color: t.gray400, letterSpacing: '0.06em', textTransform: 'uppercase' }}>
+            Internships. Not noise.
+          </span>
+          <button
+            onClick={handleSignIn}
+            style={{ display: 'flex', alignItems: 'center', gap: 8, background: t.black, color: t.white, padding: '10px 20px', borderRadius: 6, fontSize: 13, fontWeight: 400, cursor: 'pointer', border: 'none', fontFamily: t.sans }}
+            onMouseOver={e => e.currentTarget.style.opacity = '0.8'}
+            onMouseOut={e => e.currentTarget.style.opacity = '1'}
+          >
+            <GoogleIcon /> Sign in with Google
+          </button>
+        </nav>
+
+        {/* ── HERO ────────────────────────────────────────────────────────── */}
+        <section style={{ padding: 'clamp(60px, 8vw, 100px) clamp(20px, 4vw, 48px) 80px', maxWidth: 1100, margin: '0 auto' }}>
+          <div style={{ display: 'inline-flex', alignItems: 'center', gap: 8, fontSize: 12, fontWeight: 400, letterSpacing: '0.08em', textTransform: 'uppercase', color: t.gray600, marginBottom: 32 }}>
+            <span style={{ display: 'inline-block', width: 20, height: 1, background: t.gray400 }} />
+            Skill-first internship matching
+          </div>
+
+          <h1 style={{ fontFamily: t.serif, fontSize: 'clamp(52px, 7vw, 88px)', fontWeight: 400, lineHeight: 1.0, letterSpacing: '-0.02em', color: t.black, maxWidth: 780, marginBottom: 28 }}>
+            Skills got you here.<br />
+            Let them get you <em style={{ fontStyle: 'italic', color: t.green }}>hired.</em>
+          </h1>
+
+          <p style={{ fontSize: 17, fontWeight: 300, lineHeight: 1.65, color: t.gray600, maxWidth: 440, marginBottom: 48 }}>
+            Stop mass applying and getting ignored. HUNT matches you to internships based on what you can actually do — then puts you in front of recruiters who care.
+          </p>
+
+          <div style={{ display: 'flex', alignItems: 'center', gap: 16, flexWrap: 'wrap' }}>
+            <button
+              onClick={handleSignIn}
+              style={btnPrimary}
+              onMouseOver={e => e.currentTarget.style.opacity = '0.82'}
+              onMouseOut={e => e.currentTarget.style.opacity = '1'}
+            >
+              <GoogleIcon /> Start your hunt — it's free
+            </button>
+            <span style={{ fontSize: 12, color: t.gray400, fontWeight: 300 }}>No resume needed to start</span>
+          </div>
+        </section>
+
+        {/* ── STATS BAR ───────────────────────────────────────────────────── */}
+        <div style={{ borderTop: `1px solid ${t.gray100}`, borderBottom: `1px solid ${t.gray100}`, padding: 'clamp(16px,2vw,24px) clamp(20px,4vw,48px)', display: 'flex', alignItems: 'center', overflowX: 'auto' }}>
+          {[
+            { num: '5',      numAccent: false, label: 'Applications / week' },
+            { num: '40',     numAccent: true,  label: 'Min. interview rate %' },
+            { num: '50',     numAccent: false, label: 'Max applicants / role' },
+            { num: '0 ₹',    numAccent: false, label: 'Always free for students' },
+          ].map((s, i, arr) => (
+            <div key={i} style={{ flex: 1, minWidth: 140, padding: '0 clamp(12px,2vw,32px)', borderRight: i < arr.length - 1 ? `1px solid ${t.gray100}` : 'none', ...(i === 0 ? { paddingLeft: 0 } : {}) }}>
+              <div style={{ fontFamily: t.serif, fontSize: 'clamp(24px,3vw,36px)', fontWeight: 400, color: s.numAccent ? t.green : t.black, letterSpacing: '-0.02em', lineHeight: 1, marginBottom: 4 }}>
+                {s.num}
+              </div>
+              <div style={{ fontSize: 11, fontWeight: 400, color: t.gray400, letterSpacing: '0.06em', textTransform: 'uppercase' }}>{s.label}</div>
+            </div>
+          ))}
+        </div>
+
+        {/* ── HOW IT WORKS ────────────────────────────────────────────────── */}
+        <section style={{ padding: 'clamp(60px,8vw,96px) clamp(20px,4vw,48px)', maxWidth: 1100, margin: '0 auto' }}>
+          <div style={{ fontSize: 11, fontWeight: 400, letterSpacing: '0.1em', textTransform: 'uppercase', color: t.gray400, marginBottom: 48, display: 'flex', alignItems: 'center', gap: 12 }}>
+            How it works
+            <span style={{ flex: 1, height: 1, background: t.gray100, maxWidth: 200, display: 'block' }} />
+          </div>
+
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: 0, border: `1px solid ${t.gray100}`, borderRadius: 8, overflow: 'hidden' }}>
+            {[
+              { n: '01', title: 'Build your skill profile',  desc: 'Add skills, projects, and work preferences. Takes 3 minutes. No resume required.' },
+              { n: '02', title: 'Swipe through matches',     desc: 'See internships ranked by your match score. Only roles you actually qualify for.' },
+              { n: '03', title: 'Apply to your top 5',       desc: '5 applications per week. Forces intent. See your match breakdown before you commit.' },
+              { n: '04', title: 'Get in front of recruiters', desc: 'Recruiters see your ranked profile — skills first, nothing else. Hear back faster.' },
+            ].map((step, i, arr) => (
+              <div key={i} style={{ padding: '36px 28px', borderRight: i < arr.length - 1 ? `1px solid ${t.gray100}` : 'none' }}>
+                <div style={{ fontFamily: t.serif, fontSize: 13, fontWeight: 400, color: t.gray400, marginBottom: 20 }}>{step.n}</div>
+                <div style={{ fontSize: 15, fontWeight: 500, color: t.black, marginBottom: 10, lineHeight: 1.3 }}>{step.title}</div>
+                <div style={{ fontSize: 13, fontWeight: 300, color: t.gray600, lineHeight: 1.6 }}>{step.desc}</div>
+              </div>
+            ))}
+          </div>
+        </section>
+
+        {/* ── THE DIFFERENCE ──────────────────────────────────────────────── */}
+        <section style={{ padding: '0 clamp(20px,4vw,48px) clamp(60px,8vw,96px)', maxWidth: 1100, margin: '0 auto' }}>
+          <div style={{ fontSize: 11, fontWeight: 400, letterSpacing: '0.1em', textTransform: 'uppercase', color: t.gray400, marginBottom: 48, display: 'flex', alignItems: 'center', gap: 12 }}>
+            The difference
+            <span style={{ flex: 1, height: 1, background: t.gray100, maxWidth: 200, display: 'block' }} />
+          </div>
+
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: 2, borderRadius: 8, overflow: 'hidden', border: `1px solid ${t.gray100}` }}>
+            {/* Left — everywhere else */}
+            <div style={{ padding: '40px 36px', background: t.gray50 }}>
+              <div style={{ fontSize: 11, letterSpacing: '0.1em', textTransform: 'uppercase', color: t.gray400, marginBottom: 28, fontWeight: 400 }}>Everywhere else</div>
+              {[
+                '500+ applicants per job posting',
+                'Screened out before anyone reads your resume',
+                '2–5% interview rate on average',
+                'No feedback. No transparency.',
+                'Apply to 100 things, hear back from 2',
+              ].map((item, i) => (
+                <div key={i} style={{ display: 'flex', alignItems: 'flex-start', gap: 12, marginBottom: 18, fontSize: 14, color: t.gray600, fontWeight: 300, lineHeight: 1.5 }}>
+                  <CrossIcon /> {item}
                 </div>
-              </button>
+              ))}
             </div>
 
-            {/* Stats */}
-            <div className="grid grid-cols-3 gap-8 max-w-2xl mx-auto pt-12">
-              <div>
-                <div className="text-3xl md:text-4xl font-black text-green-400">5</div>
-                <div className="text-sm text-zinc-500 mt-1">Applications/week</div>
+            {/* Right — HUNT */}
+            <div style={{ padding: '40px 36px', background: t.white }}>
+              <div style={{ fontSize: 11, letterSpacing: '0.1em', textTransform: 'uppercase', color: t.green, marginBottom: 28, fontWeight: 400 }}>HUNT</div>
+              {[
+                'Max 50 applicants per role',
+                'Ranked by skill match — nothing else',
+                '40–60% interview rate for matched users',
+                'See your match score before you apply',
+                '5 intentional applications per week',
+              ].map((item, i) => (
+                <div key={i} style={{ display: 'flex', alignItems: 'flex-start', gap: 12, marginBottom: 18, fontSize: 14, color: t.black, fontWeight: 400, lineHeight: 1.5 }}>
+                  <CheckIcon /> {item}
+                </div>
+              ))}
+            </div>
+          </div>
+        </section>
+
+        {/* ── ON A HUNT (profile badges) ───────────────────────────────────── */}
+        <section style={{ padding: '0 clamp(20px,4vw,48px) clamp(60px,8vw,96px)', maxWidth: 1100, margin: '0 auto' }}>
+          <div style={{ fontSize: 11, fontWeight: 400, letterSpacing: '0.1em', textTransform: 'uppercase', color: t.gray400, marginBottom: 48, display: 'flex', alignItems: 'center', gap: 12 }}>
+            On a hunt
+            <span style={{ flex: 1, height: 1, background: t.gray100, maxWidth: 200, display: 'block' }} />
+          </div>
+
+          <p style={{ fontSize: 17, fontWeight: 300, color: t.gray600, maxWidth: 480, lineHeight: 1.65, marginBottom: 36 }}>
+            The best candidates aren't always where you'd expect to find them. HUNT surfaces them by what they've built — not where they studied.
+          </p>
+
+          <div style={{ display: 'flex', flexWrap: 'wrap', gap: 10 }}>
+            {[
+              { initials: 'RK', name: 'Rohan Kumar',  detail: 'Full Stack · React, Node.js',      score: '87%' },
+              { initials: 'PS', name: 'Priya Sharma', detail: 'Backend · Python, PostgreSQL',      score: '92%' },
+              { initials: 'AM', name: 'Arjun Mehta',  detail: 'ML · PyTorch, Scikit-learn',        score: '78%' },
+              { initials: 'SK', name: 'Sara Khan',    detail: 'Data · SQL, Pandas, Tableau',       score: '84%' },
+              { initials: 'NP', name: 'Nikhil Patel', detail: 'DevOps · Docker, AWS, CI/CD',       score: '81%' },
+            ].map((p, i) => (
+              <div key={i} style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '12px 16px', border: `1px solid ${t.gray100}`, borderRadius: 8, background: t.white }}>
+                <div style={{ width: 32, height: 32, borderRadius: '50%', background: t.gray100, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 11, fontWeight: 500, color: t.gray600, flexShrink: 0 }}>
+                  {p.initials}
+                </div>
+                <div>
+                  <div style={{ fontWeight: 500, color: t.black, fontSize: 13, lineHeight: 1, marginBottom: 3 }}>{p.name}</div>
+                  <div style={{ fontSize: 11, color: t.gray400, fontWeight: 300 }}>{p.detail}</div>
+                </div>
+                <div style={{ marginLeft: 8, background: t.greenLight, color: t.green, fontSize: 12, fontWeight: 500, padding: '4px 8px', borderRadius: 4 }}>
+                  {p.score}
+                </div>
               </div>
-              <div>
-                <div className="text-3xl md:text-4xl font-black text-blue-400">40-60%</div>
-                <div className="text-sm text-zinc-500 mt-1">Interview rate</div>
-              </div>
-              <div>
-                <div className="text-3xl md:text-4xl font-black text-purple-400">0₹</div>
-                <div className="text-sm text-zinc-500 mt-1">Always free</div>
-              </div>
-            </div>
+            ))}
           </div>
-        </div>
-      </div>
+        </section>
 
-      {/* Features */}
-      <div className="max-w-7xl mx-auto px-4 py-20">
-        <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-6">
-          {/* Feature 1 */}
-          <div className="bg-zinc-900 border border-zinc-800 rounded-2xl p-6 hover:border-blue-500/50 transition-all">
-            <div className="w-12 h-12 rounded-xl bg-blue-500/20 flex items-center justify-center mb-4">
-              <Target className="w-6 h-6 text-blue-400" />
-            </div>
-            <h3 className="text-xl font-bold mb-2">Smart Matching</h3>
-            <p className="text-zinc-400 text-sm">
-              AI matches your skills with internships. Only see roles you actually qualify for.
-            </p>
-          </div>
-
-          {/* Feature 2 */}
-          <div className="bg-zinc-900 border border-zinc-800 rounded-2xl p-6 hover:border-purple-500/50 transition-all">
-            <div className="w-12 h-12 rounded-xl bg-purple-500/20 flex items-center justify-center mb-4">
-              <Zap className="w-6 h-6 text-purple-400" />
-            </div>
-            <h3 className="text-xl font-bold mb-2">Weekly Limits</h3>
-            <p className="text-zinc-400 text-sm">
-              5 applications per week. Forces you to apply smart, not spam.
-            </p>
-          </div>
-
-          {/* Feature 3 */}
-          <div className="bg-zinc-900 border border-zinc-800 rounded-2xl p-6 hover:border-green-500/50 transition-all">
-            <div className="w-12 h-12 rounded-xl bg-green-500/20 flex items-center justify-center mb-4">
-              <TrendingUp className="w-6 h-6 text-green-400" />
-            </div>
-            <h3 className="text-xl font-bold mb-2">Higher Success</h3>
-            <p className="text-zinc-400 text-sm">
-              40-60% interview rate vs 2-5% on LinkedIn. Quality over quantity works.
-            </p>
-          </div>
-
-          {/* Feature 4 */}
-          <div className="bg-zinc-900 border border-zinc-800 rounded-2xl p-6 hover:border-orange-500/50 transition-all">
-            <div className="w-12 h-12 rounded-xl bg-orange-500/20 flex items-center justify-center mb-4">
-              <Award className="w-6 h-6 text-orange-400" />
-            </div>
-            <h3 className="text-xl font-bold mb-2">Tier 2/3 First</h3>
-            <p className="text-zinc-400 text-sm">
-              Built for students whose college name doesn't open doors. Skills do.
-            </p>
-          </div>
-        </div>
-      </div>
-
-      {/* How It Works */}
-      <div className="max-w-5xl mx-auto px-4 py-20">
-        <h2 className="text-4xl font-black text-center mb-12">How It Works</h2>
-        
-        <div className="space-y-8">
-          <div className="flex gap-6 items-start">
-            <div className="flex-shrink-0 w-12 h-12 rounded-full bg-gradient-to-r from-blue-500 to-purple-600 flex items-center justify-center font-black text-xl">
-              1
-            </div>
-            <div>
-              <h3 className="text-2xl font-bold mb-2">Create Your Profile</h3>
-              <p className="text-zinc-400">
-                Takes 3 minutes. Add skills, projects, and preferences. Import from GitHub to auto-fill.
-              </p>
-            </div>
-          </div>
-
-          <div className="flex gap-6 items-start">
-            <div className="flex-shrink-0 w-12 h-12 rounded-full bg-gradient-to-r from-purple-500 to-pink-600 flex items-center justify-center font-black text-xl">
-              2
-            </div>
-            <div>
-              <h3 className="text-2xl font-bold mb-2">Swipe Through Matches</h3>
-              <p className="text-zinc-400">
-                See internships ranked by match score. Swipe right on roles you want, left on ones you don't.
-              </p>
-            </div>
-          </div>
-
-          <div className="flex gap-6 items-start">
-            <div className="flex-shrink-0 w-12 h-12 rounded-full bg-gradient-to-r from-pink-500 to-orange-600 flex items-center justify-center font-black text-xl">
-              3
-            </div>
-            <div>
-              <h3 className="text-2xl font-bold mb-2">Apply to Top 5</h3>
-              <p className="text-zinc-400">
-                5 applications per week limit. Choose wisely. See match breakdown before applying.
-              </p>
-            </div>
-          </div>
-
-          <div className="flex gap-6 items-start">
-            <div className="flex-shrink-0 w-12 h-12 rounded-full bg-gradient-to-r from-orange-500 to-green-600 flex items-center justify-center font-black text-xl">
-              4
-            </div>
-            <div>
-              <h3 className="text-2xl font-bold mb-2">Get Interviews</h3>
-              <p className="text-zinc-400">
-                Track application status. Get feedback. Actually hear back from companies.
-              </p>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      {/* Footer CTA */}
-      <div className="border-t border-zinc-800">
-        <div className="max-w-7xl mx-auto px-4 py-16 text-center">
-          <h2 className="text-3xl md:text-4xl font-black mb-4">
-            Ready to stop being invisible?
+        {/* ── BIG CTA ─────────────────────────────────────────────────────── */}
+        <div style={{ padding: 'clamp(60px,8vw,96px) clamp(20px,4vw,48px)', borderTop: `1px solid ${t.gray100}`, textAlign: 'center' }}>
+          <h2 style={{ fontFamily: t.serif, fontSize: 'clamp(36px,5vw,64px)', fontWeight: 400, color: t.black, lineHeight: 1.05, marginBottom: 20, letterSpacing: '-0.02em' }}>
+            Apply smart.<br />
+            <em style={{ fontStyle: 'italic', color: t.green }}>Get seen.</em>
           </h2>
-          <p className="text-zinc-400 mb-8 max-w-2xl mx-auto">
-            Join HUNT and start applying to internships that actually want your skills.
+          <p style={{ fontSize: 15, fontWeight: 300, color: t.gray600, marginBottom: 36 }}>
+            Stop sending into the void. Start matching.
           </p>
           <button
             onClick={handleSignIn}
-            className="px-8 py-4 bg-gradient-to-r from-green-500 to-emerald-600 rounded-xl font-bold text-lg hover:from-green-400 hover:to-emerald-500 transition-all shadow-lg shadow-green-500/25 hover:scale-105"
+            style={{ ...btnPrimary, margin: '0 auto' }}
+            onMouseOver={e => e.currentTarget.style.opacity = '0.82'}
+            onMouseOut={e => e.currentTarget.style.opacity = '1'}
           >
-            Get Started Free
+            <GoogleIcon /> Start your hunt — it's free
           </button>
         </div>
+
+        {/* ── FOOTER ──────────────────────────────────────────────────────── */}
+        <footer style={{ borderTop: `1px solid ${t.gray100}`, padding: 'clamp(24px,3vw,40px) clamp(20px,4vw,48px)', display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 16 }}>
+          <span style={{ fontSize: 14, fontWeight: 500, letterSpacing: '0.12em', color: t.black }}>HUNT</span>
+          <span style={{ fontSize: 12, color: t.gray400, fontWeight: 300 }}>Internships. Not noise. · Built in India · 2025</span>
+        </footer>
+
       </div>
-    </div>
+    </>
   );
 }
