@@ -234,7 +234,7 @@ export default function SwipeFeed() {
         <div className="flex items-center gap-3">
           <div className="flex items-center gap-2 px-3 py-1.5 rounded-full border text-xs font-medium"
             style={{ borderColor: 'var(--border)', background: 'var(--bg-subtle)', color: 'var(--text-mid)' }}>
-            <Zap className="w-3.5 h-3.5" style={{ color: 'var(--amber)' }} />
+            <Zap className="w-3.5 h-3.5" style={{ color: 'var(--green)' }} />
             {remainingApplications}/5 left
           </div>
           <div className="w-8 h-8 rounded-full flex items-center justify-center text-xs font-medium"
@@ -259,7 +259,7 @@ export default function SwipeFeed() {
       {studentProfile?.profile_completeness < 80 && (
         <div className="max-w-6xl mx-auto px-6 pt-4">
           <div className="flex items-center gap-3 px-4 py-3 rounded-lg text-sm"
-            style={{ background: 'var(--amber-tint)', border: '1px solid var(--amber)', color: 'var(--amber)' }}>
+            style={{ background: 'var(--green-tint)', border: '1px solid var(--green)', color: 'var(--green)' }}>
             <AlertCircle className="w-4 h-4 flex-shrink-0" />
             <span>Profile {studentProfile.profile_completeness}% complete — finish it to improve your match scores.</span>
           </div>
@@ -542,7 +542,7 @@ export default function SwipeFeed() {
                   </div>
                   <div className="h-1 rounded-full overflow-hidden" style={{ background: 'var(--bg-subtle)' }}>
                     <div className="h-full rounded-full transition-all"
-                      style={{ width: `${(remainingApplications / 5) * 100}%`, background: 'var(--amber)' }} />
+                      style={{ width: `${(remainingApplications / 5) * 100}%`, background: 'var(--green)' }} />
                   </div>
                 </div>
               </div>
