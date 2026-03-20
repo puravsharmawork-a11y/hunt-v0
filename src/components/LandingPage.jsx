@@ -517,80 +517,58 @@ function StartupPage() {
         <Label>Our stance</Label>
 
         <blockquote style={{
-          fontFamily: t.sans,
-          fontSize: 'clamp(36px,5vw,68px)',
-          fontWeight: 800,
+          fontFamily: t.serif,
+          fontSize: 'clamp(38px,5.5vw,72px)',
+          fontWeight: 400,
           lineHeight: 1.05,
           letterSpacing: '-0.02em',
           color: '#fff',
-          borderLeft: `4px solid ${t.ember}`,
+          borderLeft: `3px solid ${t.ember}`,
           paddingLeft: '1.5rem',
-          margin: '0 0 24px 0',
+          margin: '0 0 28px 0',
         }}>
           "We don't filter by<br />
           college. We never will.<br />
-          <em style={{ fontStyle: 'normal', color: t.ember }}>Skill is the only signal."</em>
+          <em style={{ fontStyle: 'italic', color: t.ember }}>Skill is the only signal."</em>
         </blockquote>
 
         <p style={{ fontSize: 15, color: 'rgba(255,255,255,0.4)', maxWidth: 540, lineHeight: 1.7, fontWeight: 300, marginBottom: 52 }}>
           This isn't a policy. It's the entire thesis. The best React dev for your 4-person startup might be self-taught, from a college you've never heard of, building in public. HUNT finds them anyway.
         </p>
 
-        {/* 4 feature cards */}
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: 1, background: t.s_border, border: `1px solid ${t.s_border}`, borderRadius: 10, overflow: 'hidden' }}>
+        {/* 4 principle columns — raw, no icon boxes */}
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', borderTop: `1px solid ${t.s_border}` }}>
           {[
             {
-              icon: (
-                <svg width="20" height="20" viewBox="0 0 20 20" fill="none" stroke={t.ember} strokeWidth="1.5">
-                  <polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/>
-                </svg>
-              ),
+              n: '01',
               title: 'Skills, not credentials',
               desc: 'College name is visible but never filterable. Skill score is the primary signal. This is intentional and non-negotiable.',
             },
             {
-              icon: (
-                <svg width="20" height="20" viewBox="0 0 20 20" fill="none" stroke={t.ember} strokeWidth="1.5">
-                  <path d="M14 2H6a2 2 0 00-2 2v16l8-4 8 4V4a2 2 0 00-2-2z"/>
-                </svg>
-              ),
+              n: '02',
               title: 'Project proof over claims',
-              desc: 'Every matched skill is backed by project evidence — not just a checkbox. If they say React, we check if they\'ve shipped React.',
+              desc: "Every matched skill is backed by project evidence — not just a checkbox. If they say React, we check if they've shipped React.",
             },
             {
-              icon: (
-                <svg width="20" height="20" viewBox="0 0 20 20" fill="none" stroke={t.ember} strokeWidth="1.5">
-                  <circle cx="12" cy="12" r="10"/>
-                  <polyline points="12 6 12 12 16 14"/>
-                </svg>
-              ),
+              n: '03',
               title: 'Intentional applications only',
               desc: 'Students have a weekly application limit. So when someone applies to your role, they actually want it. No noise, no mass-apply bots.',
             },
             {
-              icon: (
-                <svg width="20" height="20" viewBox="0 0 20 20" fill="none" stroke={t.ember} strokeWidth="1.5">
-                  <path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/>
-                  <circle cx="9" cy="7" r="4"/>
-                  <path d="M23 21v-2a4 4 0 00-3-3.87M16 3.13a4 4 0 010 7.75"/>
-                </svg>
-              ),
+              n: '04',
               title: 'Self-correcting over time',
-              desc: 'Recruiter feedback after each hire feeds back into our scoring. Candidates who skill-faked don\'t survive. Shortlists improve with every placement.',
+              desc: "Recruiter feedback after each hire feeds back into our scoring. Candidates who skill-faked don't survive. Shortlists improve with every placement.",
             },
           ].map((card, i) => (
-            <div key={i} style={{ background: t.s_surface, padding: '32px 28px' }}>
-              <div style={{
-                width: 44, height: 44, borderRadius: 10,
-                background: t.emberDim,
-                border: `1px solid ${t.emberBorder}`,
-                display: 'flex', alignItems: 'center', justifyContent: 'center',
-                marginBottom: 20,
-              }}>
-                {card.icon}
-              </div>
-              <div style={{ fontSize: 15, fontWeight: 600, color: '#fff', marginBottom: 10, lineHeight: 1.3 }}>{card.title}</div>
-              <div style={{ fontSize: 13, fontWeight: 300, color: t.s_muted, lineHeight: 1.65 }}>{card.desc}</div>
+            <div key={i} style={{
+              padding: '32px 28px 32px 0',
+              borderRight: i < 3 ? `1px solid ${t.s_border}` : 'none',
+              paddingRight: i < 3 ? 28 : 0,
+              paddingLeft: i > 0 ? 28 : 0,
+            }}>
+              <div style={{ fontFamily: t.serif, fontSize: 12, color: 'rgba(255,255,255,0.25)', marginBottom: 20, letterSpacing: '0.02em' }}>{card.n}</div>
+              <div style={{ fontSize: 15, fontWeight: 500, color: '#fff', marginBottom: 12, lineHeight: 1.3, letterSpacing: '-0.01em' }}>{card.title}</div>
+              <div style={{ fontSize: 13, fontWeight: 300, color: t.s_muted, lineHeight: 1.7 }}>{card.desc}</div>
             </div>
           ))}
         </div>
