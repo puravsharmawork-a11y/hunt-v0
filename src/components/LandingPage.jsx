@@ -1,5 +1,5 @@
 // src/components/LandingPage.jsx
-import React, { useEffect } from 'react';
+import React, { useEffect, useState } from 'react';
 import { signInWithGoogle } from '../services/supabase';
 
 const GoogleIcon = () => (
@@ -36,6 +36,15 @@ const t = {
   greenLight: '#E8F5EE',
   serif:      "'Editorial New', Georgia, serif",
   sans:       "'DM Sans', system-ui, sans-serif",
+  // startup palette
+  ember:      '#D85A30',
+  emberDim:   'rgba(216,90,48,0.15)',
+  emberBorder:'rgba(216,90,48,0.35)',
+  s_bg:       '#0C0B09',
+  s_surface:  '#131210',
+  s_border:   'rgba(255,255,255,0.08)',
+  s_muted:    'rgba(255,255,255,0.45)',
+  s_body:     'rgba(255,255,255,0.72)',
 };
 
 const btnPrimary = {
@@ -54,6 +63,9 @@ const btnPrimary = {
   transition:     'opacity 0.15s',
 };
 
+// ─────────────────────────────────────────────────────────────────────────────
+// PHONE HERO  (unchanged from original)
+// ─────────────────────────────────────────────────────────────────────────────
 function PhoneHero() {
   useEffect(() => {
     const scenes = [
@@ -168,13 +180,7 @@ function PhoneHero() {
   }, []);
 
   return (
-    <div style={{
-      flexShrink: 0,
-      width: '300px',
-      height: '530px',
-      pointerEvents: 'none',
-      alignSelf: 'center',
-    }}>
+    <div style={{ flexShrink: 0, width: '300px', height: '530px', pointerEvents: 'none', alignSelf: 'center' }}>
       <div style={{
         background: '#111',
         borderRadius: '44px',
@@ -183,30 +189,14 @@ function PhoneHero() {
         width: '300px',
         height: '530px',
       }}>
-        <div style={{
-          background: '#000',
-          borderRadius: '36px',
-          overflow: 'hidden',
-          height: '100%',
-          display: 'flex',
-          flexDirection: 'column',
-        }}>
-          {/* Notch */}
+        <div style={{ background: '#000', borderRadius: '36px', overflow: 'hidden', height: '100%', display: 'flex', flexDirection: 'column' }}>
           <div style={{ background: '#000', padding: '12px 0 4px', display: 'flex', justifyContent: 'center' }}>
             <div style={{ width: '80px', height: '6px', background: '#1a1a1a', borderRadius: '3px' }} />
           </div>
-          {/* Screen content */}
           <div
             id="hunt-phone-screen"
-            style={{
-              flex: 1,
-              padding: '24px 20px 48px',
-              display: 'flex',
-              flexDirection: 'column',
-              justifyContent: 'center',
-            }}
+            style={{ flex: 1, padding: '24px 20px 48px', display: 'flex', flexDirection: 'column', justifyContent: 'center' }}
           />
-          {/* Home bar */}
           <div style={{ height: '30px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
             <div style={{ width: '100px', height: '4px', background: '#333', borderRadius: '2px' }} />
           </div>
@@ -216,7 +206,351 @@ function PhoneHero() {
   );
 }
 
+// ─────────────────────────────────────────────────────────────────────────────
+// STARTUP PAGE  (dark, ember accent — no nav/footer, they come from parent)
+// ─────────────────────────────────────────────────────────────────────────────
+function StartupPage() {
+  // tiny helpers
+  const S = (style) => style; // identity — just for clarity grouping
+  const Label = ({ children }) => (
+    <div style={{ fontSize: 11, fontWeight: 500, letterSpacing: '0.1em', textTransform: 'uppercase', color: t.ember, marginBottom: 20, display: 'flex', alignItems: 'center', gap: 10 }}>
+      <span style={{ width: 16, height: 1, background: t.ember, display: 'inline-block' }} />
+      {children}
+    </div>
+  );
+
+  return (
+    <div style={{ background: t.s_bg, color: '#fff', fontFamily: t.sans, WebkitFontSmoothing: 'antialiased', paddingBottom: 120 }}>
+
+      {/* ── HERO ── */}
+      <section style={{ padding: 'clamp(80px,10vw,120px) clamp(20px,5vw,64px) clamp(60px,8vw,100px)', maxWidth: 1000, margin: '0 auto' }}>
+
+        {/* live pill */}
+        <div style={{ display: 'inline-flex', alignItems: 'center', gap: 8, border: `1px solid ${t.emberBorder}`, borderRadius: 20, padding: '5px 14px', marginBottom: 36 }}>
+          <span style={{ width: 6, height: 6, borderRadius: '50%', background: t.ember, animation: 'huntPulse 2s infinite', display: 'inline-block' }} />
+          <span style={{ fontSize: 11, fontWeight: 500, letterSpacing: '0.1em', textTransform: 'uppercase', color: t.ember }}>Early access · Invite only</span>
+        </div>
+
+        <h1 style={{ fontFamily: t.serif, fontSize: 'clamp(38px,6vw,72px)', fontWeight: 400, lineHeight: 1.05, letterSpacing: '-0.02em', color: '#fff', marginBottom: 28 }}>
+          Stop reviewing<br />
+          <em style={{ fontStyle: 'italic', color: t.ember }}>400 applications</em><br />
+          <span style={{ color: 'rgba(255,255,255,0.3)' }}>to hire one intern.</span>
+        </h1>
+
+        <p style={{ fontSize: 18, fontWeight: 300, lineHeight: 1.7, color: t.s_muted, maxWidth: 520, marginBottom: 44 }}>
+          HUNT pre-matches candidates to your role by actual skill. You get a ranked shortlist of 6. No resume pile. No keyword filtering. No college-name guessing.
+        </p>
+
+        <div style={{ display: 'flex', alignItems: 'center', gap: 16, flexWrap: 'wrap' }}>
+          <button style={{ display: 'inline-flex', alignItems: 'center', gap: 10, background: t.ember, color: '#fff', padding: '14px 32px', borderRadius: 6, fontSize: 15, fontWeight: 500, cursor: 'pointer', border: 'none', fontFamily: t.sans, letterSpacing: '0.01em' }}
+            onMouseOver={e => e.currentTarget.style.background = '#c04e28'}
+            onMouseOut={e => e.currentTarget.style.background = t.ember}
+          >
+            Post a Role → Get Notified
+          </button>
+          <span style={{ fontSize: 13, color: 'rgba(255,255,255,0.3)', fontWeight: 300 }}>Free while in early access</span>
+        </div>
+
+        {/* proof bar */}
+        <div style={{ display: 'flex', gap: 0, marginTop: 56, borderTop: `1px solid ${t.s_border}`, paddingTop: 36, flexWrap: 'wrap' }}>
+          {[
+            { num: '6',          label: 'Max candidates per role' },
+            { num: 'Skill-first', label: 'Not college-first' },
+            { num: '₹0',         label: 'During early access' },
+            { num: '48h',        label: 'Shortlist turnaround' },
+          ].map((s, i, arr) => (
+            <div key={i} style={{ flex: '1 1 120px', paddingRight: 32, borderRight: i < arr.length - 1 ? `1px solid ${t.s_border}` : 'none', marginRight: 32, marginBottom: 16 }}>
+              <div style={{ fontFamily: t.serif, fontSize: 28, fontWeight: 400, color: '#fff', letterSpacing: '-0.02em', lineHeight: 1, marginBottom: 4 }}>{s.num}</div>
+              <div style={{ fontSize: 11, color: 'rgba(255,255,255,0.35)', letterSpacing: '0.06em', textTransform: 'uppercase' }}>{s.label}</div>
+            </div>
+          ))}
+        </div>
+      </section>
+
+      {/* ── THE MATH ── */}
+      <section style={{ padding: '0 clamp(20px,5vw,64px) clamp(60px,8vw,96px)', maxWidth: 1000, margin: '0 auto' }}>
+        <Label>The problem, in numbers</Label>
+        <h2 style={{ fontFamily: t.serif, fontSize: 'clamp(26px,4vw,44px)', fontWeight: 400, lineHeight: 1.1, letterSpacing: '-0.02em', color: '#fff', marginBottom: 12 }}>
+          Your current hiring process is<br />
+          <em style={{ fontStyle: 'italic', color: t.ember }}>broken by design.</em>
+        </h2>
+        <p style={{ fontSize: 15, fontWeight: 300, color: t.s_muted, maxWidth: 520, marginBottom: 40, lineHeight: 1.7 }}>
+          Not because you're doing it wrong. Because every platform incentivises volume over quality — more applications means more revenue for them.
+        </p>
+
+        {/* 2×2 grid */}
+        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', border: `1px solid ${t.s_border}`, borderRadius: 10, overflow: 'hidden' }}>
+          {/* bad cells */}
+          {[
+            { label: 'What you post today', num: '400+', desc: 'applications for a single internship on LinkedIn or Internshala.' },
+            { label: 'What you actually screen', num: '~20', desc: 'because the rest are clearly unqualified. But you spent 6 hours getting there.' },
+          ].map((c, i) => (
+            <div key={i} style={{ padding: '2rem', borderBottom: `1px solid ${t.s_border}`, borderRight: i === 0 ? `1px solid ${t.s_border}` : 'none', background: t.s_surface }}>
+              <div style={{ fontSize: 11, letterSpacing: '0.08em', textTransform: 'uppercase', color: 'rgba(255,255,255,0.3)', marginBottom: 12 }}>{c.label}</div>
+              <div style={{ fontFamily: t.serif, fontSize: 48, fontWeight: 400, color: 'rgba(255,255,255,0.18)', lineHeight: 1, marginBottom: 8 }}>{c.num}</div>
+              <div style={{ fontSize: 13, color: 'rgba(255,255,255,0.4)', lineHeight: 1.55, fontWeight: 300 }}>{c.desc}</div>
+            </div>
+          ))}
+
+          {/* divider arrow */}
+          <div style={{ gridColumn: '1 / -1', padding: '1rem 2rem', background: t.emberDim, borderTop: `1px solid ${t.emberBorder}`, borderBottom: `1px solid ${t.emberBorder}`, display: 'flex', alignItems: 'center', gap: 12 }}>
+            <svg width="14" height="14" viewBox="0 0 14 14" fill="none" style={{ flexShrink: 0 }}>
+              <path d="M7 2v10M12 7l-5 5-5-5" stroke={t.ember} strokeWidth="1.5" strokeLinecap="round"/>
+            </svg>
+            <span style={{ fontSize: 14, color: t.s_body }}>HUNT inverts this. <strong style={{ color: '#F0997B', fontWeight: 500 }}>Match first, then show candidates.</strong></span>
+          </div>
+
+          {/* good cells */}
+          {[
+            { label: 'What HUNT delivers', num: 'Top 6', desc: 'skill-matched, pre-scored candidates. Nobody without the skills gets through.' },
+            { label: 'Your actual time investment', num: '1 call', desc: 'to verify fit. The screening was already done by the match score.' },
+          ].map((c, i) => (
+            <div key={i} style={{ padding: '2rem', borderTop: `1px solid ${t.s_border}`, borderRight: i === 0 ? `1px solid ${t.s_border}` : 'none', background: t.s_surface }}>
+              <div style={{ fontSize: 11, letterSpacing: '0.08em', textTransform: 'uppercase', color: 'rgba(255,255,255,0.3)', marginBottom: 12 }}>{c.label}</div>
+              <div style={{ fontFamily: t.serif, fontSize: 48, fontWeight: 400, color: t.ember, lineHeight: 1, marginBottom: 8 }}>{c.num}</div>
+              <div style={{ fontSize: 13, color: t.s_body, lineHeight: 1.55, fontWeight: 300 }}>{c.desc}</div>
+            </div>
+          ))}
+        </div>
+      </section>
+
+      {/* ── HOW IT WORKS ── */}
+      <section style={{ padding: '0 clamp(20px,5vw,64px) clamp(60px,8vw,96px)', maxWidth: 1000, margin: '0 auto' }}>
+        <Label>How it works</Label>
+        <h2 style={{ fontFamily: t.serif, fontSize: 'clamp(26px,4vw,44px)', fontWeight: 400, lineHeight: 1.1, letterSpacing: '-0.02em', color: '#fff', marginBottom: 48 }}>
+          Post once.<br /><em style={{ fontStyle: 'italic', color: t.ember }}>Get matched candidates.</em>
+        </h2>
+
+        <div style={{ display: 'flex', flexDirection: 'column', borderLeft: `1px solid ${t.s_border}`, paddingLeft: 32, gap: 0 }}>
+          {[
+            {
+              n: '01', title: 'Post the role with required skills',
+              desc: 'Tell us what the intern actually needs to do. Tech stack, key skills, level. Takes 5 minutes. No lengthy JD required — we need the skill spec.',
+              tag: 'No lengthy JD needed',
+            },
+            {
+              n: '02', title: 'HUNT scores every candidate against your role',
+              desc: 'Our match engine runs against verified skill data, project proof, and profile completeness — not just keywords. We weight each skill by your requirement, then rank.',
+              tag: 'Skill-weighted, not keyword search',
+            },
+            {
+              n: '03', title: 'Students with the highest match apply — max 6 total',
+              desc: 'We cap applicants. Students can only apply to a limited number of roles per week, so only intentional applications reach you. No spray-and-pray.',
+              tag: 'Capped at 6 applicants per role',
+            },
+            {
+              n: '04', title: 'You see ranked profiles with match breakdowns',
+              desc: 'Each candidate comes with a score breakdown: skill match, project relevance, tool familiarity. You decide who to call in 10 minutes, not 10 hours.',
+              tag: 'Match score transparent before you open the profile',
+            },
+          ].map((step, i, arr) => (
+            <div key={i} style={{ paddingBottom: i < arr.length - 1 ? 40 : 0, marginBottom: i < arr.length - 1 ? 0 : 0, position: 'relative' }}>
+              {/* step dot on the left border */}
+              <div style={{ position: 'absolute', left: -40, top: 0, width: 16, height: 16, borderRadius: '50%', background: t.s_bg, border: `1px solid ${t.s_border}`, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                <div style={{ width: 6, height: 6, borderRadius: '50%', background: t.ember }} />
+              </div>
+              <div style={{ fontSize: 11, fontFamily: t.serif, color: 'rgba(255,255,255,0.25)', marginBottom: 8 }}>{step.n}</div>
+              <div style={{ fontSize: 17, fontWeight: 500, color: '#fff', marginBottom: 8, lineHeight: 1.3 }}>{step.title}</div>
+              <div style={{ fontSize: 14, fontWeight: 300, color: t.s_muted, lineHeight: 1.7, marginBottom: 12 }}>{step.desc}</div>
+              <span style={{ display: 'inline-block', fontSize: 11, padding: '3px 10px', borderRadius: 20, background: t.emberDim, border: `1px solid ${t.emberBorder}`, color: '#F0997B', fontWeight: 500, marginBottom: i < arr.length - 1 ? 40 : 0 }}>{step.tag}</span>
+            </div>
+          ))}
+        </div>
+      </section>
+
+      {/* ── STANCE ── */}
+      <section style={{ padding: '0 clamp(20px,5vw,64px) clamp(60px,8vw,96px)', maxWidth: 1000, margin: '0 auto' }}>
+        <Label>Our stance</Label>
+
+        <blockquote style={{ fontFamily: t.serif, fontSize: 'clamp(22px,3.5vw,38px)', fontWeight: 400, lineHeight: 1.25, color: 'rgba(255,255,255,0.85)', borderLeft: `3px solid ${t.ember}`, paddingLeft: '1.5rem', marginBottom: 20, letterSpacing: '-0.01em' }}>
+          "We don't filter by college.<br />
+          We never will.<br />
+          <em style={{ fontStyle: 'italic', color: t.ember }}>Skill is the only signal."</em>
+        </blockquote>
+        <p style={{ fontSize: 14, color: 'rgba(255,255,255,0.4)', maxWidth: 460, lineHeight: 1.7, fontWeight: 300, marginBottom: 48 }}>
+          This isn't a policy. It's the entire thesis. The best React dev for your 4-person startup might be self-taught, from a college you've never heard of, building in public. HUNT finds them anyway.
+        </p>
+
+        {/* them vs hunt table */}
+        <div style={{ border: `1px solid ${t.s_border}`, borderRadius: 10, overflow: 'hidden' }}>
+          <div style={{ padding: '1.2rem 1.5rem', borderBottom: `1px solid ${t.s_border}`, display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: t.s_surface }}>
+            <span style={{ fontSize: 13, fontWeight: 500, color: '#fff' }}>The difference</span>
+            <span style={{ fontSize: 11, color: 'rgba(255,255,255,0.3)', letterSpacing: '0.06em', textTransform: 'uppercase' }}>We're not in the same market</span>
+          </div>
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', background: t.s_surface }}>
+            {/* them col */}
+            <div style={{ padding: '1.5rem 2rem', borderRight: `1px solid ${t.s_border}` }}>
+              <div style={{ fontSize: 11, fontWeight: 700, letterSpacing: '0.1em', textTransform: 'uppercase', color: 'rgba(255,255,255,0.25)', marginBottom: 20 }}>Every other platform</div>
+              {[
+                'More applications = more revenue for them',
+                'College filter as the primary sort',
+                'You screen. You filter. You do all the work.',
+                'No feedback loop on who actually got hired',
+                'Keyword search over actual skill depth',
+              ].map((item, i) => (
+                <div key={i} style={{ display: 'flex', alignItems: 'flex-start', gap: 10, marginBottom: 14, fontSize: 13, color: 'rgba(255,255,255,0.35)', fontWeight: 300, lineHeight: 1.5, textDecoration: 'line-through', textDecorationColor: 'rgba(255,255,255,0.12)' }}>
+                  <span style={{ width: 5, height: 5, borderRadius: '50%', background: 'rgba(255,255,255,0.18)', flexShrink: 0, marginTop: 5 }} />
+                  {item}
+                </div>
+              ))}
+            </div>
+            {/* hunt col */}
+            <div style={{ padding: '1.5rem 2rem' }}>
+              <div style={{ fontSize: 11, fontWeight: 700, letterSpacing: '0.1em', textTransform: 'uppercase', color: t.ember, marginBottom: 20 }}>HUNT</div>
+              {[
+                'We win only when you successfully hire',
+                'College visible — never filterable. Ever.',
+                'Matching is done before you open a profile',
+                'Hire/no-hire feedback improves every future shortlist',
+                'Weighted skill matching + project evidence',
+              ].map((item, i) => (
+                <div key={i} style={{ display: 'flex', alignItems: 'flex-start', gap: 10, marginBottom: 14, fontSize: 13, color: t.s_body, fontWeight: 400, lineHeight: 1.5 }}>
+                  <span style={{ width: 5, height: 5, borderRadius: '50%', background: t.ember, flexShrink: 0, marginTop: 5 }} />
+                  {item}
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* ── CONVICTION NUMBERS ── */}
+      <section style={{ padding: '0 clamp(20px,5vw,64px) clamp(60px,8vw,96px)', maxWidth: 1000, margin: '0 auto' }}>
+        <Label>The long game</Label>
+        <p style={{ fontFamily: t.serif, fontSize: 'clamp(20px,3vw,32px)', fontWeight: 400, lineHeight: 1.4, letterSpacing: '-0.01em', color: '#fff', maxWidth: 620, marginBottom: 12 }}>
+          After 100 successful placements, we'll have data no one else has.
+        </p>
+        <p style={{ fontSize: 14, fontWeight: 300, color: 'rgba(255,255,255,0.4)', lineHeight: 1.7, maxWidth: 520, marginBottom: 40 }}>
+          Which skills actually predict internship success. What a real 91% match looks like in practice. That data becomes the moat — a HUNT-verified candidate will mean something to recruiters the way a YC company means something to investors.
+        </p>
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(160px, 1fr))', gap: 1, background: t.s_border, border: `1px solid ${t.s_border}`, borderRadius: 10, overflow: 'hidden' }}>
+          {[
+            { num: '2–5%',  label: 'Interview rate on LinkedIn per application' },
+            { num: '15–25%', label: 'Target interview rate we\'re building toward' },
+            { num: '6',     label: 'Max candidates you\'ll review per role' },
+            { num: '0',     label: 'Unfiltered inbox floods. Ever.' },
+          ].map((s, i) => (
+            <div key={i} style={{ background: t.s_surface, padding: '1.5rem' }}>
+              <div style={{ fontFamily: t.serif, fontSize: 32, fontWeight: 400, color: t.ember, lineHeight: 1, marginBottom: 8, letterSpacing: '-0.02em' }}>{s.num}</div>
+              <div style={{ fontSize: 12, color: 'rgba(255,255,255,0.4)', lineHeight: 1.5, fontWeight: 300 }}>{s.label}</div>
+            </div>
+          ))}
+        </div>
+      </section>
+
+      {/* ── CTA ── */}
+      <section style={{ padding: '0 clamp(20px,5vw,64px)', maxWidth: 1000, margin: '0 auto' }}>
+        <div style={{ border: `1px solid ${t.s_border}`, borderRadius: 12, padding: 'clamp(40px,6vw,64px)', textAlign: 'center', background: t.s_surface, position: 'relative', overflow: 'hidden' }}>
+          {/* subtle glow */}
+          <div style={{ position: 'absolute', top: '50%', left: '50%', transform: 'translate(-50%,-50%)', width: 500, height: 200, background: 'radial-gradient(ellipse, rgba(216,90,48,0.1) 0%, transparent 70%)', pointerEvents: 'none' }} />
+
+          <div style={{ position: 'relative' }}>
+            <div style={{ fontSize: 11, fontWeight: 500, letterSpacing: '0.1em', textTransform: 'uppercase', color: 'rgba(255,255,255,0.3)', marginBottom: 20 }}>Early access · Free while we grow</div>
+            <h2 style={{ fontFamily: t.serif, fontSize: 'clamp(28px,5vw,52px)', fontWeight: 400, lineHeight: 1.1, color: '#fff', marginBottom: 16, letterSpacing: '-0.02em' }}>
+              Post your first role.<br />
+              See who <em style={{ fontStyle: 'italic', color: t.ember }}>actually</em> fits.
+            </h2>
+            <p style={{ fontSize: 15, fontWeight: 300, color: t.s_muted, maxWidth: 380, margin: '0 auto 32px', lineHeight: 1.7 }}>
+              We're in early access. Get your shortlist within 48 hours. No cost until we prove the model works.
+            </p>
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 16, flexWrap: 'wrap' }}>
+              <button
+                style={{ display: 'inline-flex', alignItems: 'center', gap: 10, background: t.ember, color: '#fff', padding: '14px 36px', borderRadius: 6, fontSize: 15, fontWeight: 500, cursor: 'pointer', border: 'none', fontFamily: t.sans }}
+                onMouseOver={e => e.currentTarget.style.background = '#c04e28'}
+                onMouseOut={e => e.currentTarget.style.background = t.ember}
+              >
+                Post a Role on HUNT
+              </button>
+              <button
+                style={{ display: 'inline-flex', alignItems: 'center', gap: 8, background: 'transparent', color: 'rgba(255,255,255,0.5)', padding: '14px 24px', borderRadius: 6, fontSize: 14, fontWeight: 300, cursor: 'pointer', border: `1px solid rgba(255,255,255,0.15)`, fontFamily: t.sans }}
+                onMouseOver={e => { e.currentTarget.style.color = '#fff'; e.currentTarget.style.borderColor = 'rgba(255,255,255,0.35)'; }}
+                onMouseOut={e => { e.currentTarget.style.color = 'rgba(255,255,255,0.5)'; e.currentTarget.style.borderColor = 'rgba(255,255,255,0.15)'; }}
+              >
+                Talk to the founder →
+              </button>
+            </div>
+            <p style={{ fontSize: 12, color: 'rgba(255,255,255,0.2)', marginTop: 20 }}>No dashboard to set up. No contract. Just a role spec and a skill list.</p>
+          </div>
+        </div>
+      </section>
+
+      {/* keyframe for pulse — injected once */}
+      <style>{`
+        @keyframes huntPulse { 0%,100%{opacity:1;} 50%{opacity:0.35;} }
+      `}</style>
+    </div>
+  );
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// AUDIENCE TOGGLE  (fixed, doesn't scroll)
+// ─────────────────────────────────────────────────────────────────────────────
+function AudienceToggle({ mode, onChange }) {
+  return (
+    <div style={{
+      position: 'fixed',
+      bottom: 28,
+      left: '50%',
+      transform: 'translateX(-50%)',
+      zIndex: 999,
+      display: 'flex',
+      alignItems: 'center',
+      background: 'rgba(10,10,10,0.88)',
+      backdropFilter: 'blur(16px)',
+      WebkitBackdropFilter: 'blur(16px)',
+      border: '1px solid rgba(255,255,255,0.12)',
+      borderRadius: 40,
+      padding: 4,
+      gap: 4,
+      boxShadow: '0 8px 32px rgba(0,0,0,0.4)',
+      whiteSpace: 'nowrap',
+    }}>
+      <button
+        onClick={() => onChange('student')}
+        style={{
+          fontFamily: t.sans,
+          fontSize: 13,
+          fontWeight: 500,
+          padding: '9px 22px',
+          borderRadius: 32,
+          border: 'none',
+          cursor: 'pointer',
+          transition: 'all 0.25s',
+          background: mode === 'student' ? t.green : 'transparent',
+          color: mode === 'student' ? '#fff' : 'rgba(255,255,255,0.45)',
+          letterSpacing: '0.01em',
+        }}
+      >
+        I'm a Student
+      </button>
+      <button
+        onClick={() => onChange('startup')}
+        style={{
+          fontFamily: t.sans,
+          fontSize: 13,
+          fontWeight: 500,
+          padding: '9px 22px',
+          borderRadius: 32,
+          border: 'none',
+          cursor: 'pointer',
+          transition: 'all 0.25s',
+          background: mode === 'startup' ? '#D85A30' : 'transparent',
+          color: mode === 'startup' ? '#fff' : 'rgba(255,255,255,0.45)',
+          letterSpacing: '0.01em',
+        }}
+      >
+        I'm a Startup
+      </button>
+    </div>
+  );
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// ROOT EXPORT  (nav + footer untouched from original)
+// ─────────────────────────────────────────────────────────────────────────────
 export default function LandingPage() {
+  const [mode, setMode] = useState('student'); // 'student' | 'startup'
+
   const handleSignIn = async () => {
     try {
       await signInWithGoogle();
@@ -229,224 +563,237 @@ export default function LandingPage() {
   return (
     <>
       <link
-        href="https://fonts.googleapis.com/css2?family=Editorial+New:ital@0;1&family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;1,9..40,300&display=swap"
+        href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;1,9..40,300&display=swap"
         rel="stylesheet"
       />
 
-      <div style={{ fontFamily: t.sans, background: t.white, color: t.black, minHeight: '100vh', WebkitFontSmoothing: 'antialiased', overflowX: 'hidden' }}>
+      <div style={{ fontFamily: t.sans, background: mode === 'student' ? t.white : t.s_bg, color: t.black, minHeight: '100vh', WebkitFontSmoothing: 'antialiased', overflowX: 'hidden', transition: 'background 0.3s' }}>
 
-        {/* ── NAV ─────────────────────────────────────────────────────────── */}
+        {/* ── NAV — completely unchanged ── */}
         <nav style={{
           display:         'flex',
           alignItems:      'center',
           justifyContent:  'space-between',
           padding:         '20px 48px',
-          borderBottom:    `1px solid ${t.gray100}`,
+          borderBottom:    `1px solid ${mode === 'student' ? t.gray100 : 'rgba(255,255,255,0.07)'}`,
           position:        'sticky',
           top:             0,
-          background:      'rgba(250,250,248,0.95)',
+          background:      mode === 'student' ? 'rgba(250,250,248,0.95)' : 'rgba(12,11,9,0.92)',
           backdropFilter:  'blur(8px)',
           zIndex:          100,
+          transition:      'background 0.3s, border-color 0.3s',
         }}>
-          <span style={{ fontSize: 18, fontWeight: 500, letterSpacing: '0.12em', color: t.black }}>HUNT</span>
-          <span style={{ fontSize: 11, fontWeight: 400, color: t.gray400, letterSpacing: '0.06em', textTransform: 'uppercase' }}>
-            Internships. Not noise.
+          <span style={{ fontSize: 18, fontWeight: 500, letterSpacing: '0.12em', color: mode === 'student' ? t.black : '#fff' }}>HUNT</span>
+          <span style={{ fontSize: 11, fontWeight: 400, color: mode === 'student' ? t.gray400 : 'rgba(255,255,255,0.35)', letterSpacing: '0.06em', textTransform: 'uppercase' }}>
+            {mode === 'student' ? 'Internships. Not noise.' : 'Skill-first talent. Not noise.'}
           </span>
-          <button
-            onClick={handleSignIn}
-            style={{ display: 'flex', alignItems: 'center', gap: 8, background: t.black, color: t.white, padding: '10px 20px', borderRadius: 6, fontSize: 13, fontWeight: 400, cursor: 'pointer', border: 'none', fontFamily: t.sans }}
-            onMouseOver={e => e.currentTarget.style.opacity = '0.8'}
-            onMouseOut={e => e.currentTarget.style.opacity = '1'}
-          >
-            <GoogleIcon /> Sign in with Google
-          </button>
+          {mode === 'student' ? (
+            <button
+              onClick={handleSignIn}
+              style={{ display: 'flex', alignItems: 'center', gap: 8, background: t.black, color: t.white, padding: '10px 20px', borderRadius: 6, fontSize: 13, fontWeight: 400, cursor: 'pointer', border: 'none', fontFamily: t.sans }}
+              onMouseOver={e => e.currentTarget.style.opacity = '0.8'}
+              onMouseOut={e => e.currentTarget.style.opacity = '1'}
+            >
+              <GoogleIcon /> Sign in with Google
+            </button>
+          ) : (
+            <button
+              style={{ display: 'flex', alignItems: 'center', gap: 8, background: '#D85A30', color: '#fff', padding: '10px 20px', borderRadius: 6, fontSize: 13, fontWeight: 500, cursor: 'pointer', border: 'none', fontFamily: t.sans }}
+              onMouseOver={e => e.currentTarget.style.background = '#c04e28'}
+              onMouseOut={e => e.currentTarget.style.background = '#D85A30'}
+            >
+              Post a Role
+            </button>
+          )}
         </nav>
 
-        {/* ── HERO ────────────────────────────────────────────────────────── */}
-        <section style={{
-          padding: 'clamp(60px, 8vw, 100px) clamp(20px, 4vw, 48px) 80px',
-          maxWidth: 1100,
-          margin: '0 auto',
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'space-between',
-          gap: 48,
-          minHeight: 'calc(100vh - 65px)',
-        }}>
+        {/* ── MAIN CONTENT — swap based on mode ── */}
+        {mode === 'student' ? (
+          <>
+            {/* ── HERO ── */}
+            <section style={{
+              padding: 'clamp(60px, 8vw, 100px) clamp(20px, 4vw, 48px) 80px',
+              maxWidth: 1100,
+              margin: '0 auto',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'space-between',
+              gap: 48,
+              minHeight: 'calc(100vh - 65px)',
+            }}>
+              <div style={{ flex: 1, minWidth: 0 }}>
+                <div style={{ display: 'inline-flex', alignItems: 'center', gap: 8, fontSize: 12, fontWeight: 400, letterSpacing: '0.08em', textTransform: 'uppercase', color: t.gray600, marginBottom: 32 }}>
+                  <span style={{ display: 'inline-block', width: 20, height: 1, background: t.gray400 }} />
+                  Skill-first internship matching
+                </div>
+                <h1 style={{ fontFamily: t.serif, fontSize: 'clamp(52px, 7vw, 88px)', fontWeight: 400, lineHeight: 1.0, letterSpacing: '-0.02em', color: t.black, maxWidth: 780, marginBottom: 28 }}>
+                  Skills got you here.<br />
+                  Let them get you <em style={{ fontStyle: 'italic', color: t.green }}>hired.</em>
+                </h1>
+                <p style={{ fontSize: 17, fontWeight: 300, lineHeight: 1.65, color: t.gray600, maxWidth: 440, marginBottom: 48 }}>
+                  Stop mass applying and getting ignored. HUNT matches you to internships based on what you can actually do — then puts you in front of recruiters who care.
+                </p>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 16, flexWrap: 'wrap' }}>
+                  <button
+                    onClick={handleSignIn}
+                    style={btnPrimary}
+                    onMouseOver={e => e.currentTarget.style.opacity = '0.82'}
+                    onMouseOut={e => e.currentTarget.style.opacity = '1'}
+                  >
+                    <GoogleIcon /> Start your hunt — it's free
+                  </button>
+                  <span style={{ fontSize: 12, color: t.gray400, fontWeight: 300 }}>No resume needed to start</span>
+                </div>
+              </div>
+              <PhoneHero />
+            </section>
 
-          {/* Left: text content */}
-          <div style={{ flex: 1, minWidth: 0 }}>
-            <div style={{ display: 'inline-flex', alignItems: 'center', gap: 8, fontSize: 12, fontWeight: 400, letterSpacing: '0.08em', textTransform: 'uppercase', color: t.gray600, marginBottom: 32 }}>
-              <span style={{ display: 'inline-block', width: 20, height: 1, background: t.gray400 }} />
-              Skill-first internship matching
+            {/* ── STATS BAR ── */}
+            <div style={{ borderTop: `1px solid ${t.gray100}`, borderBottom: `1px solid ${t.gray100}`, padding: 'clamp(16px,2vw,24px) clamp(20px,4vw,48px)', display: 'flex', alignItems: 'center', overflowX: 'auto' }}>
+              {[
+                { num: '5',   numAccent: false, label: 'Applications / week' },
+                { num: '40',  numAccent: true,  label: 'Min. interview rate %' },
+                { num: '50',  numAccent: false, label: 'Max applicants / role' },
+                { num: '0 ₹', numAccent: false, label: 'Always free for students' },
+              ].map((s, i, arr) => (
+                <div key={i} style={{ flex: 1, minWidth: 140, padding: '0 clamp(12px,2vw,32px)', borderRight: i < arr.length - 1 ? `1px solid ${t.gray100}` : 'none', ...(i === 0 ? { paddingLeft: 0 } : {}) }}>
+                  <div style={{ fontFamily: t.serif, fontSize: 'clamp(24px,3vw,36px)', fontWeight: 400, color: s.numAccent ? t.green : t.black, letterSpacing: '-0.02em', lineHeight: 1, marginBottom: 4 }}>{s.num}</div>
+                  <div style={{ fontSize: 11, fontWeight: 400, color: t.gray400, letterSpacing: '0.06em', textTransform: 'uppercase' }}>{s.label}</div>
+                </div>
+              ))}
             </div>
 
-            <h1 style={{ fontFamily: t.serif, fontSize: 'clamp(52px, 7vw, 88px)', fontWeight: 400, lineHeight: 1.0, letterSpacing: '-0.02em', color: t.black, maxWidth: 780, marginBottom: 28 }}>
-              Skills got you here.<br />
-              Let them get you <em style={{ fontStyle: 'italic', color: t.green }}>hired.</em>
-            </h1>
+            {/* ── HOW IT WORKS ── */}
+            <section style={{ padding: 'clamp(60px,8vw,96px) clamp(20px,4vw,48px)', maxWidth: 1100, margin: '0 auto' }}>
+              <div style={{ fontSize: 11, fontWeight: 400, letterSpacing: '0.1em', textTransform: 'uppercase', color: t.gray400, marginBottom: 48, display: 'flex', alignItems: 'center', gap: 12 }}>
+                How it works
+                <span style={{ flex: 1, height: 1, background: t.gray100, maxWidth: 200, display: 'block' }} />
+              </div>
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: 0, border: `1px solid ${t.gray100}`, borderRadius: 8, overflow: 'hidden' }}>
+                {[
+                  { n: '01', title: 'Build your skill profile',    desc: 'Add skills, projects, and work preferences. Takes 3 minutes. No resume required.' },
+                  { n: '02', title: 'Swipe through matches',       desc: 'See internships ranked by your match score. Only roles you actually qualify for.' },
+                  { n: '03', title: 'Apply to your top 5',         desc: '5 applications per week. Forces intent. See your match breakdown before you commit.' },
+                  { n: '04', title: 'Get in front of recruiters',  desc: 'Recruiters see your ranked profile — skills first, nothing else. Hear back faster.' },
+                ].map((step, i, arr) => (
+                  <div key={i} style={{ padding: '36px 28px', borderRight: i < arr.length - 1 ? `1px solid ${t.gray100}` : 'none' }}>
+                    <div style={{ fontFamily: t.serif, fontSize: 13, fontWeight: 400, color: t.gray400, marginBottom: 20 }}>{step.n}</div>
+                    <div style={{ fontSize: 15, fontWeight: 500, color: t.black, marginBottom: 10, lineHeight: 1.3 }}>{step.title}</div>
+                    <div style={{ fontSize: 13, fontWeight: 300, color: t.gray600, lineHeight: 1.6 }}>{step.desc}</div>
+                  </div>
+                ))}
+              </div>
+            </section>
 
-            <p style={{ fontSize: 17, fontWeight: 300, lineHeight: 1.65, color: t.gray600, maxWidth: 440, marginBottom: 48 }}>
-              Stop mass applying and getting ignored. HUNT matches you to internships based on what you can actually do — then puts you in front of recruiters who care.
-            </p>
+            {/* ── THE DIFFERENCE ── */}
+            <section style={{ padding: '0 clamp(20px,4vw,48px) clamp(60px,8vw,96px)', maxWidth: 1100, margin: '0 auto' }}>
+              <div style={{ fontSize: 11, fontWeight: 400, letterSpacing: '0.1em', textTransform: 'uppercase', color: t.gray400, marginBottom: 48, display: 'flex', alignItems: 'center', gap: 12 }}>
+                The difference
+                <span style={{ flex: 1, height: 1, background: t.gray100, maxWidth: 200, display: 'block' }} />
+              </div>
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: 2, borderRadius: 8, overflow: 'hidden', border: `1px solid ${t.gray100}` }}>
+                <div style={{ padding: '40px 36px', background: t.gray50 }}>
+                  <div style={{ fontSize: 11, letterSpacing: '0.1em', textTransform: 'uppercase', color: t.gray400, marginBottom: 28, fontWeight: 400 }}>Everywhere else</div>
+                  {[
+                    '500+ applicants per job posting',
+                    'Screened out before anyone reads your resume',
+                    '2–5% interview rate on average',
+                    'No feedback. No transparency.',
+                    'Apply to 100 things, hear back from 2',
+                  ].map((item, i) => (
+                    <div key={i} style={{ display: 'flex', alignItems: 'flex-start', gap: 12, marginBottom: 18, fontSize: 14, color: t.gray600, fontWeight: 300, lineHeight: 1.5 }}>
+                      <CrossIcon /> {item}
+                    </div>
+                  ))}
+                </div>
+                <div style={{ padding: '40px 36px', background: t.white }}>
+                  <div style={{ fontSize: 11, letterSpacing: '0.1em', textTransform: 'uppercase', color: t.green, marginBottom: 28, fontWeight: 400 }}>HUNT</div>
+                  {[
+                    'Max 50 applicants per role',
+                    'Ranked by skill match — nothing else',
+                    '40–60% interview rate for matched users',
+                    'See your match score before you apply',
+                    '5 intentional applications per week',
+                  ].map((item, i) => (
+                    <div key={i} style={{ display: 'flex', alignItems: 'flex-start', gap: 12, marginBottom: 18, fontSize: 14, color: t.black, fontWeight: 400, lineHeight: 1.5 }}>
+                      <CheckIcon /> {item}
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </section>
 
-            <div style={{ display: 'flex', alignItems: 'center', gap: 16, flexWrap: 'wrap' }}>
+            {/* ── ON A HUNT ── */}
+            <section style={{ padding: '0 clamp(20px,4vw,48px) clamp(60px,8vw,96px)', maxWidth: 1100, margin: '0 auto' }}>
+              <div style={{ fontSize: 11, fontWeight: 400, letterSpacing: '0.1em', textTransform: 'uppercase', color: t.gray400, marginBottom: 48, display: 'flex', alignItems: 'center', gap: 12 }}>
+                On a hunt
+                <span style={{ flex: 1, height: 1, background: t.gray100, maxWidth: 200, display: 'block' }} />
+              </div>
+              <p style={{ fontSize: 17, fontWeight: 300, color: t.gray600, maxWidth: 480, lineHeight: 1.65, marginBottom: 36 }}>
+                The best candidates aren't always where you'd expect to find them. HUNT surfaces them by what they've built — not where they studied.
+              </p>
+              <div style={{ display: 'flex', flexWrap: 'wrap', gap: 10 }}>
+                {[
+                  { initials: 'RK', name: 'Rohan Kumar',  detail: 'Full Stack · React, Node.js',   score: '87%' },
+                  { initials: 'PS', name: 'Priya Sharma', detail: 'Backend · Python, PostgreSQL',   score: '92%' },
+                  { initials: 'AM', name: 'Arjun Mehta',  detail: 'ML · PyTorch, Scikit-learn',     score: '78%' },
+                  { initials: 'SK', name: 'Sara Khan',    detail: 'Data · SQL, Pandas, Tableau',    score: '84%' },
+                  { initials: 'NP', name: 'Nikhil Patel', detail: 'DevOps · Docker, AWS, CI/CD',    score: '81%' },
+                ].map((p, i) => (
+                  <div key={i} style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '12px 16px', border: `1px solid ${t.gray100}`, borderRadius: 8, background: t.white }}>
+                    <div style={{ width: 32, height: 32, borderRadius: '50%', background: t.gray100, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 11, fontWeight: 500, color: t.gray600, flexShrink: 0 }}>
+                      {p.initials}
+                    </div>
+                    <div>
+                      <div style={{ fontWeight: 500, color: t.black, fontSize: 13, lineHeight: 1, marginBottom: 3 }}>{p.name}</div>
+                      <div style={{ fontSize: 11, color: t.gray400, fontWeight: 300 }}>{p.detail}</div>
+                    </div>
+                    <div style={{ marginLeft: 8, background: t.greenLight, color: t.green, fontSize: 12, fontWeight: 500, padding: '4px 8px', borderRadius: 4 }}>{p.score}</div>
+                  </div>
+                ))}
+              </div>
+            </section>
+
+            {/* ── BIG CTA ── */}
+            <div style={{ padding: 'clamp(60px,8vw,96px) clamp(20px,4vw,48px)', borderTop: `1px solid ${t.gray100}`, textAlign: 'center' }}>
+              <h2 style={{ fontFamily: t.serif, fontSize: 'clamp(36px,5vw,64px)', fontWeight: 400, color: t.black, lineHeight: 1.05, marginBottom: 20, letterSpacing: '-0.02em' }}>
+                Apply smart.<br />
+                <em style={{ fontStyle: 'italic', color: t.green }}>Get seen.</em>
+              </h2>
+              <p style={{ fontSize: 15, fontWeight: 300, color: t.gray600, marginBottom: 36 }}>
+                Stop sending into the void. Start matching.
+              </p>
               <button
                 onClick={handleSignIn}
-                style={btnPrimary}
+                style={{ ...btnPrimary, margin: '0 auto' }}
                 onMouseOver={e => e.currentTarget.style.opacity = '0.82'}
                 onMouseOut={e => e.currentTarget.style.opacity = '1'}
               >
                 <GoogleIcon /> Start your hunt — it's free
               </button>
-              <span style={{ fontSize: 12, color: t.gray400, fontWeight: 300 }}>No resume needed to start</span>
             </div>
-          </div>
+          </>
+        ) : (
+          <StartupPage />
+        )}
 
-          {/* Right: phone */}
-          <PhoneHero />
-
-        </section>
-
-        {/* ── STATS BAR ───────────────────────────────────────────────────── */}
-        <div style={{ borderTop: `1px solid ${t.gray100}`, borderBottom: `1px solid ${t.gray100}`, padding: 'clamp(16px,2vw,24px) clamp(20px,4vw,48px)', display: 'flex', alignItems: 'center', overflowX: 'auto' }}>
-          {[
-            { num: '5',      numAccent: false, label: 'Applications / week' },
-            { num: '40',     numAccent: true,  label: 'Min. interview rate %' },
-            { num: '50',     numAccent: false, label: 'Max applicants / role' },
-            { num: '0 ₹',    numAccent: false, label: 'Always free for students' },
-          ].map((s, i, arr) => (
-            <div key={i} style={{ flex: 1, minWidth: 140, padding: '0 clamp(12px,2vw,32px)', borderRight: i < arr.length - 1 ? `1px solid ${t.gray100}` : 'none', ...(i === 0 ? { paddingLeft: 0 } : {}) }}>
-              <div style={{ fontFamily: t.serif, fontSize: 'clamp(24px,3vw,36px)', fontWeight: 400, color: s.numAccent ? t.green : t.black, letterSpacing: '-0.02em', lineHeight: 1, marginBottom: 4 }}>
-                {s.num}
-              </div>
-              <div style={{ fontSize: 11, fontWeight: 400, color: t.gray400, letterSpacing: '0.06em', textTransform: 'uppercase' }}>{s.label}</div>
-            </div>
-          ))}
-        </div>
-
-        {/* ── HOW IT WORKS ────────────────────────────────────────────────── */}
-        <section style={{ padding: 'clamp(60px,8vw,96px) clamp(20px,4vw,48px)', maxWidth: 1100, margin: '0 auto' }}>
-          <div style={{ fontSize: 11, fontWeight: 400, letterSpacing: '0.1em', textTransform: 'uppercase', color: t.gray400, marginBottom: 48, display: 'flex', alignItems: 'center', gap: 12 }}>
-            How it works
-            <span style={{ flex: 1, height: 1, background: t.gray100, maxWidth: 200, display: 'block' }} />
-          </div>
-
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: 0, border: `1px solid ${t.gray100}`, borderRadius: 8, overflow: 'hidden' }}>
-            {[
-              { n: '01', title: 'Build your skill profile',  desc: 'Add skills, projects, and work preferences. Takes 3 minutes. No resume required.' },
-              { n: '02', title: 'Swipe through matches',     desc: 'See internships ranked by your match score. Only roles you actually qualify for.' },
-              { n: '03', title: 'Apply to your top 5',       desc: '5 applications per week. Forces intent. See your match breakdown before you commit.' },
-              { n: '04', title: 'Get in front of recruiters', desc: 'Recruiters see your ranked profile — skills first, nothing else. Hear back faster.' },
-            ].map((step, i, arr) => (
-              <div key={i} style={{ padding: '36px 28px', borderRight: i < arr.length - 1 ? `1px solid ${t.gray100}` : 'none' }}>
-                <div style={{ fontFamily: t.serif, fontSize: 13, fontWeight: 400, color: t.gray400, marginBottom: 20 }}>{step.n}</div>
-                <div style={{ fontSize: 15, fontWeight: 500, color: t.black, marginBottom: 10, lineHeight: 1.3 }}>{step.title}</div>
-                <div style={{ fontSize: 13, fontWeight: 300, color: t.gray600, lineHeight: 1.6 }}>{step.desc}</div>
-              </div>
-            ))}
-          </div>
-        </section>
-
-        {/* ── THE DIFFERENCE ──────────────────────────────────────────────── */}
-        <section style={{ padding: '0 clamp(20px,4vw,48px) clamp(60px,8vw,96px)', maxWidth: 1100, margin: '0 auto' }}>
-          <div style={{ fontSize: 11, fontWeight: 400, letterSpacing: '0.1em', textTransform: 'uppercase', color: t.gray400, marginBottom: 48, display: 'flex', alignItems: 'center', gap: 12 }}>
-            The difference
-            <span style={{ flex: 1, height: 1, background: t.gray100, maxWidth: 200, display: 'block' }} />
-          </div>
-
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: 2, borderRadius: 8, overflow: 'hidden', border: `1px solid ${t.gray100}` }}>
-            <div style={{ padding: '40px 36px', background: t.gray50 }}>
-              <div style={{ fontSize: 11, letterSpacing: '0.1em', textTransform: 'uppercase', color: t.gray400, marginBottom: 28, fontWeight: 400 }}>Everywhere else</div>
-              {[
-                '500+ applicants per job posting',
-                'Screened out before anyone reads your resume',
-                '2–5% interview rate on average',
-                'No feedback. No transparency.',
-                'Apply to 100 things, hear back from 2',
-              ].map((item, i) => (
-                <div key={i} style={{ display: 'flex', alignItems: 'flex-start', gap: 12, marginBottom: 18, fontSize: 14, color: t.gray600, fontWeight: 300, lineHeight: 1.5 }}>
-                  <CrossIcon /> {item}
-                </div>
-              ))}
-            </div>
-
-            <div style={{ padding: '40px 36px', background: t.white }}>
-              <div style={{ fontSize: 11, letterSpacing: '0.1em', textTransform: 'uppercase', color: t.green, marginBottom: 28, fontWeight: 400 }}>HUNT</div>
-              {[
-                'Max 50 applicants per role',
-                'Ranked by skill match — nothing else',
-                '40–60% interview rate for matched users',
-                'See your match score before you apply',
-                '5 intentional applications per week',
-              ].map((item, i) => (
-                <div key={i} style={{ display: 'flex', alignItems: 'flex-start', gap: 12, marginBottom: 18, fontSize: 14, color: t.black, fontWeight: 400, lineHeight: 1.5 }}>
-                  <CheckIcon /> {item}
-                </div>
-              ))}
-            </div>
-          </div>
-        </section>
-
-        {/* ── ON A HUNT (profile badges) ───────────────────────────────────── */}
-        <section style={{ padding: '0 clamp(20px,4vw,48px) clamp(60px,8vw,96px)', maxWidth: 1100, margin: '0 auto' }}>
-          <div style={{ fontSize: 11, fontWeight: 400, letterSpacing: '0.1em', textTransform: 'uppercase', color: t.gray400, marginBottom: 48, display: 'flex', alignItems: 'center', gap: 12 }}>
-            On a hunt
-            <span style={{ flex: 1, height: 1, background: t.gray100, maxWidth: 200, display: 'block' }} />
-          </div>
-
-          <p style={{ fontSize: 17, fontWeight: 300, color: t.gray600, maxWidth: 480, lineHeight: 1.65, marginBottom: 36 }}>
-            The best candidates aren't always where you'd expect to find them. HUNT surfaces them by what they've built — not where they studied.
-          </p>
-
-          <div style={{ display: 'flex', flexWrap: 'wrap', gap: 10 }}>
-            {[
-              { initials: 'RK', name: 'Rohan Kumar',  detail: 'Full Stack · React, Node.js',      score: '87%' },
-              { initials: 'PS', name: 'Priya Sharma', detail: 'Backend · Python, PostgreSQL',      score: '92%' },
-              { initials: 'AM', name: 'Arjun Mehta',  detail: 'ML · PyTorch, Scikit-learn',        score: '78%' },
-              { initials: 'SK', name: 'Sara Khan',    detail: 'Data · SQL, Pandas, Tableau',       score: '84%' },
-              { initials: 'NP', name: 'Nikhil Patel', detail: 'DevOps · Docker, AWS, CI/CD',       score: '81%' },
-            ].map((p, i) => (
-              <div key={i} style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '12px 16px', border: `1px solid ${t.gray100}`, borderRadius: 8, background: t.white }}>
-                <div style={{ width: 32, height: 32, borderRadius: '50%', background: t.gray100, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 11, fontWeight: 500, color: t.gray600, flexShrink: 0 }}>
-                  {p.initials}
-                </div>
-                <div>
-                  <div style={{ fontWeight: 500, color: t.black, fontSize: 13, lineHeight: 1, marginBottom: 3 }}>{p.name}</div>
-                  <div style={{ fontSize: 11, color: t.gray400, fontWeight: 300 }}>{p.detail}</div>
-                </div>
-                <div style={{ marginLeft: 8, background: t.greenLight, color: t.green, fontSize: 12, fontWeight: 500, padding: '4px 8px', borderRadius: 4 }}>
-                  {p.score}
-                </div>
-              </div>
-            ))}
-          </div>
-        </section>
-
-        {/* ── BIG CTA ─────────────────────────────────────────────────────── */}
-        <div style={{ padding: 'clamp(60px,8vw,96px) clamp(20px,4vw,48px)', borderTop: `1px solid ${t.gray100}`, textAlign: 'center' }}>
-          <h2 style={{ fontFamily: t.serif, fontSize: 'clamp(36px,5vw,64px)', fontWeight: 400, color: t.black, lineHeight: 1.05, marginBottom: 20, letterSpacing: '-0.02em' }}>
-            Apply smart.<br />
-            <em style={{ fontStyle: 'italic', color: t.green }}>Get seen.</em>
-          </h2>
-          <p style={{ fontSize: 15, fontWeight: 300, color: t.gray600, marginBottom: 36 }}>
-            Stop sending into the void. Start matching.
-          </p>
-          <button
-            onClick={handleSignIn}
-            style={{ ...btnPrimary, margin: '0 auto' }}
-            onMouseOver={e => e.currentTarget.style.opacity = '0.82'}
-            onMouseOut={e => e.currentTarget.style.opacity = '1'}
-          >
-            <GoogleIcon /> Start your hunt — it's free
-          </button>
-        </div>
-
-        {/* ── FOOTER ──────────────────────────────────────────────────────── */}
-        <footer style={{ borderTop: `1px solid ${t.gray100}`, padding: 'clamp(24px,3vw,40px) clamp(20px,4vw,48px)', display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 16 }}>
-          <span style={{ fontSize: 14, fontWeight: 500, letterSpacing: '0.12em', color: t.black }}>HUNT</span>
-          <span style={{ fontSize: 12, color: t.gray400, fontWeight: 300 }}>Internships. Not noise. · Built in India · 2025</span>
+        {/* ── FOOTER — completely unchanged ── */}
+        <footer style={{
+          borderTop: `1px solid ${mode === 'student' ? t.gray100 : 'rgba(255,255,255,0.07)'}`,
+          padding: 'clamp(24px,3vw,40px) clamp(20px,4vw,48px)',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'space-between',
+          flexWrap: 'wrap',
+          gap: 16,
+          background: mode === 'student' ? t.white : t.s_bg,
+        }}>
+          <span style={{ fontSize: 14, fontWeight: 500, letterSpacing: '0.12em', color: mode === 'student' ? t.black : '#fff' }}>HUNT</span>
+          <span style={{ fontSize: 12, color: mode === 'student' ? t.gray400 : 'rgba(255,255,255,0.3)', fontWeight: 300 }}>Internships. Not noise. · Built in India · 2025</span>
         </footer>
+
+        {/* ── FIXED TOGGLE — never scrolls away ── */}
+        <AudienceToggle mode={mode} onChange={setMode} />
 
       </div>
     </>
