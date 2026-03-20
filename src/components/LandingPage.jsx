@@ -372,8 +372,18 @@ function StartupPage() {
     </div>
   );
 
+  // Light-theme overrides for recruiter page
+  const r = {
+    bg:      t.white,
+    surface: t.gray50,
+    border:  t.gray100,
+    muted:   t.gray600,
+    body:    t.gray600,
+    heading: t.black,
+  };
+
   return (
-    <div style={{ background: t.s_bg, color: '#fff', fontFamily: t.sans, WebkitFontSmoothing: 'antialiased', paddingBottom: 120 }}>
+    <div style={{ background: r.bg, color: r.heading, fontFamily: t.sans, WebkitFontSmoothing: 'antialiased', paddingBottom: 120 }}>
 
       {/* ── HERO ── */}
       <section style={{
@@ -394,13 +404,13 @@ function StartupPage() {
             <span style={{ fontSize: 11, fontWeight: 500, letterSpacing: '0.1em', textTransform: 'uppercase', color: t.ember }}>Early access · Invite only</span>
           </div>
 
-          <h1 style={{ fontFamily: t.serif, fontSize: 'clamp(52px,6vw,88px)', fontWeight: 400, lineHeight: 1.0, letterSpacing: '-0.02em', color: '#fff', marginBottom: 28 }}>
+          <h1 style={{ fontFamily: t.serif, fontSize: 'clamp(52px,6vw,88px)', fontWeight: 400, lineHeight: 1.0, letterSpacing: '-0.02em', color: r.heading, marginBottom: 28 }}>
             Stop reviewing<br />
             <em style={{ fontStyle: 'italic', color: t.ember }}>400 applications</em><br />
             <span style={{ color: 'rgba(255,255,255,0.3)' }}>to hire one intern.</span>
           </h1>
 
-          <p style={{ fontSize: 17, fontWeight: 300, lineHeight: 1.65, color: t.s_muted, maxWidth: 480, marginBottom: 48 }}>
+          <p style={{ fontSize: 17, fontWeight: 300, lineHeight: 1.65, color: r.muted, maxWidth: 480, marginBottom: 48 }}>
             HUNT pre-matches candidates to your role by actual skill. You get a ranked shortlist of 6. No resume pile. No keyword filtering. No college-name guessing.
           </p>
 
@@ -427,16 +437,16 @@ function StartupPage() {
       </section>
 
       {/* ── STATS BAR ── */}
-      <div style={{ borderTop: `1px solid ${t.s_border}`, borderBottom: `1px solid ${t.s_border}`, padding: 'clamp(16px,2vw,24px) clamp(20px,4vw,48px)', display: 'flex', alignItems: 'center', overflowX: 'auto' }}>
+      <div style={{ borderTop: `1px solid ${r.border}`, borderBottom: `1px solid ${r.border}`, padding: 'clamp(16px,2vw,24px) clamp(20px,4vw,48px)', display: 'flex', alignItems: 'center', overflowX: 'auto' }}>
         {[
           { num: '6',          label: 'Max candidates per role' },
           { num: 'Skill-first', label: 'Not college-first' },
           { num: '₹0',         label: 'During early access' },
           { num: '48h',        label: 'Shortlist turnaround' },
         ].map((s, i, arr) => (
-          <div key={i} style={{ flex: 1, minWidth: 140, padding: '0 clamp(12px,2vw,32px)', borderRight: i < arr.length - 1 ? `1px solid ${t.s_border}` : 'none', ...(i === 0 ? { paddingLeft: 0 } : {}) }}>
+          <div key={i} style={{ flex: 1, minWidth: 140, padding: '0 clamp(12px,2vw,32px)', borderRight: i < arr.length - 1 ? `1px solid ${r.border}` : 'none', ...(i === 0 ? { paddingLeft: 0 } : {}) }}>
             <div style={{ fontFamily: t.serif, fontSize: 'clamp(24px,3vw,36px)', fontWeight: 400, color: t.ember, letterSpacing: '-0.02em', lineHeight: 1, marginBottom: 4 }}>{s.num}</div>
-            <div style={{ fontSize: 11, fontWeight: 400, color: 'rgba(255,255,255,0.35)', letterSpacing: '0.06em', textTransform: 'uppercase' }}>{s.label}</div>
+            <div style={{ fontSize: 11, fontWeight: 400, color: t.gray400, letterSpacing: '0.06em', textTransform: 'uppercase' }}>{s.label}</div>
           </div>
         ))}
       </div>
@@ -444,23 +454,23 @@ function StartupPage() {
       {/* ── THE MATH ── */}
       <section style={{ padding: 'clamp(60px,8vw,96px) clamp(20px,4vw,48px)', maxWidth: 1100, margin: '0 auto' }}>
         <Label>The problem, in numbers</Label>
-        <h2 style={{ fontFamily: t.serif, fontSize: 'clamp(36px,5vw,64px)', fontWeight: 400, lineHeight: 1.05, letterSpacing: '-0.02em', color: '#fff', marginBottom: 12 }}>
+        <h2 style={{ fontFamily: t.serif, fontSize: 'clamp(36px,5vw,64px)', fontWeight: 400, lineHeight: 1.05, letterSpacing: '-0.02em', color: r.heading, marginBottom: 12 }}>
           Your current hiring process is<br />
           <em style={{ fontStyle: 'italic', color: t.ember }}>broken by design.</em>
         </h2>
-        <p style={{ fontSize: 17, fontWeight: 300, color: t.s_muted, maxWidth: 520, marginBottom: 48, lineHeight: 1.65 }}>
+        <p style={{ fontSize: 17, fontWeight: 300, color: r.muted, maxWidth: 520, marginBottom: 48, lineHeight: 1.65 }}>
           Not because you're doing it wrong. Because every platform incentivises volume over quality — more applications means more revenue for them.
         </p>
 
-        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', border: `1px solid ${t.s_border}`, borderRadius: 10, overflow: 'hidden' }}>
+        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', border: `1px solid ${r.border}`, borderRadius: 10, overflow: 'hidden' }}>
           {[
             { label: 'What you post today', num: '400+', desc: 'applications for a single internship on LinkedIn or Internshala.' },
             { label: 'What you actually screen', num: '~20', desc: 'because the rest are clearly unqualified. But you spent 6 hours getting there.' },
           ].map((c, i) => (
-            <div key={i} style={{ padding: '2.5rem', borderBottom: `1px solid ${t.s_border}`, borderRight: i === 0 ? `1px solid ${t.s_border}` : 'none', background: t.s_surface }}>
-              <div style={{ fontSize: 11, letterSpacing: '0.08em', textTransform: 'uppercase', color: 'rgba(255,255,255,0.3)', marginBottom: 12 }}>{c.label}</div>
-              <div style={{ fontFamily: t.serif, fontSize: 56, fontWeight: 400, color: 'rgba(255,255,255,0.18)', lineHeight: 1, marginBottom: 8 }}>{c.num}</div>
-              <div style={{ fontSize: 14, color: 'rgba(255,255,255,0.4)', lineHeight: 1.6, fontWeight: 300 }}>{c.desc}</div>
+            <div key={i} style={{ padding: '2.5rem', borderBottom: `1px solid ${r.border}`, borderRight: i === 0 ? `1px solid ${r.border}` : 'none', background: r.surface }}>
+              <div style={{ fontSize: 11, letterSpacing: '0.08em', textTransform: 'uppercase', color: t.gray400, marginBottom: 12 }}>{c.label}</div>
+              <div style={{ fontFamily: t.serif, fontSize: 56, fontWeight: 400, color: t.gray100, lineHeight: 1, marginBottom: 8 }}>{c.num}</div>
+              <div style={{ fontSize: 14, color: t.gray400, lineHeight: 1.6, fontWeight: 300 }}>{c.desc}</div>
             </div>
           ))}
 
@@ -468,17 +478,17 @@ function StartupPage() {
             <svg width="14" height="14" viewBox="0 0 14 14" fill="none" style={{ flexShrink: 0 }}>
               <path d="M7 2v10M12 7l-5 5-5-5" stroke={t.ember} strokeWidth="1.5" strokeLinecap="round"/>
             </svg>
-            <span style={{ fontSize: 15, color: t.s_body }}>HUNT inverts this. <strong style={{ color: '#F0997B', fontWeight: 500 }}>Match first, then show candidates.</strong></span>
+            <span style={{ fontSize: 15, color: t.black }}>HUNT inverts this. <strong style={{ color: t.ember, fontWeight: 500 }}>Match first, then show candidates.</strong></span>
           </div>
 
           {[
             { label: 'What HUNT delivers', num: 'Top 6', desc: 'skill-matched, pre-scored candidates. Nobody without the skills gets through.' },
             { label: 'Your actual time investment', num: '1 call', desc: 'to verify fit. The screening was already done by the match score.' },
           ].map((c, i) => (
-            <div key={i} style={{ padding: '2.5rem', borderTop: `1px solid ${t.s_border}`, borderRight: i === 0 ? `1px solid ${t.s_border}` : 'none', background: t.s_surface }}>
-              <div style={{ fontSize: 11, letterSpacing: '0.08em', textTransform: 'uppercase', color: 'rgba(255,255,255,0.3)', marginBottom: 12 }}>{c.label}</div>
+            <div key={i} style={{ padding: '2.5rem', borderTop: `1px solid ${r.border}`, borderRight: i === 0 ? `1px solid ${r.border}` : 'none', background: r.surface }}>
+              <div style={{ fontSize: 11, letterSpacing: '0.08em', textTransform: 'uppercase', color: t.gray400, marginBottom: 12 }}>{c.label}</div>
               <div style={{ fontFamily: t.serif, fontSize: 56, fontWeight: 400, color: t.ember, lineHeight: 1, marginBottom: 8 }}>{c.num}</div>
-              <div style={{ fontSize: 14, color: t.s_body, lineHeight: 1.6, fontWeight: 300 }}>{c.desc}</div>
+              <div style={{ fontSize: 14, color: r.body, lineHeight: 1.6, fontWeight: 300 }}>{c.desc}</div>
             </div>
           ))}
         </div>
@@ -487,11 +497,11 @@ function StartupPage() {
       {/* ── HOW IT WORKS ── */}
       <section style={{ padding: '0 clamp(20px,4vw,48px) clamp(60px,8vw,96px)', maxWidth: 1100, margin: '0 auto' }}>
         <Label>How it works</Label>
-        <h2 style={{ fontFamily: t.serif, fontSize: 'clamp(36px,5vw,64px)', fontWeight: 400, lineHeight: 1.05, letterSpacing: '-0.02em', color: '#fff', marginBottom: 48 }}>
+        <h2 style={{ fontFamily: t.serif, fontSize: 'clamp(36px,5vw,64px)', fontWeight: 400, lineHeight: 1.05, letterSpacing: '-0.02em', color: r.heading, marginBottom: 48 }}>
           Post once.<br /><em style={{ fontStyle: 'italic', color: t.ember }}>Get matched candidates.</em>
         </h2>
 
-        <div style={{ display: 'flex', flexDirection: 'column', borderLeft: `1px solid ${t.s_border}`, paddingLeft: 32, gap: 0 }}>
+        <div style={{ display: 'flex', flexDirection: 'column', borderLeft: `1px solid ${r.border}`, paddingLeft: 32, gap: 0 }}>
           {[
             { n: '01', title: 'Post the role with required skills', desc: 'Tell us what the intern actually needs to do. Tech stack, key skills, level. Takes 5 minutes. No lengthy JD required — we need the skill spec.', tag: 'No lengthy JD needed' },
             { n: '02', title: 'HUNT scores every candidate against your role', desc: 'Our match engine runs against verified skill data, project proof, and profile completeness — not just keywords. We weight each skill by your requirement, then rank.', tag: 'Skill-weighted, not keyword search' },
@@ -499,20 +509,19 @@ function StartupPage() {
             { n: '04', title: 'You see ranked profiles with match breakdowns', desc: 'Each candidate comes with a score breakdown: skill match, project relevance, tool familiarity. You decide who to call in 10 minutes, not 10 hours.', tag: 'Match score transparent before you open the profile' },
           ].map((step, i, arr) => (
             <div key={i} style={{ paddingBottom: i < arr.length - 1 ? 52 : 0, position: 'relative' }}>
-              {/* dot on left border */}
-              <div style={{ position: 'absolute', left: -40, top: 4, width: 16, height: 16, borderRadius: '50%', background: t.s_bg, border: `1px solid ${t.s_border}`, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+              <div style={{ position: 'absolute', left: -40, top: 4, width: 16, height: 16, borderRadius: '50%', background: r.bg, border: `1px solid ${r.border}`, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
                 <div style={{ width: 6, height: 6, borderRadius: '50%', background: t.ember }} />
               </div>
-              <div style={{ fontSize: 12, color: 'rgba(255,255,255,0.25)', marginBottom: 10, fontFamily: t.sans }}>{step.n}</div>
-              <div style={{ fontSize: 17, fontWeight: 600, color: '#fff', marginBottom: 10, lineHeight: 1.3 }}>{step.title}</div>
-              <div style={{ fontSize: 14, fontWeight: 300, color: t.s_muted, lineHeight: 1.7, marginBottom: 14, maxWidth: 680 }}>{step.desc}</div>
-              <span style={{ display: 'inline-block', fontSize: 11, padding: '4px 12px', borderRadius: 20, background: t.emberDim, border: `1px solid ${t.emberBorder}`, color: '#F0997B', fontWeight: 500 }}>{step.tag}</span>
+              <div style={{ fontSize: 12, color: t.gray400, marginBottom: 10, fontFamily: t.sans }}>{step.n}</div>
+              <div style={{ fontSize: 17, fontWeight: 600, color: r.heading, marginBottom: 10, lineHeight: 1.3 }}>{step.title}</div>
+              <div style={{ fontSize: 14, fontWeight: 300, color: r.muted, lineHeight: 1.7, marginBottom: 14, maxWidth: 680 }}>{step.desc}</div>
+              <span style={{ display: 'inline-block', fontSize: 11, padding: '4px 12px', borderRadius: 20, background: t.emberDim, border: `1px solid ${t.emberBorder}`, color: t.ember, fontWeight: 500 }}>{step.tag}</span>
             </div>
           ))}
         </div>
       </section>
 
-      {/* ── OUR STANCE — styled like image 4 (big bold headline + 4 cards) ── */}
+      {/* ── OUR STANCE ── */}
       <section style={{ padding: '0 clamp(20px,4vw,48px) clamp(60px,8vw,96px)', maxWidth: 1100, margin: '0 auto' }}>
         <Label>Our stance</Label>
 
@@ -522,7 +531,7 @@ function StartupPage() {
           fontWeight: 400,
           lineHeight: 1.05,
           letterSpacing: '-0.02em',
-          color: '#fff',
+          color: r.heading,
           borderLeft: `3px solid ${t.ember}`,
           paddingLeft: '1.5rem',
           margin: '0 0 28px 0',
@@ -532,43 +541,26 @@ function StartupPage() {
           <em style={{ fontStyle: 'italic', color: t.ember }}>Skill is the only signal."</em>
         </blockquote>
 
-        <p style={{ fontSize: 15, color: 'rgba(255,255,255,0.4)', maxWidth: 540, lineHeight: 1.7, fontWeight: 300, marginBottom: 52 }}>
+        <p style={{ fontSize: 15, color: t.gray400, maxWidth: 540, lineHeight: 1.7, fontWeight: 300, marginBottom: 52 }}>
           This isn't a policy. It's the entire thesis. The best React dev for your 4-person startup might be self-taught, from a college you've never heard of, building in public. HUNT finds them anyway.
         </p>
 
-        {/* 4 principle columns — raw, no icon boxes */}
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', borderTop: `1px solid ${t.s_border}` }}>
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', borderTop: `1px solid ${r.border}` }}>
           {[
-            {
-              n: '01',
-              title: 'Skills, not credentials',
-              desc: 'College name is visible but never filterable. Skill score is the primary signal. This is intentional and non-negotiable.',
-            },
-            {
-              n: '02',
-              title: 'Project proof over claims',
-              desc: "Every matched skill is backed by project evidence — not just a checkbox. If they say React, we check if they've shipped React.",
-            },
-            {
-              n: '03',
-              title: 'Intentional applications only',
-              desc: 'Students have a weekly application limit. So when someone applies to your role, they actually want it. No noise, no mass-apply bots.',
-            },
-            {
-              n: '04',
-              title: 'Self-correcting over time',
-              desc: "Recruiter feedback after each hire feeds back into our scoring. Candidates who skill-faked don't survive. Shortlists improve with every placement.",
-            },
+            { n: '01', title: 'Skills, not credentials', desc: 'College name is visible but never filterable. Skill score is the primary signal. This is intentional and non-negotiable.' },
+            { n: '02', title: 'Project proof over claims', desc: "Every matched skill is backed by project evidence — not just a checkbox. If they say React, we check if they've shipped React." },
+            { n: '03', title: 'Intentional applications only', desc: 'Students have a weekly application limit. So when someone applies to your role, they actually want it. No noise, no mass-apply bots.' },
+            { n: '04', title: 'Self-correcting over time', desc: "Recruiter feedback after each hire feeds back into our scoring. Candidates who skill-faked don't survive. Shortlists improve with every placement." },
           ].map((card, i) => (
             <div key={i} style={{
               padding: '32px 28px 32px 0',
-              borderRight: i < 3 ? `1px solid ${t.s_border}` : 'none',
+              borderRight: i < 3 ? `1px solid ${r.border}` : 'none',
               paddingRight: i < 3 ? 28 : 0,
               paddingLeft: i > 0 ? 28 : 0,
             }}>
-              <div style={{ fontFamily: t.serif, fontSize: 12, color: 'rgba(255,255,255,0.25)', marginBottom: 20, letterSpacing: '0.02em' }}>{card.n}</div>
-              <div style={{ fontSize: 15, fontWeight: 500, color: '#fff', marginBottom: 12, lineHeight: 1.3, letterSpacing: '-0.01em' }}>{card.title}</div>
-              <div style={{ fontSize: 13, fontWeight: 300, color: t.s_muted, lineHeight: 1.7 }}>{card.desc}</div>
+              <div style={{ fontFamily: t.serif, fontSize: 12, color: t.gray400, marginBottom: 20, letterSpacing: '0.02em' }}>{card.n}</div>
+              <div style={{ fontSize: 15, fontWeight: 500, color: r.heading, marginBottom: 12, lineHeight: 1.3, letterSpacing: '-0.01em' }}>{card.title}</div>
+              <div style={{ fontSize: 13, fontWeight: 300, color: r.muted, lineHeight: 1.7 }}>{card.desc}</div>
             </div>
           ))}
         </div>
@@ -577,24 +569,23 @@ function StartupPage() {
       {/* ── THE DIFFERENCE ── */}
       <section style={{ padding: '0 clamp(20px,4vw,48px) clamp(60px,8vw,96px)', maxWidth: 1100, margin: '0 auto' }}>
         <Label>The difference</Label>
-        <h2 style={{ fontFamily: t.serif, fontSize: 'clamp(36px,5vw,64px)', fontWeight: 400, lineHeight: 1.05, letterSpacing: '-0.02em', color: '#fff', marginBottom: 12 }}>
+        <h2 style={{ fontFamily: t.serif, fontSize: 'clamp(36px,5vw,64px)', fontWeight: 400, lineHeight: 1.05, letterSpacing: '-0.02em', color: r.heading, marginBottom: 12 }}>
           Not a job board.<br />
           <em style={{ fontStyle: 'italic', color: t.ember }}>Not a recruiter tool.</em><br />
-          <span style={{ color: 'rgba(255,255,255,0.3)' }}>Something different.</span>
+          <span style={{ color: t.gray400 }}>Something different.</span>
         </h2>
-        <p style={{ fontSize: 17, fontWeight: 300, color: t.s_muted, maxWidth: 480, lineHeight: 1.65, marginBottom: 48 }}>
+        <p style={{ fontSize: 17, fontWeight: 300, color: r.muted, maxWidth: 480, lineHeight: 1.65, marginBottom: 48 }}>
           Job boards optimise for volume. That's their business model. Ours is different — we only win if you actually hire.
         </p>
 
-        <div style={{ border: `1px solid ${t.s_border}`, borderRadius: 10, overflow: 'hidden' }}>
-          <div style={{ padding: '1.4rem 2rem', borderBottom: `1px solid ${t.s_border}`, display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: t.s_surface }}>
-            <span style={{ fontSize: 15, fontWeight: 600, color: '#fff' }}>Them vs HUNT</span>
-            <span style={{ fontSize: 11, color: 'rgba(255,255,255,0.3)', letterSpacing: '0.06em', textTransform: 'uppercase' }}>We're not in the same market</span>
+        <div style={{ border: `1px solid ${r.border}`, borderRadius: 10, overflow: 'hidden' }}>
+          <div style={{ padding: '1.4rem 2rem', borderBottom: `1px solid ${r.border}`, display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: r.surface }}>
+            <span style={{ fontSize: 15, fontWeight: 600, color: r.heading }}>Them vs HUNT</span>
+            <span style={{ fontSize: 11, color: t.gray400, letterSpacing: '0.06em', textTransform: 'uppercase' }}>We're not in the same market</span>
           </div>
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', background: t.s_surface }}>
-            {/* them col */}
-            <div style={{ padding: '2rem 2.5rem', borderRight: `1px solid ${t.s_border}` }}>
-              <div style={{ fontSize: 11, fontWeight: 700, letterSpacing: '0.1em', textTransform: 'uppercase', color: 'rgba(255,255,255,0.25)', marginBottom: 24 }}>Every other platform</div>
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', background: r.surface }}>
+            <div style={{ padding: '2rem 2.5rem', borderRight: `1px solid ${r.border}` }}>
+              <div style={{ fontSize: 11, fontWeight: 700, letterSpacing: '0.1em', textTransform: 'uppercase', color: t.gray400, marginBottom: 24 }}>Every other platform</div>
               {[
                 'More applications = more revenue for them',
                 'College filter as the primary sort',
@@ -602,13 +593,12 @@ function StartupPage() {
                 'No feedback loop on who actually got hired',
                 'Keyword search over actual skill depth',
               ].map((item, i) => (
-                <div key={i} style={{ display: 'flex', alignItems: 'flex-start', gap: 12, marginBottom: 18, fontSize: 14, color: 'rgba(255,255,255,0.35)', fontWeight: 300, lineHeight: 1.5 }}>
-                  <span style={{ width: 6, height: 6, borderRadius: '50%', background: 'rgba(255,255,255,0.15)', flexShrink: 0, marginTop: 5 }} />
-                  <span style={{ textDecoration: 'line-through', textDecorationColor: 'rgba(255,255,255,0.12)' }}>{item}</span>
+                <div key={i} style={{ display: 'flex', alignItems: 'flex-start', gap: 12, marginBottom: 18, fontSize: 14, color: t.gray400, fontWeight: 300, lineHeight: 1.5 }}>
+                  <span style={{ width: 6, height: 6, borderRadius: '50%', background: t.gray100, flexShrink: 0, marginTop: 5 }} />
+                  <span style={{ textDecoration: 'line-through', textDecorationColor: t.gray100 }}>{item}</span>
                 </div>
               ))}
             </div>
-            {/* hunt col */}
             <div style={{ padding: '2rem 2.5rem' }}>
               <div style={{ fontSize: 11, fontWeight: 700, letterSpacing: '0.1em', textTransform: 'uppercase', color: t.ember, marginBottom: 24 }}>HUNT</div>
               {[
@@ -618,7 +608,7 @@ function StartupPage() {
                 'Hire/no-hire feedback improves every future shortlist',
                 'Weighted skill matching + project evidence',
               ].map((item, i) => (
-                <div key={i} style={{ display: 'flex', alignItems: 'flex-start', gap: 12, marginBottom: 18, fontSize: 14, color: t.s_body, fontWeight: 400, lineHeight: 1.5 }}>
+                <div key={i} style={{ display: 'flex', alignItems: 'flex-start', gap: 12, marginBottom: 18, fontSize: 14, color: r.body, fontWeight: 400, lineHeight: 1.5 }}>
                   <span style={{ width: 6, height: 6, borderRadius: '50%', background: t.ember, flexShrink: 0, marginTop: 5 }} />
                   {item}
                 </div>
@@ -630,16 +620,16 @@ function StartupPage() {
 
       {/* ── CTA ── */}
       <section style={{ padding: '0 clamp(20px,4vw,48px)', maxWidth: 1100, margin: '0 auto' }}>
-        <div style={{ border: `1px solid ${t.s_border}`, borderRadius: 12, padding: 'clamp(40px,6vw,64px)', textAlign: 'center', background: t.s_surface, position: 'relative', overflow: 'hidden' }}>
-          <div style={{ position: 'absolute', top: '50%', left: '50%', transform: 'translate(-50%,-50%)', width: 500, height: 200, background: 'radial-gradient(ellipse, rgba(216,90,48,0.1) 0%, transparent 70%)', pointerEvents: 'none' }} />
+        <div style={{ border: `1px solid ${r.border}`, borderRadius: 12, padding: 'clamp(40px,6vw,64px)', textAlign: 'center', background: r.surface, position: 'relative', overflow: 'hidden' }}>
+          <div style={{ position: 'absolute', top: '50%', left: '50%', transform: 'translate(-50%,-50%)', width: 500, height: 200, background: 'radial-gradient(ellipse, rgba(216,90,48,0.06) 0%, transparent 70%)', pointerEvents: 'none' }} />
 
           <div style={{ position: 'relative' }}>
-            <div style={{ fontSize: 11, fontWeight: 500, letterSpacing: '0.1em', textTransform: 'uppercase', color: 'rgba(255,255,255,0.3)', marginBottom: 20 }}>Early access · Free while we grow</div>
-            <h2 style={{ fontFamily: t.serif, fontSize: 'clamp(36px,5vw,64px)', fontWeight: 400, lineHeight: 1.05, color: '#fff', marginBottom: 16, letterSpacing: '-0.02em' }}>
+            <div style={{ fontSize: 11, fontWeight: 500, letterSpacing: '0.1em', textTransform: 'uppercase', color: t.gray400, marginBottom: 20 }}>Early access · Free while we grow</div>
+            <h2 style={{ fontFamily: t.serif, fontSize: 'clamp(36px,5vw,64px)', fontWeight: 400, lineHeight: 1.05, color: r.heading, marginBottom: 16, letterSpacing: '-0.02em' }}>
               Post your first role.<br />
               See who <em style={{ fontStyle: 'italic', color: t.ember }}>actually</em> fits.
             </h2>
-            <p style={{ fontSize: 17, fontWeight: 300, color: t.s_muted, maxWidth: 420, margin: '0 auto 40px', lineHeight: 1.65 }}>
+            <p style={{ fontSize: 17, fontWeight: 300, color: r.muted, maxWidth: 420, margin: '0 auto 40px', lineHeight: 1.65 }}>
               We're in early access. Get your shortlist within 48 hours. No cost until we prove the model works.
             </p>
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 16, flexWrap: 'wrap' }}>
@@ -658,7 +648,7 @@ function StartupPage() {
                 Talk to the founder →
               </button>
             </div>
-            <p style={{ fontSize: 12, color: 'rgba(255,255,255,0.2)', marginTop: 20 }}>No dashboard to set up. No contract. Just a role spec and a skill list.</p>
+            <p style={{ fontSize: 12, color: t.gray400, marginTop: 20 }}>No dashboard to set up. No contract. Just a role spec and a skill list.</p>
           </div>
         </div>
       </section>
@@ -755,7 +745,7 @@ export default function LandingPage() {
         rel="stylesheet"
       />
 
-      <div style={{ fontFamily: t.sans, background: mode === 'student' ? t.white : t.s_bg, color: t.black, minHeight: '100vh', WebkitFontSmoothing: 'antialiased', overflowX: 'hidden', transition: 'background 0.3s' }}>
+      <div style={{ fontFamily: t.sans, background: t.white, color: t.black, minHeight: '100vh', WebkitFontSmoothing: 'antialiased', overflowX: 'hidden', transition: 'background 0.3s' }}>
 
         {/* ── NAV — unchanged ── */}
         <nav style={{
@@ -763,16 +753,16 @@ export default function LandingPage() {
           alignItems:      'center',
           justifyContent:  'space-between',
           padding:         '20px 48px',
-          borderBottom:    `1px solid ${mode === 'student' ? t.gray100 : 'rgba(255,255,255,0.07)'}`,
+          borderBottom:    `1px solid ${t.gray100}`,
           position:        'sticky',
           top:             0,
-          background:      mode === 'student' ? 'rgba(250,250,248,0.95)' : 'rgba(12,11,9,0.92)',
+          background:      'rgba(250,250,248,0.95)',
           backdropFilter:  'blur(8px)',
           zIndex:          100,
           transition:      'background 0.3s, border-color 0.3s',
         }}>
-          <span style={{ fontSize: 18, fontWeight: 500, letterSpacing: '0.12em', color: mode === 'student' ? t.black : '#fff' }}>HUNT</span>
-          <span style={{ fontSize: 11, fontWeight: 400, color: mode === 'student' ? t.gray400 : 'rgba(255,255,255,0.35)', letterSpacing: '0.06em', textTransform: 'uppercase' }}>
+          <span style={{ fontSize: 18, fontWeight: 500, letterSpacing: '0.12em', color: t.black }}>HUNT</span>
+          <span style={{ fontSize: 11, fontWeight: 400, color: t.gray400, letterSpacing: '0.06em', textTransform: 'uppercase' }}>
             {mode === 'student' ? 'Internships. Not noise.' : 'Skill-first talent. Not noise.'}
           </span>
           {mode === 'student' ? (
@@ -967,17 +957,17 @@ export default function LandingPage() {
 
         {/* ── FOOTER — unchanged ── */}
         <footer style={{
-          borderTop: `1px solid ${mode === 'student' ? t.gray100 : 'rgba(255,255,255,0.07)'}`,
+          borderTop: `1px solid ${t.gray100}`,
           padding: 'clamp(24px,3vw,40px) clamp(20px,4vw,48px)',
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'space-between',
           flexWrap: 'wrap',
           gap: 16,
-          background: mode === 'student' ? t.white : t.s_bg,
+          background: t.white,
         }}>
-          <span style={{ fontSize: 14, fontWeight: 500, letterSpacing: '0.12em', color: mode === 'student' ? t.black : '#fff' }}>HUNT</span>
-          <span style={{ fontSize: 12, color: mode === 'student' ? t.gray400 : 'rgba(255,255,255,0.3)', fontWeight: 300 }}>Internships. Not noise. · Built in India · 2025</span>
+          <span style={{ fontSize: 14, fontWeight: 500, letterSpacing: '0.12em', color: t.black }}>HUNT</span>
+          <span style={{ fontSize: 12, color: t.gray400, fontWeight: 300 }}>Internships. Not noise. · Built in India · 2025</span>
         </footer>
 
         {/* ── FIXED TOGGLE ── */}
