@@ -529,7 +529,7 @@ function StartupPage() {
         }}>
           "We don't filter by<br />
           college. We never will.<br />
-          <em style={{ fontStyle: 'normal', color: t.ember }}>Skill is the only signal."</em>
+          <em style={{ fontStyle: 'italic', color: t.ember }}>Skill is the only signal."</em>
         </blockquote>
 
         <p style={{ fontSize: 15, color: 'rgba(255,255,255,0.4)', maxWidth: 540, lineHeight: 1.7, fontWeight: 300, marginBottom: 52 }}>
