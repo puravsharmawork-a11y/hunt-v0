@@ -1,5 +1,5 @@
 // src/components/LandingPage.jsx
-import React from 'react';
+import React, { useEffect } from 'react';
 import { signInWithGoogle } from '../services/supabase';
 
 // ─── Google icon (inline so no extra dependency) ─────────────────────────────
@@ -57,8 +57,151 @@ const btnPrimary = {
   transition:     'opacity 0.15s',
 };
 
+// ─── Phone Animation Component ────────────────────────────────────────────────
+function PhoneHero() {
+  useEffect(() => {
+    const scenes = [
+      [
+        { text: "What if you knew\nyour chances ", style: "color:#1a1a1a;" },
+        { text: "BEFORE", style: "color:#1A7A4A;font-weight:700;" },
+        { text: "\napplying for an\ninternship?", style: "color:#1a1a1a;" },
+      ],
+      [
+        { text: "your jee rank\ndoesn't live here.\n\n", style: "color:#9B9B97;" },
+        { text: "your ", style: "color:#5A5A56;" },
+        { text: "github / projects\n", style: "color:#1A7A4A;font-weight:700;" },
+        { text: "does.", style: "color:#5A5A56;" },
+      ],
+      [
+        { text: "swipe on\ninternships\n\n", style: "color:#1a1a1a;" },
+        { text: "left = nope\n", style: "color:#9B9B97;" },
+        { text: "right = ", style: "color:#9B9B97;" },
+        { text: "let's go", style: "color:#1A7A4A;font-weight:700;" },
+      ],
+      [
+        { text: "know your\n", style: "color:#9B9B97;" },
+        { text: "match score\n", style: "color:#1A7A4A;font-weight:700;" },
+        { text: "before\napplying.", style: "color:#9B9B97;" },
+      ],
+    ];
+
+    const SCENE_DURATIONS = [3200, 3200, 3200, 99999];
+    const CHAR_DELAY = 38;
+    const screen = document.getElementById('hunt-phone-screen');
+    if (!screen) return;
+
+    let stopped = false;
+    let typeTimer = null;
+    let sceneTimer = null;
+    let currentScene = 0;
+
+    function typeScene(idx) {
+      if (stopped) return;
+      screen.innerHTML = '';
+      const parts = scenes[idx];
+      const container = document.createElement('div');
+      screen.appendChild(container);
+
+      const spans = parts.map(p => {
+        const sp = document.createElement('span');
+        sp.style.cssText = `white-space:pre-wrap;font-family:monospace;font-size:11.5px;line-height:1.75;${p.style}`;
+        container.appendChild(sp);
+        return { el: sp, text: p.text };
+      });
+
+      let partIdx = 0, charIdx = 0;
+
+      function tick() {
+        if (stopped) return;
+        if (partIdx >= spans.length) {
+          sceneTimer = setTimeout(() => {
+            if (currentScene < scenes.length - 1) {
+              screen.style.transition = 'opacity 0.35s';
+              screen.style.opacity = '0';
+              setTimeout(() => {
+                if (stopped) return;
+                screen.style.opacity = '1';
+                currentScene++;
+                typeScene(currentScene);
+              }, 380);
+            }
+          }, SCENE_DURATIONS[idx]);
+          return;
+        }
+        const cur = spans[partIdx];
+        if (charIdx < cur.text.length) {
+          cur.el.textContent += cur.text[charIdx];
+          charIdx++;
+          typeTimer = setTimeout(tick, CHAR_DELAY);
+        } else {
+          partIdx++;
+          charIdx = 0;
+          typeTimer = setTimeout(tick, CHAR_DELAY);
+        }
+      }
+      tick();
+    }
+
+    const startTimer = setTimeout(() => typeScene(0), 500);
+    return () => {
+      stopped = true;
+      clearTimeout(typeTimer);
+      clearTimeout(sceneTimer);
+      clearTimeout(startTimer);
+    };
+  }, []);
+
+  return (
+    <div style={{
+      flexShrink: 0,
+      width: '190px',
+      height: '340px',
+      pointerEvents: 'none',
+      alignSelf: 'center',
+    }}>
+      <div style={{
+        background: '#111',
+        borderRadius: '32px',
+        padding: '8px',
+        boxShadow: '0 0 0 1px #d0d0cc, 0 24px 48px rgba(0,0,0,0.10)',
+        width: '190px',
+        height: '340px',
+      }}>
+        <div style={{
+          background: '#FAFAF8',
+          borderRadius: '26px',
+          overflow: 'hidden',
+          height: '100%',
+          display: 'flex',
+          flexDirection: 'column',
+          border: '1px solid #ebebea',
+        }}>
+          {/* Notch */}
+          <div style={{ padding: '10px 0 2px', display: 'flex', justifyContent: 'center', background: '#FAFAF8' }}>
+            <div style={{ width: '52px', height: '4px', background: '#e0e0de', borderRadius: '2px' }} />
+          </div>
+          {/* Screen content */}
+          <div
+            id="hunt-phone-screen"
+            style={{
+              flex: 1,
+              padding: '16px 14px 20px',
+              display: 'flex',
+              flexDirection: 'column',
+              justifyContent: 'center',
+            }}
+          />
+          {/* Home bar */}
+          <div style={{ padding: '0 0 10px', display: 'flex', justifyContent: 'center' }}>
+            <div style={{ width: '40px', height: '3px', background: '#d0d0cc', borderRadius: '2px' }} />
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 export default function LandingPage() {
-  // ─── Auth — unchanged from your original ───────────────────────────────────
   const handleSignIn = async () => {
     try {
       await signInWithGoogle();
@@ -106,60 +249,48 @@ export default function LandingPage() {
         </nav>
 
         {/* ── HERO ────────────────────────────────────────────────────────── */}
-        <section style={{ padding: 'clamp(60px, 8vw, 100px) clamp(20px, 4vw, 48px) 80px', maxWidth: 1100, margin: '0 auto', position: 'relative', overflow: 'hidden' }}>
-          <div style={{ display: 'inline-flex', alignItems: 'center', gap: 8, fontSize: 12, fontWeight: 400, letterSpacing: '0.08em', textTransform: 'uppercase', color: t.gray600, marginBottom: 32 }}>
-            <span style={{ display: 'inline-block', width: 20, height: 1, background: t.gray400 }} />
-            Skill-first internship matching
+        <section style={{
+          padding: 'clamp(60px, 8vw, 100px) clamp(20px, 4vw, 48px) 80px',
+          maxWidth: 1100,
+          margin: '0 auto',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'space-between',
+          gap: 48,
+        }}>
+
+          {/* Left: text content */}
+          <div style={{ flex: 1, minWidth: 0 }}>
+            <div style={{ display: 'inline-flex', alignItems: 'center', gap: 8, fontSize: 12, fontWeight: 400, letterSpacing: '0.08em', textTransform: 'uppercase', color: t.gray600, marginBottom: 32 }}>
+              <span style={{ display: 'inline-block', width: 20, height: 1, background: t.gray400 }} />
+              Skill-first internship matching
+            </div>
+
+            <h1 style={{ fontFamily: t.serif, fontSize: 'clamp(52px, 7vw, 88px)', fontWeight: 400, lineHeight: 1.0, letterSpacing: '-0.02em', color: t.black, maxWidth: 780, marginBottom: 28 }}>
+              Skills got you here.<br />
+              Let them get you <em style={{ fontStyle: 'italic', color: t.green }}>hired.</em>
+            </h1>
+
+            <p style={{ fontSize: 17, fontWeight: 300, lineHeight: 1.65, color: t.gray600, maxWidth: 440, marginBottom: 48 }}>
+              Stop mass applying and getting ignored. HUNT matches you to internships based on what you can actually do — then puts you in front of recruiters who care.
+            </p>
+
+            <div style={{ display: 'flex', alignItems: 'center', gap: 16, flexWrap: 'wrap' }}>
+              <button
+                onClick={handleSignIn}
+                style={btnPrimary}
+                onMouseOver={e => e.currentTarget.style.opacity = '0.82'}
+                onMouseOut={e => e.currentTarget.style.opacity = '1'}
+              >
+                <GoogleIcon /> Start your hunt — it's free
+              </button>
+              <span style={{ fontSize: 12, color: t.gray400, fontWeight: 300 }}>No resume needed to start</span>
+            </div>
           </div>
 
-          <h1 style={{ fontFamily: t.serif, fontSize: 'clamp(52px, 7vw, 88px)', fontWeight: 400, lineHeight: 1.0, letterSpacing: '-0.02em', color: t.black, maxWidth: 780, marginBottom: 28 }}>
-            Skills got you here.<br />
-            Let them get you <em style={{ fontStyle: 'italic', color: t.green }}>hired.</em>
-          </h1>
+          {/* Right: phone */}
+          <PhoneHero />
 
-          <p style={{ fontSize: 17, fontWeight: 300, lineHeight: 1.65, color: t.gray600, maxWidth: 440, marginBottom: 48 }}>
-            Stop mass applying and getting ignored. HUNT matches you to internships based on what you can actually do — then puts you in front of recruiters who care.
-          </p>
-
-          <div style={{ display: 'flex', alignItems: 'center', gap: 16, flexWrap: 'wrap' }}>
-            <button
-              onClick={handleSignIn}
-              style={btnPrimary}
-              onMouseOver={e => e.currentTarget.style.opacity = '0.82'}
-              onMouseOut={e => e.currentTarget.style.opacity = '1'}
-            >
-              <GoogleIcon /> Start your hunt — it's free
-            </button>
-            <span style={{ fontSize: 12, color: t.gray400, fontWeight: 300 }}>No resume needed to start</span>
-          </div>
-          {/* Mascot */}
-          <div style={{
-            position: 'absolute',
-            bottom: '-10px',
-            right: '80px',
-            width: '320px',
-            height: '320px',
-            opacity: 0.18,
-            animation: 'mascotFloat 7s ease-in-out infinite',
-            transformOrigin: 'center bottom',
-            pointerEvents: 'none',
-          }}>
-            <svg width="320" height="320" viewBox="0 0 72 72" xmlns="http://www.w3.org/2000/svg">
-              <path d="M8 8 L22 28 L14 28 Q12 36 20 42 Q28 50 36 50 Q44 50 52 42 Q60 36 58 28 L50 28 L62 8 L48 20 Q42 14 36 14 Q30 14 24 20 Z" fill="#0a0a0a"/>
-              <path d="M8 8 L22 28 L20 16 Z" fill="#16a34a"/>
-              <path d="M62 8 L50 28 L52 16 Z" fill="#16a34a"/>
-              <circle cx="27" cy="34" r="4" fill="#f5f0e8"/>
-              <circle cx="45" cy="34" r="4" fill="#f5f0e8"/>
-              <circle className="mascot-pupil-left" cx="27" cy="34" r="2" fill="#0a0a0a"/>
-              <circle className="mascot-pupil-right" cx="45" cy="34" r="2" fill="#0a0a0a"/>
-              <circle cx="27.8" cy="33.2" r="0.7" fill="white" opacity="0.9"/>
-              <circle cx="45.8" cy="33.2" r="0.7" fill="white" opacity="0.9"/>
-              <rect className="mascot-blink-left" x="23" y="30" width="8" height="4" rx="1" fill="#0a0a0a"/>
-              <rect className="mascot-blink-right" x="41" y="30" width="8" height="4" rx="1" fill="#0a0a0a"/>
-              <ellipse cx="36" cy="41" rx="3" ry="2" fill="#f5f0e8"/>
-              <ellipse cx="36" cy="47" rx="8" ry="4" fill="white"/>
-            </svg>
-          </div>
         </section>
 
         {/* ── STATS BAR ───────────────────────────────────────────────────── */}
@@ -210,7 +341,6 @@ export default function LandingPage() {
           </div>
 
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: 2, borderRadius: 8, overflow: 'hidden', border: `1px solid ${t.gray100}` }}>
-            {/* Left — everywhere else */}
             <div style={{ padding: '40px 36px', background: t.gray50 }}>
               <div style={{ fontSize: 11, letterSpacing: '0.1em', textTransform: 'uppercase', color: t.gray400, marginBottom: 28, fontWeight: 400 }}>Everywhere else</div>
               {[
@@ -226,7 +356,6 @@ export default function LandingPage() {
               ))}
             </div>
 
-            {/* Right — HUNT */}
             <div style={{ padding: '40px 36px', background: t.white }}>
               <div style={{ fontSize: 11, letterSpacing: '0.1em', textTransform: 'uppercase', color: t.green, marginBottom: 28, fontWeight: 400 }}>HUNT</div>
               {[
