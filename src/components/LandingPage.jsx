@@ -62,26 +62,26 @@ function PhoneHero() {
   useEffect(() => {
     const scenes = [
       [
-        { text: "What if you knew\nyour chances ", style: "color:#1a1a1a;" },
-        { text: "BEFORE", style: "color:#1A7A4A;font-weight:700;" },
-        { text: "\napplying for an\ninternship?", style: "color:#1a1a1a;" },
+        { text: "What if you knew\nyour chances ", style: "color:#e0e0e0;" },
+        { text: "BEFORE", style: "color:#4ade80;font-weight:700;" },
+        { text: "\napplying for an\ninternship?", style: "color:#e0e0e0;" },
       ],
       [
-        { text: "your jee rank\ndoesn't live here.\n\n", style: "color:#9B9B97;" },
-        { text: "your ", style: "color:#5A5A56;" },
-        { text: "github / projects\n", style: "color:#1A7A4A;font-weight:700;" },
-        { text: "does.", style: "color:#5A5A56;" },
+        { text: "your jee rank\ndoesn't live here.\n\n", style: "color:#666666;" },
+        { text: "your ", style: "color:#888888;" },
+        { text: "github / projects\n", style: "color:#4ade80;font-weight:700;" },
+        { text: "does.", style: "color:#888888;" },
       ],
       [
-        { text: "swipe on\ninternships\n\n", style: "color:#1a1a1a;" },
-        { text: "left = nope\n", style: "color:#9B9B97;" },
-        { text: "right = ", style: "color:#9B9B97;" },
-        { text: "let's go", style: "color:#1A7A4A;font-weight:700;" },
+        { text: "swipe on\ninternships\n\n", style: "color:#e0e0e0;" },
+        { text: "left = nope\n", style: "color:#666666;" },
+        { text: "right = ", style: "color:#666666;" },
+        { text: "let's go", style: "color:#4ade80;font-weight:700;" },
       ],
       [
-        { text: "know your\n", style: "color:#9B9B97;" },
-        { text: "match score\n", style: "color:#1A7A4A;font-weight:700;" },
-        { text: "before\napplying.", style: "color:#9B9B97;" },
+        { text: "know your\n", style: "color:#666666;" },
+        { text: "match score\n", style: "color:#4ade80;font-weight:700;" },
+        { text: "before\napplying.", style: "color:#666666;" },
       ],
     ];
 
@@ -154,31 +154,31 @@ function PhoneHero() {
   return (
     <div style={{
       flexShrink: 0,
-      width: '190px',
-      height: '340px',
+      width: '240px',
+      height: '420px',
       pointerEvents: 'none',
       alignSelf: 'center',
     }}>
       <div style={{
         background: '#111',
-        borderRadius: '32px',
+        borderRadius: '36px',
         padding: '8px',
-        boxShadow: '0 0 0 1px #d0d0cc, 0 24px 48px rgba(0,0,0,0.10)',
-        width: '190px',
-        height: '340px',
+        boxShadow: '0 0 0 1px #333, 0 24px 48px rgba(0,0,0,0.18)',
+        width: '240px',
+        height: '420px',
       }}>
         <div style={{
-          background: '#FAFAF8',
-          borderRadius: '26px',
+          background: '#000',
+          borderRadius: '30px',
           overflow: 'hidden',
           height: '100%',
           display: 'flex',
           flexDirection: 'column',
-          border: '1px solid #ebebea',
+          border: '1px solid #222',
         }}>
           {/* Notch */}
-          <div style={{ padding: '10px 0 2px', display: 'flex', justifyContent: 'center', background: '#FAFAF8' }}>
-            <div style={{ width: '52px', height: '4px', background: '#e0e0de', borderRadius: '2px' }} />
+          <div style={{ padding: '10px 0 2px', display: 'flex', justifyContent: 'center', background: '#000' }}>
+            <div style={{ width: '52px', height: '4px', background: '#1a1a1a', borderRadius: '2px' }} />
           </div>
           {/* Screen content */}
           <div
@@ -193,7 +193,7 @@ function PhoneHero() {
           />
           {/* Home bar */}
           <div style={{ padding: '0 0 10px', display: 'flex', justifyContent: 'center' }}>
-            <div style={{ width: '40px', height: '3px', background: '#d0d0cc', borderRadius: '2px' }} />
+            <div style={{ width: '40px', height: '3px', background: '#333', borderRadius: '2px' }} />
           </div>
         </div>
       </div>
