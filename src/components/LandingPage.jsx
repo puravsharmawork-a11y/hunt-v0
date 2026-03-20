@@ -58,31 +58,51 @@ function PhoneHero() {
   useEffect(() => {
     const scenes = [
       [
-        { text: "What if you knew\nyour chances ", style: "color:#e0e0e0;" },
-        { text: "BEFORE", style: "color:#4ade80;font-weight:700;" },
-        { text: "\napplying for an\ninternship?", style: "color:#e0e0e0;" },
+        { text: "What if you knew\nyour chances ", style: "color:#e0e0e0;font-size:20px;font-family:monospace;line-height:1.7;" },
+        { text: "BEFORE", style: "color:#4ade80;font-size:20px;font-family:monospace;font-weight:700;line-height:1.7;" },
+        { text: "\napplying for an\ninternship?", style: "color:#e0e0e0;font-size:20px;font-family:monospace;line-height:1.7;" },
       ],
       [
-        { text: "your jee rank\ndoesn't live here.\n\n", style: "color:#666666;" },
-        { text: "your ", style: "color:#888888;" },
-        { text: "github / projects\n", style: "color:#4ade80;font-weight:700;" },
-        { text: "does.", style: "color:#888888;" },
+        { text: "Still hunting\ninternships in 2026\nthe old way?", style: "color:#888;font-size:19px;font-family:monospace;line-height:1.7;" },
+        { text: "\n\n😅", style: "color:#e0e0e0;font-size:26px;font-family:monospace;" },
       ],
       [
-        { text: "swipe on\ninternships\n\n", style: "color:#e0e0e0;" },
-        { text: "left = nope\n", style: "color:#666666;" },
-        { text: "right = ", style: "color:#666666;" },
-        { text: "let's go", style: "color:#4ade80;font-weight:700;" },
+        { text: "Open\n", style: "color:#888;font-size:19px;font-family:monospace;line-height:1.8;" },
+        { text: "HUNT", style: "color:#4ade80;font-size:30px;font-family:monospace;font-weight:700;letter-spacing:3px;" },
       ],
       [
-        { text: "know your\n", style: "color:#666666;" },
-        { text: "match score\n", style: "color:#4ade80;font-weight:700;" },
-        { text: "before\napplying.", style: "color:#666666;" },
+        { text: "→ complete your\n  profile\n", style: "color:#e0e0e0;font-size:18px;font-family:monospace;line-height:1.8;" },
+        { text: "\n(only takes 2 min\nor less, seriously)", style: "color:#555;font-size:15px;font-family:monospace;line-height:1.7;" },
+      ],
+      [
+        { text: "→ swipe on\n  internships\n\n", style: "color:#e0e0e0;font-size:18px;font-family:monospace;line-height:1.8;" },
+        { text: "left = nope\n", style: "color:#888;font-size:16px;font-family:monospace;line-height:1.8;" },
+        { text: "right = ", style: "color:#888;font-size:16px;font-family:monospace;line-height:1.8;" },
+        { text: "let's go", style: "color:#4ade80;font-size:16px;font-family:monospace;font-weight:700;line-height:1.8;" },
+      ],
+      [
+        { text: "that's it.\n", style: "color:#e0e0e0;font-size:22px;font-family:monospace;font-weight:700;line-height:1.8;" },
+        { text: "\nso easy\nand fast.", style: "color:#666;font-size:18px;font-family:monospace;line-height:1.8;" },
+      ],
+      [
+        { text: "right now ", style: "color:#888;font-size:17px;font-family:monospace;line-height:1.8;" },
+        { text: "v0\n", style: "color:#4ade80;font-size:17px;font-family:monospace;font-weight:700;line-height:1.8;" },
+        { text: "\nonly for cs students\n", style: "color:#888;font-size:17px;font-family:monospace;line-height:1.8;" },
+        { text: "with actual skills.", style: "color:#4ade80;font-size:17px;font-family:monospace;font-weight:700;line-height:1.8;" },
+      ],
+      [
+        { text: "your jee rank\ndoesn't live here.\n", style: "color:#555;font-size:16px;font-family:monospace;line-height:1.9;" },
+        { text: "\nyour\n", style: "color:#888;font-size:16px;font-family:monospace;line-height:1.9;" },
+        { text: "github / projects\n", style: "color:#4ade80;font-size:16px;font-family:monospace;font-weight:700;line-height:1.9;" },
+        { text: "does.\n", style: "color:#888;font-size:16px;font-family:monospace;line-height:1.9;" },
+        { text: "\ntry it.\n", style: "color:#666;font-size:15px;font-family:monospace;line-height:1.9;" },
+        { text: "roast it.\n", style: "color:#666;font-size:15px;font-family:monospace;line-height:1.9;" },
+        { text: "↗", style: "color:#4ade80;font-size:15px;font-family:monospace;" },
       ],
     ];
 
-    const SCENE_DURATIONS = [3200, 3200, 3200, 99999];
-    const CHAR_DELAY = 38;
+    const SCENE_DURATIONS = [3200, 2800, 2600, 3200, 3200, 2600, 3200, 99999];
+    const CHAR_DELAY = 36;
     const screen = document.getElementById('hunt-phone-screen');
     if (!screen) return;
 
@@ -100,7 +120,7 @@ function PhoneHero() {
 
       const spans = parts.map(p => {
         const sp = document.createElement('span');
-        sp.style.cssText = `white-space:pre-wrap;font-family:monospace;font-size:13px;line-height:1.75;${p.style}`;
+        sp.style.cssText = p.style + 'white-space:pre-wrap;';
         container.appendChild(sp);
         return { el: sp, text: p.text };
       });
@@ -112,14 +132,14 @@ function PhoneHero() {
         if (partIdx >= spans.length) {
           sceneTimer = setTimeout(() => {
             if (currentScene < scenes.length - 1) {
-              screen.style.transition = 'opacity 0.35s';
+              screen.style.transition = 'opacity 0.4s';
               screen.style.opacity = '0';
               setTimeout(() => {
                 if (stopped) return;
                 screen.style.opacity = '1';
                 currentScene++;
                 typeScene(currentScene);
-              }, 380);
+              }, 420);
             }
           }, SCENE_DURATIONS[idx]);
           return;
@@ -138,7 +158,7 @@ function PhoneHero() {
       tick();
     }
 
-    const startTimer = setTimeout(() => typeScene(0), 500);
+    const startTimer = setTimeout(() => typeScene(0), 600);
     return () => {
       stopped = true;
       clearTimeout(typeTimer);
@@ -159,7 +179,7 @@ function PhoneHero() {
         background: '#111',
         borderRadius: '44px',
         padding: '10px',
-        boxShadow: '0 0 0 1px #333, 0 32px 64px rgba(0,0,0,0.22)',
+        boxShadow: '0 0 0 1px #333, 0 0 0 2px #222, 0 32px 64px rgba(0,0,0,0.22)',
         width: '300px',
         height: '530px',
       }}>
@@ -170,26 +190,25 @@ function PhoneHero() {
           height: '100%',
           display: 'flex',
           flexDirection: 'column',
-          border: '1px solid #222',
         }}>
           {/* Notch */}
-          <div style={{ padding: '12px 0 3px', display: 'flex', justifyContent: 'center', background: '#000' }}>
-            <div style={{ width: '64px', height: '5px', background: '#1a1a1a', borderRadius: '3px' }} />
+          <div style={{ background: '#000', padding: '12px 0 4px', display: 'flex', justifyContent: 'center' }}>
+            <div style={{ width: '80px', height: '6px', background: '#1a1a1a', borderRadius: '3px' }} />
           </div>
           {/* Screen content */}
           <div
             id="hunt-phone-screen"
             style={{
               flex: 1,
-              padding: '20px 18px 24px',
+              padding: '24px 20px 48px',
               display: 'flex',
               flexDirection: 'column',
               justifyContent: 'center',
             }}
           />
           {/* Home bar */}
-          <div style={{ padding: '0 0 14px', display: 'flex', justifyContent: 'center' }}>
-            <div style={{ width: '48px', height: '4px', background: '#333', borderRadius: '2px' }} />
+          <div style={{ height: '30px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+            <div style={{ width: '100px', height: '4px', background: '#333', borderRadius: '2px' }} />
           </div>
         </div>
       </div>
