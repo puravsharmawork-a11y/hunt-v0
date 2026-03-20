@@ -2,7 +2,6 @@
 import React, { useEffect } from 'react';
 import { signInWithGoogle } from '../services/supabase';
 
-// ─── Google icon (inline so no extra dependency) ─────────────────────────────
 const GoogleIcon = () => (
   <svg width="14" height="14" viewBox="0 0 18 18" fill="none">
     <path d="M17.64 9.2c0-.637-.057-1.251-.164-1.84H9v3.481h4.844c-.209 1.125-.843 2.078-1.796 2.716v2.259h2.908c1.702-1.567 2.684-3.875 2.684-6.615z" fill="currentColor" opacity=".9"/>
@@ -26,7 +25,6 @@ const CrossIcon = () => (
   </svg>
 );
 
-// ─── Design tokens ────────────────────────────────────────────────────────────
 const t = {
   black:      '#0A0A0A',
   white:      '#FAFAF8',
@@ -40,7 +38,6 @@ const t = {
   sans:       "'DM Sans', system-ui, sans-serif",
 };
 
-// ─── Shared button styles ─────────────────────────────────────────────────────
 const btnPrimary = {
   display:        'inline-flex',
   alignItems:     'center',
@@ -57,7 +54,6 @@ const btnPrimary = {
   transition:     'opacity 0.15s',
 };
 
-// ─── Phone Animation Component ────────────────────────────────────────────────
 function PhoneHero() {
   useEffect(() => {
     const scenes = [
@@ -104,7 +100,7 @@ function PhoneHero() {
 
       const spans = parts.map(p => {
         const sp = document.createElement('span');
-        sp.style.cssText = `white-space:pre-wrap;font-family:monospace;font-size:11.5px;line-height:1.75;${p.style}`;
+        sp.style.cssText = `white-space:pre-wrap;font-family:monospace;font-size:13px;line-height:1.75;${p.style}`;
         container.appendChild(sp);
         return { el: sp, text: p.text };
       });
@@ -154,22 +150,22 @@ function PhoneHero() {
   return (
     <div style={{
       flexShrink: 0,
-      width: '240px',
-      height: '420px',
+      width: '300px',
+      height: '530px',
       pointerEvents: 'none',
       alignSelf: 'center',
     }}>
       <div style={{
         background: '#111',
-        borderRadius: '36px',
-        padding: '8px',
-        boxShadow: '0 0 0 1px #333, 0 24px 48px rgba(0,0,0,0.18)',
-        width: '240px',
-        height: '420px',
+        borderRadius: '44px',
+        padding: '10px',
+        boxShadow: '0 0 0 1px #333, 0 32px 64px rgba(0,0,0,0.22)',
+        width: '300px',
+        height: '530px',
       }}>
         <div style={{
           background: '#000',
-          borderRadius: '30px',
+          borderRadius: '36px',
           overflow: 'hidden',
           height: '100%',
           display: 'flex',
@@ -177,23 +173,23 @@ function PhoneHero() {
           border: '1px solid #222',
         }}>
           {/* Notch */}
-          <div style={{ padding: '10px 0 2px', display: 'flex', justifyContent: 'center', background: '#000' }}>
-            <div style={{ width: '52px', height: '4px', background: '#1a1a1a', borderRadius: '2px' }} />
+          <div style={{ padding: '12px 0 3px', display: 'flex', justifyContent: 'center', background: '#000' }}>
+            <div style={{ width: '64px', height: '5px', background: '#1a1a1a', borderRadius: '3px' }} />
           </div>
           {/* Screen content */}
           <div
             id="hunt-phone-screen"
             style={{
               flex: 1,
-              padding: '16px 14px 20px',
+              padding: '20px 18px 24px',
               display: 'flex',
               flexDirection: 'column',
               justifyContent: 'center',
             }}
           />
           {/* Home bar */}
-          <div style={{ padding: '0 0 10px', display: 'flex', justifyContent: 'center' }}>
-            <div style={{ width: '40px', height: '3px', background: '#333', borderRadius: '2px' }} />
+          <div style={{ padding: '0 0 14px', display: 'flex', justifyContent: 'center' }}>
+            <div style={{ width: '48px', height: '4px', background: '#333', borderRadius: '2px' }} />
           </div>
         </div>
       </div>
@@ -213,7 +209,6 @@ export default function LandingPage() {
 
   return (
     <>
-      {/* Google Fonts */}
       <link
         href="https://fonts.googleapis.com/css2?family=Editorial+New:ital@0;1&family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;1,9..40,300&display=swap"
         rel="stylesheet"
@@ -257,6 +252,7 @@ export default function LandingPage() {
           alignItems: 'center',
           justifyContent: 'space-between',
           gap: 48,
+          minHeight: 'calc(100vh - 65px)',
         }}>
 
           {/* Left: text content */}
