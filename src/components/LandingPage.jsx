@@ -407,7 +407,7 @@ function StartupPage() {
           <h1 style={{ fontFamily: t.serif, fontSize: 'clamp(52px,6vw,88px)', fontWeight: 400, lineHeight: 1.0, letterSpacing: '-0.02em', color: r.heading, marginBottom: 28 }}>
             Stop reviewing<br />
             <em style={{ fontStyle: 'italic', color: t.ember }}>400 applications</em><br />
-            <span style={{ color: 'rgba(255,255,255,0.3)' }}>to hire one intern.</span>
+            <span style={{ color: t.gray600 }}>to hire one intern.</span>
           </h1>
 
           <p style={{ fontSize: 17, fontWeight: 300, lineHeight: 1.65, color: r.muted, maxWidth: 480, marginBottom: 48 }}>
@@ -423,9 +423,9 @@ function StartupPage() {
               Reserve Early Access →
             </button>
             <button
-              style={{ display: 'inline-flex', alignItems: 'center', gap: 8, background: 'transparent', color: 'rgba(255,255,255,0.5)', padding: '14px 20px', borderRadius: 6, fontSize: 14, fontWeight: 300, cursor: 'pointer', border: `1px solid rgba(255,255,255,0.15)`, fontFamily: t.sans }}
-              onMouseOver={e => { e.currentTarget.style.color = '#fff'; e.currentTarget.style.borderColor = 'rgba(255,255,255,0.35)'; }}
-              onMouseOut={e => { e.currentTarget.style.color = 'rgba(255,255,255,0.5)'; e.currentTarget.style.borderColor = 'rgba(255,255,255,0.15)'; }}
+              style={{ display: 'inline-flex', alignItems: 'center', gap: 8, background: 'transparent', color: t.gray600, padding: '14px 20px', borderRadius: 6, fontSize: 14, fontWeight: 400, cursor: 'pointer', border: `1px solid ${t.gray100}`, fontFamily: t.sans }}
+              onMouseOver={e => { e.currentTarget.style.color = t.black; e.currentTarget.style.borderColor = t.gray400; }}
+              onMouseOut={e => { e.currentTarget.style.color = t.gray600; e.currentTarget.style.borderColor = t.gray100; }}
             >
               Talk to the founder
             </button>
@@ -468,9 +468,9 @@ function StartupPage() {
             { label: 'What you actually screen', num: '~20', desc: 'because the rest are clearly unqualified. But you spent 6 hours getting there.' },
           ].map((c, i) => (
             <div key={i} style={{ padding: '2.5rem', borderBottom: `1px solid ${r.border}`, borderRight: i === 0 ? `1px solid ${r.border}` : 'none', background: r.surface }}>
-              <div style={{ fontSize: 11, letterSpacing: '0.08em', textTransform: 'uppercase', color: t.gray400, marginBottom: 12 }}>{c.label}</div>
-              <div style={{ fontFamily: t.serif, fontSize: 56, fontWeight: 400, color: t.gray100, lineHeight: 1, marginBottom: 8 }}>{c.num}</div>
-              <div style={{ fontSize: 14, color: t.gray400, lineHeight: 1.6, fontWeight: 300 }}>{c.desc}</div>
+              <div style={{ fontSize: 11, letterSpacing: '0.08em', textTransform: 'uppercase', color: t.gray600, marginBottom: 12 }}>{c.label}</div>
+              <div style={{ fontFamily: t.serif, fontSize: 56, fontWeight: 400, color: t.gray400, lineHeight: 1, marginBottom: 8 }}>{c.num}</div>
+              <div style={{ fontSize: 14, color: t.gray600, lineHeight: 1.6, fontWeight: 300 }}>{c.desc}</div>
             </div>
           ))}
 
@@ -641,9 +641,9 @@ function StartupPage() {
                 Reserve Early Access →
               </button>
               <button
-                style={{ display: 'inline-flex', alignItems: 'center', gap: 8, background: 'transparent', color: 'rgba(255,255,255,0.5)', padding: '14px 24px', borderRadius: 6, fontSize: 14, fontWeight: 300, cursor: 'pointer', border: `1px solid rgba(255,255,255,0.15)`, fontFamily: t.sans }}
-                onMouseOver={e => { e.currentTarget.style.color = '#fff'; e.currentTarget.style.borderColor = 'rgba(255,255,255,0.35)'; }}
-                onMouseOut={e => { e.currentTarget.style.color = 'rgba(255,255,255,0.5)'; e.currentTarget.style.borderColor = 'rgba(255,255,255,0.15)'; }}
+                style={{ display: 'inline-flex', alignItems: 'center', gap: 8, background: 'transparent', color: t.gray600, padding: '14px 24px', borderRadius: 6, fontSize: 14, fontWeight: 400, cursor: 'pointer', border: `1px solid ${t.gray100}`, fontFamily: t.sans }}
+                onMouseOver={e => { e.currentTarget.style.color = t.black; e.currentTarget.style.borderColor = t.gray400; }}
+                onMouseOut={e => { e.currentTarget.style.color = t.gray600; e.currentTarget.style.borderColor = t.gray100; }}
               >
                 Talk to the founder →
               </button>
