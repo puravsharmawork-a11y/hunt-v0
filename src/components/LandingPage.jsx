@@ -491,18 +491,22 @@ function StartupPage() {
           Post once.<br /><em style={{ fontStyle: 'italic', color: t.ember }}>Get matched candidates.</em>
         </h2>
 
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: 0, border: `1px solid ${t.s_border}`, borderRadius: 8, overflow: 'hidden' }}>
+        <div style={{ display: 'flex', flexDirection: 'column', borderLeft: `1px solid ${t.s_border}`, paddingLeft: 32, gap: 0 }}>
           {[
-            { n: '01', title: 'Post the role with required skills', desc: 'Tell us what the intern actually needs to do. Tech stack, key skills, level. Takes 5 minutes. No lengthy JD required.', tag: 'No lengthy JD needed' },
-            { n: '02', title: 'HUNT scores every candidate against your role', desc: 'Our match engine runs against verified skill data, project proof, and profile completeness — not just keywords.', tag: 'Skill-weighted, not keyword search' },
-            { n: '03', title: 'Students with the highest match apply — max 6 total', desc: 'We cap applicants. Students can only apply to a limited number of roles per week, so only intentional applications reach you.', tag: 'Capped at 6 applicants per role' },
-            { n: '04', title: 'You see ranked profiles with match breakdowns', desc: 'Each candidate comes with a score breakdown: skill match, project relevance, tool familiarity. Decide in 10 minutes.', tag: 'Match score transparent before you open the profile' },
+            { n: '01', title: 'Post the role with required skills', desc: 'Tell us what the intern actually needs to do. Tech stack, key skills, level. Takes 5 minutes. No lengthy JD required — we need the skill spec.', tag: 'No lengthy JD needed' },
+            { n: '02', title: 'HUNT scores every candidate against your role', desc: 'Our match engine runs against verified skill data, project proof, and profile completeness — not just keywords. We weight each skill by your requirement, then rank.', tag: 'Skill-weighted, not keyword search' },
+            { n: '03', title: 'Students with the highest match apply — max 6 total', desc: 'We cap applicants. Students can only apply to a limited number of roles per week, so only intentional applications reach you. No spray-and-pray.', tag: 'Capped at 6 applicants per role' },
+            { n: '04', title: 'You see ranked profiles with match breakdowns', desc: 'Each candidate comes with a score breakdown: skill match, project relevance, tool familiarity. You decide who to call in 10 minutes, not 10 hours.', tag: 'Match score transparent before you open the profile' },
           ].map((step, i, arr) => (
-            <div key={i} style={{ padding: '36px 28px', borderRight: i < arr.length - 1 ? `1px solid ${t.s_border}` : 'none', background: t.s_surface }}>
-              <div style={{ fontFamily: t.serif, fontSize: 13, color: 'rgba(255,255,255,0.25)', marginBottom: 20 }}>{step.n}</div>
-              <div style={{ fontSize: 15, fontWeight: 500, color: '#fff', marginBottom: 10, lineHeight: 1.3 }}>{step.title}</div>
-              <div style={{ fontSize: 13, fontWeight: 300, color: t.s_muted, lineHeight: 1.6, marginBottom: 14 }}>{step.desc}</div>
-              <span style={{ display: 'inline-block', fontSize: 11, padding: '3px 10px', borderRadius: 20, background: t.emberDim, border: `1px solid ${t.emberBorder}`, color: '#F0997B', fontWeight: 500 }}>{step.tag}</span>
+            <div key={i} style={{ paddingBottom: i < arr.length - 1 ? 52 : 0, position: 'relative' }}>
+              {/* dot on left border */}
+              <div style={{ position: 'absolute', left: -40, top: 4, width: 16, height: 16, borderRadius: '50%', background: t.s_bg, border: `1px solid ${t.s_border}`, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                <div style={{ width: 6, height: 6, borderRadius: '50%', background: t.ember }} />
+              </div>
+              <div style={{ fontSize: 12, color: 'rgba(255,255,255,0.25)', marginBottom: 10, fontFamily: t.sans }}>{step.n}</div>
+              <div style={{ fontSize: 17, fontWeight: 600, color: '#fff', marginBottom: 10, lineHeight: 1.3 }}>{step.title}</div>
+              <div style={{ fontSize: 14, fontWeight: 300, color: t.s_muted, lineHeight: 1.7, marginBottom: 14, maxWidth: 680 }}>{step.desc}</div>
+              <span style={{ display: 'inline-block', fontSize: 11, padding: '4px 12px', borderRadius: 20, background: t.emberDim, border: `1px solid ${t.emberBorder}`, color: '#F0997B', fontWeight: 500 }}>{step.tag}</span>
             </div>
           ))}
         </div>
@@ -514,14 +518,14 @@ function StartupPage() {
 
         <blockquote style={{
           fontFamily: t.sans,
-          fontSize: 'clamp(36px,5vw,72px)',
+          fontSize: 'clamp(36px,5vw,68px)',
           fontWeight: 800,
           lineHeight: 1.05,
-          letterSpacing: '-0.03em',
+          letterSpacing: '-0.02em',
           color: '#fff',
           borderLeft: `4px solid ${t.ember}`,
           paddingLeft: '1.5rem',
-          marginBottom: 24,
+          margin: '0 0 24px 0',
         }}>
           "We don't filter by<br />
           college. We never will.<br />
