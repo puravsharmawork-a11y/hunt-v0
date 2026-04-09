@@ -658,7 +658,7 @@ function RecruiterDemo({ onOpenPreBook }) {
 
   const handleStatus = (i, status) => {
     setCandidateStatus(p => ({ ...p, [i]: status }));
-    const msgs = { shortlist:'Shortlisted! They'll be notified.', pass:'Passed on this candidate.', interview:'Interview request sent!' };
+    const msgs = { shortlist:'Shortlisted! They will be notified.', pass:'Passed on this candidate.', interview:'Interview request sent!' };
     showToast(msgs[status] || 'Done!', status==='pass'?'warn':'success');
     if (i < RECRUITER_CANDIDATES.length - 1) setTimeout(() => setSelectedCand(i+1), 400);
   };
