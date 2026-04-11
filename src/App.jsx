@@ -5,6 +5,7 @@ import { onAuthStateChange } from './services/supabase';
 import LandingPage from './components/LandingPage';
 import StudentOnboarding from './components/StudentOnboarding';
 import SwipeFeed from './components/SwipeFeed';
+import StudentProfile from './components/StudentProfile';
 
 function App() {
   const [user, setUser] = useState(null);
@@ -48,6 +49,10 @@ function App() {
           path="/swipe" 
           element={user ? <SwipeFeed /> : <Navigate to="/" />} 
         />
+        <Route 
+          path="/profile" 
+          element={user ? <StudentProfile /> : <Navigate to="/" />} 
+          />
         
         {/* Catch all - redirect to home */}
         <Route path="*" element={<Navigate to="/" />} />
