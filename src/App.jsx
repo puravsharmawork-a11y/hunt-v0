@@ -7,6 +7,7 @@ import StudentOnboarding from './components/StudentOnboarding';
 import SwipeFeed from './components/SwipeFeed';
 import StudentProfile from './components/StudentProfile';
 import RecruiterOnboarding from './components/RecruiterOnboarding';
+import RecruiterDashboard from './components/RecruiterDashboard';
 
 function App() {
   const [user, setUser] = useState(null);
@@ -57,6 +58,10 @@ function App() {
         <Route 
           path="/recruiter/onboarding" 
           element={user ? <RecruiterOnboarding /> : <Navigate to="/" />} 
+          />
+        <Route 
+          path="/recruiter/dashboard" 
+          element={user ? <RecruiterDashboard /> : <Navigate to="/" />} 
           />
         
         {/* Catch all - redirect to home */}
