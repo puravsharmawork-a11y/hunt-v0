@@ -206,17 +206,32 @@ export default function RecruiterOnboarding() {
 
   // If recruiter already onboarded, skip to dashboard
   useEffect(() => {
-    (async () => {
-      try {
-        const existing = await getRecruiterProfile();
-        if (existing) { navigate('/recruiter/dashboard'); return; }
-      } catch (e) {
-        // not onboarded yet — stay on this page
-      } finally {
-        setCheckingExisting(false);
+  (async () => {
+    try {
+      // Already onboarded? Skip straight to dashboard
+      const existing = await getRecruiterProfile();
+      if (existing) { navigate('/recruiter/dashboard'); return; }
+
+      // Check if their email is approved
+      const user = await getCurrentUser();
+      const { data } = await supabase
+        .from('recruiter_waitlist')
+        .select('approved')
+        .eq('email', user.email)
+        .single();
+
+      if (!data || !data.approved) {
+        setApproved(false); // show waitlist screen
+      } else {
+        setApproved(true);  // let them through
       }
-    })();
-  }, []);
+    } catch (e) {
+      setApproved(false);
+    } finally {
+      setCheckingExisting(false);
+    }
+  })();
+}, []);
 
   const set = (field) => (value) => setForm(f => ({ ...f, [field]: value }));
 
