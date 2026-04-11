@@ -237,8 +237,9 @@ export default function SwipeFeed() {
             <Zap className="w-3.5 h-3.5" style={{ color: 'var(--green)' }} />
             {remainingApplications}/5 left
           </div>
-          <div className="w-8 h-8 rounded-full flex items-center justify-center text-xs font-medium"
-            style={{ background: 'var(--bg-subtle)', border: '1px solid var(--border)', color: 'var(--text-mid)' }}>
+          <div onClick={() => navigate('/profile')}
+            className="w-8 h-8 rounded-full flex items-center justify-center text-xs font-medium"
+            style={{ background: 'var(--bg-subtle)', border: '1px solid var(--border)', color: 'var(--text-mid)', cursor: 'pointer' }}>
             {initials}
           </div>
           <button onClick={toggleTheme}
