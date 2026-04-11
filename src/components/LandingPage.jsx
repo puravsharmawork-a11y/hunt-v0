@@ -80,12 +80,30 @@ function PreBookModal({ onClose }) {
         <style>{`@keyframes modalIn { from{opacity:0;transform:translateY(10px) scale(0.98)} to{opacity:1;transform:none} }`}</style>
         <button onClick={onClose} style={{ position:'absolute', top:16, right:18, background:'transparent', border:'none', cursor:'pointer', color:t.gray400, fontSize:22, lineHeight:1, fontFamily:t.sans }}>×</button>
         {status === 'success' ? (
-          <div style={{ textAlign:'center', padding:'8px 0' }}>
-            <div style={{ fontSize:44, marginBottom:18 }}>🎯</div>
-            <h3 style={{ fontFamily:t.serif, fontSize:26, fontWeight:400, color:t.black, marginBottom:10, letterSpacing:'-0.02em' }}>You're on the list.</h3>
-            <p style={{ fontSize:14, color:t.gray600, lineHeight:1.7, marginBottom:28, fontWeight:300 }}>We'll reach out personally when the recruiter side launches.</p>
-            <button onClick={onClose} style={{ background:t.ember, color:'#fff', border:'none', borderRadius:6, padding:'12px 32px', fontSize:14, fontWeight:500, cursor:'pointer', fontFamily:t.sans }}>Done</button>
-          </div>
+  <div style={{ textAlign:'center', padding:'8px 0' }}>
+    <div style={{ fontSize:44, marginBottom:18 }}>🎯</div>
+    <h3 style={{ fontFamily:t.serif, fontSize:26, fontWeight:400, color:t.black, marginBottom:10, letterSpacing:'-0.02em' }}>You're on the list.</h3>
+    <p style={{ fontSize:14, color:t.gray600, lineHeight:1.7, marginBottom:24, fontWeight:300 }}>
+      We'll reach out personally. If you've already been approved, sign in now to access the dashboard.
+    </p>
+    <button
+      onClick={async () => {
+        try {
+          const { data, error } = await supabase.auth.signInWithOAuth({
+            provider: 'google',
+            options: { redirectTo: `${window.location.origin}/recruiter/onboarding` }
+          });
+          if (error) throw error;
+        } catch(e) { alert('Sign in failed: ' + e.message); }
+      }}
+      style={{ display:'flex', alignItems:'center', gap:8, background:t.ember, color:'#fff', border:'none', borderRadius:6, padding:'12px 24px', fontSize:14, fontWeight:500, cursor:'pointer', fontFamily:t.sans, margin:'0 auto 12px' }}
+    >
+      <GoogleIcon /> Sign in with Google
+    </button>
+    <button onClick={onClose} style={{ background:'transparent', color:t.gray400, border:'none', fontSize:13, cursor:'pointer', fontFamily:t.sans }}>
+      Close
+    </button>
+  </div>
         ) : (
           <>
             <div style={{ marginBottom:26 }}>
