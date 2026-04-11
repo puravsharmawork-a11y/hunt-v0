@@ -179,6 +179,7 @@ function StepHeader({ step, title, italic, sub }) {
 
 // ─── Main component ───────────────────────────────────────────────────────────
 export default function RecruiterOnboarding() {
+  const [approved, setApproved] = useState(null);
   const navigate = useNavigate();
   const [theme, setTheme]           = useState(() => localStorage.getItem('hunt-theme') || 'light');
   const [currentStep, setCurrentStep] = useState(1);
