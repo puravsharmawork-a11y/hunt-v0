@@ -9,6 +9,8 @@ import StudentProfile from './components/StudentProfile';
 import RecruiterOnboarding from './components/RecruiterOnboarding';
 import RecruiterDashboard from './components/RecruiterDashboard';
 import ApplyPage from './components/ApplyPage';
+import AdminJobCreator from './components/AdminJobCreator';
+
 
 function App() {
   const [user, setUser] = useState(null);
@@ -67,6 +69,10 @@ function App() {
         <Route 
           path="/apply/:slug" 
           element={<ApplyPage />} 
+          />
+        <Route 
+          path="/admin" 
+          element={<AdminJobCreator />} 
           />
         
         {/* Catch all - redirect to home */}
