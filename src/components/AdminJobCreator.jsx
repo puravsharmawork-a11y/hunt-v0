@@ -20,11 +20,21 @@ const ADMIN_PASSWORD     = 'hunt2026';           // change this to your own
 // ─────────────────────────────────────────────────────────────────────────────
 
 const SKILL_OPTIONS = [
-  'JavaScript','Python','Java','TypeScript','React','Next.js','Node.js',
-  'Express.js','Django','FastAPI','Flask','REST API','GraphQL',
-  'PostgreSQL','MongoDB','MySQL','Redis','Firebase','Docker',
-  'AWS','CI/CD','Linux','Git','Figma','React Native','Flutter',
-  'Machine Learning','TensorFlow','PyTorch','Pandas','SQL',
+  'JavaScript','Python','Java','TypeScript','C / C++','Golang','Rust','SQL',
+  'React','React Native','Next.js','Tailwind CSS','AngularJS','Redux',
+  'Flutter','Android Dev','iOS Dev',
+  'Node.js','Express.js','Django','Flask','FastAPI','REST API','GraphQL',
+  'MySQL','PostgreSQL','MongoDB','Firebase','Redis',
+  'Machine Learning','Data Analysis','TensorFlow','PyTorch','Pandas',
+  'Scikit-learn','Jupyter Notebook','Data Science','NLP',
+  'Docker','Linux','AWS','CI/CD','Git',
+  'Figma','Canva','SEO','Ethical Hacking','Embedded Systems',
+  'Blockchain','Prompt Engineering','LangChain',
+  'Shopify','Amazon Seller','WooCommerce','Product Listing',
+  'Email Marketing','Social Media Marketing','Google Ads','Meta Ads',
+  'Competitor Research','Content Writing','Google Analytics','Sales Analysis',
+  'Excel / Google Sheets','Google Workspace','MS Office',
+  'Customer Service','Operations Management','Inventory Management',
 ];
 
 const LOGO_EMOJIS = ['🚀','⚡','🎯','💡','🔥','🌊','🛠️','📊','🎨','🌱','⭐','🦾'];
