@@ -183,7 +183,11 @@ export default function ApplyPage() {
   };
 
   const handleApply = async () => {
-    if (!studentProfile) { navigate(`/onboarding`); return; }
+    if (!studentProfile) {
+      sessionStorage.setItem('apply_after_login', slug);
+      navigate(`/onboarding`);
+      return;
+    }
     if (applying || alreadyApplied || applied) return;
 
     setApplying(true); setError('');
