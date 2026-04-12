@@ -91,6 +91,31 @@ const SKILL_OPTIONS = [
   { id: 'sk-075', name: 'Blockchain', category: 'Emerging' },
   { id: 'sk-079', name: 'Prompt Engineering', category: 'Emerging' },
   { id: 'sk-080', name: 'LangChain', category: 'Emerging' },
+  
+  // E-commerce & Marketing
+  { id: 'sk-081', name: 'Shopify', category: 'E-commerce' },
+  { id: 'sk-082', name: 'Amazon Seller', category: 'E-commerce' },
+  { id: 'sk-083', name: 'WooCommerce', category: 'E-commerce' },
+  { id: 'sk-084', name: 'Product Listing', category: 'E-commerce' },
+  { id: 'sk-085', name: 'Email Marketing', category: 'Marketing' },
+  { id: 'sk-086', name: 'Social Media Marketing', category: 'Marketing' },
+  { id: 'sk-087', name: 'Google Ads', category: 'Marketing' },
+  { id: 'sk-088', name: 'Meta Ads', category: 'Marketing' },
+  { id: 'sk-089', name: 'Competitor Research', category: 'Marketing' },
+  { id: 'sk-090', name: 'Content Writing', category: 'Marketing' },
+  { id: 'sk-091', name: 'Google Analytics', category: 'Analytics' },
+  { id: 'sk-092', name: 'Sales Analysis', category: 'Analytics' },
+  { id: 'sk-093', name: 'Excel / Google Sheets', category: 'Tools' },
+  { id: 'sk-094', name: 'Google Workspace', category: 'Tools' },
+  { id: 'sk-095', name: 'MS Office', category: 'Tools' },
+  { id: 'sk-096', name: 'Canva', category: 'Design' },
+  { id: 'sk-097', name: 'Scikit-learn', category: 'Data Science' },
+  { id: 'sk-098', name: 'Jupyter Notebook', category: 'Tools' },
+  { id: 'sk-099', name: 'Data Science', category: 'Data Science' },
+  { id: 'sk-100', name: 'NLP', category: 'Data Science' },
+  { id: 'sk-101', name: 'Customer Service', category: 'Operations' },
+  { id: 'sk-102', name: 'Operations Management', category: 'Operations' },
+  { id: 'sk-103', name: 'Inventory Management', category: 'Operations' },
 ];
 
 const SKILL_CATEGORIES = [...new Set(SKILL_OPTIONS.map(s => s.category))];
@@ -100,6 +125,8 @@ const ROLE_OPTIONS = [
   'Mobile Developer', 'DevOps Engineer', 'Data Analyst',
   'ML Engineer', 'UI/UX Designer', 'Security / Pen Tester',
   'Embedded Systems Engineer', 'QA / Testing Engineer'
+  'E-commerce Executive', 'Digital Marketing Intern'
+  
 ];
 
 const LEVEL_LABELS = ['', 'Beginner', 'Elementary', 'Intermediate', 'Advanced', 'Expert'];
