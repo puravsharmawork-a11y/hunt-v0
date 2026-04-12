@@ -15,8 +15,8 @@ import { Plus, X, Copy, Check, ExternalLink, Eye, EyeOff, Trash2, Link2 } from '
 import { supabase } from '../services/supabase';
 
 // ─── CONFIG — change these ────────────────────────────────────────────────────
-const ADMIN_RECRUITER_ID = 'YOUR_RECRUITER_ID_HERE'; // paste UUID from SQL
-const ADMIN_PASSWORD     = 'hunt2026admin';           // change this to your own
+const ADMIN_RECRUITER_ID = '78b5cea0-ee99-49f8-8cef-d72a5199f5c3'; // paste UUID from SQL
+const ADMIN_PASSWORD     = 'hunt2026';           // change this to your own
 // ─────────────────────────────────────────────────────────────────────────────
 
 const SKILL_OPTIONS = [
