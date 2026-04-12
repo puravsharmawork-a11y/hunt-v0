@@ -124,7 +124,7 @@ const ROLE_OPTIONS = [
   'Full Stack Developer', 'Backend Developer', 'Frontend Developer',
   'Mobile Developer', 'DevOps Engineer', 'Data Analyst',
   'ML Engineer', 'UI/UX Designer', 'Security / Pen Tester',
-  'Embedded Systems Engineer', 'QA / Testing Engineer'
+  'Embedded Systems Engineer', 'QA / Testing Engineer',
   'E-commerce Executive', 'Digital Marketing Intern'
   
 ];
