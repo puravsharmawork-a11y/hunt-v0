@@ -171,7 +171,7 @@ export default function ApplyPage() {
     setSigningIn(true);
     try {
       // Store slug so we can redirect back after auth
-      sessionStorage.setItem('apply_after_login', slug);
+      localStorage.setItem('apply_after_login', slug);
       await supabase.auth.signInWithOAuth({
         provider: 'google',
         options: { redirectTo: `${window.location.origin}/apply/${slug}` }
@@ -184,7 +184,7 @@ export default function ApplyPage() {
 
   const handleApply = async () => {
     if (!studentProfile) {
-      sessionStorage.setItem('apply_after_login', slug);
+      localStorage.setItem('apply_after_login', slug);
       navigate(`/onboarding`);
       return;
     }
