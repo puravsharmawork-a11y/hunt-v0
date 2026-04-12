@@ -205,13 +205,22 @@ function CandidatesView({ job, onBack, showToast }) {
   useEffect(() => {
     (async () => {
       try {
-        const { data, error } = await supabase
+        const { data: appsData, error } = await supabase
           .from('applications')
-          .select(`*, students(*)`)
+          .select('*')
           .eq('job_id', job.id)
           .order('match_score', { ascending: false });
         if (error) throw error;
-        setApps(data || []);
+        const studentIds = appsData.map(a => a.student_id);
+        const { data: studentsData } = await supabase
+          .from('students')
+          .select('*')
+          .in('id', studentIds);
+        const merged = appsData.map(app => ({
+          ...app,
+          students: studentsData?.find(s => s.id === app.student_id) || {}
+        }));
+        setApps(merged);
       } catch (e) {
         showToast('Failed to load applicants', 'error');
       } finally {
