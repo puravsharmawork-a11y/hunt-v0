@@ -268,9 +268,9 @@ export default function StudentOnboarding() {
         portfolio_url: formData.portfolioUrl, resume_url: resumeUrl,
         profile_completeness: calculateCompleteness(),
       });
-      const pendingSlug = sessionStorage.getItem('apply_after_login');
+      const pendingSlug = localStorage.getItem('apply_after_login');
       if (pendingSlug) {
-        sessionStorage.removeItem('apply_after_login');
+        localStorage.removeItem('apply_after_login');
         navigate(`/apply/${pendingSlug}`);
       } else {
         navigate('/swipe');
