@@ -9,7 +9,7 @@ import StudentProfile from './components/StudentProfile';
 import RecruiterOnboarding from './components/RecruiterOnboarding';
 import RecruiterDashboard from './components/RecruiterDashboard';
 import ApplyPage from './components/ApplyPage';
-import AdminJobCreator from './components/AdminJobCreator';
+import AdminDashboard from './components/AdminDashboard';
 
 
 function App() {
@@ -72,7 +72,7 @@ function App() {
           />
         <Route 
           path="/admin" 
-          element={<AdminJobCreator />} 
+          element={<AdminDashboard />} 
           />
         
         {/* Catch all - redirect to home */}
