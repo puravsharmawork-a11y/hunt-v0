@@ -1053,15 +1053,15 @@ function JobsTab({jobs:init,T,showToast}) {
 
   useEffect(()=>setJobs(init),[init]);
 
-  // If drilling into a job's candidates, show that view
-  if(viewingJob) {
-    return <JobCandidatesView job={viewingJob} onBack={()=>setViewingJob(null)} T={T} showToast={showToast}/>;
-  }
-
   const filtered=useMemo(()=>{
     if(!search) return jobs;
     return jobs.filter(j=>j.role?.toLowerCase().includes(search.toLowerCase())||j.company?.toLowerCase().includes(search.toLowerCase()));
   },[jobs,search]);
+
+  // Early return AFTER all hooks — fixes React error #300
+  if(viewingJob) {
+    return <JobCandidatesView job={viewingJob} onBack={()=>setViewingJob(null)} T={T} showToast={showToast}/>;
+  }
 
   const toggleJob=async(job)=>{
     try {
