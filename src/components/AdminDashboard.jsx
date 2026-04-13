@@ -9,7 +9,8 @@ import {
   CheckCircle2, Star, BarChart2, Activity, Target, Calendar,
   Mail, MapPin, Globe, ArrowUpRight, ArrowDownRight, Minus,
   Sun, Moon, Eye, EyeOff, RefreshCw, Plus, Trash2, Link2,
-  Copy, Check, Phone, FileText, Clock, AlertCircle,
+  Copy, Check, Phone, FileText, Clock, AlertCircle, ArrowLeft,
+  ChevronRight,
 } from 'lucide-react';
 import { supabase } from '../services/supabase';
 
@@ -717,13 +718,345 @@ function RecruitersTab({recruiters:init,T,showToast}) {
   );
 }
 
+// ─── COPY LINK ────────────────────────────────────────────────────────────────
+function CopyLink({url,T}) {
+  const [copied,setCopied]=useState(false);
+  const copy=()=>{navigator.clipboard.writeText(url);setCopied(true);setTimeout(()=>setCopied(false),2000);};
+  return (
+    <div style={{display:'flex',gap:6,alignItems:'center',padding:'7px 10px',borderRadius:8,background:T.surfaceAlt,border:`1px solid ${T.border}`}}>
+      <Link2 size={11} style={{color:T.muted,flexShrink:0}}/>
+      <span style={{fontSize:10,color:T.muted,flex:1,overflow:'hidden',textOverflow:'ellipsis',whiteSpace:'nowrap'}}>{url}</span>
+      <button onClick={copy} style={{display:'flex',alignItems:'center',gap:4,padding:'3px 8px',borderRadius:6,border:`1px solid ${T.border}`,background:copied?T.greenSoft:T.surface,color:copied?T.green:T.sub,fontSize:10,cursor:'pointer',fontFamily:font,flexShrink:0}}>
+        {copied?<><Check size={9}/>Copied!</>:<><Copy size={9}/>Copy</>}
+      </button>
+    </div>
+  );
+}
+
+// ─── JOB CANDIDATES VIEW ──────────────────────────────────────────────────────
+function JobCandidatesView({job, onBack, T, showToast}) {
+  const [apps, setApps]           = useState([]);
+  const [loading, setLoading]     = useState(true);
+  const [selected, setSelected]   = useState(null);
+  const [statusFilter, setSFilter]= useState('all');
+
+  useEffect(()=>{
+    (async()=>{
+      setLoading(true);
+      try {
+        // Fetch applications for this job
+        const {data:appData, error:appErr} = await supabase
+          .from('applications')
+          .select('*')
+          .eq('job_id', job.id)
+          .order('match_score', {ascending:false});
+        if(appErr) throw appErr;
+
+        // Fetch student profiles for all applicants
+        const studentIds = (appData||[]).map(a=>a.student_id).filter(Boolean);
+        let studentsMap = {};
+        if(studentIds.length > 0) {
+          const {data:sData} = await supabase
+            .from('students')
+            .select('*')
+            .in('id', studentIds);
+          (sData||[]).forEach(s=>{ studentsMap[s.id]=s; });
+        }
+
+        setApps((appData||[]).map(a=>({...a, student: studentsMap[a.student_id]||null})));
+      } catch(e){ showToast('Failed to load applicants','error'); }
+      finally{ setLoading(false); }
+    })();
+  },[job.id]);
+
+  const updateStatus = async(appId, status) => {
+    try {
+      const {error} = await supabase.from('applications').update({status}).eq('id',appId);
+      if(error) throw error;
+      setApps(p=>p.map(a=>a.id===appId?{...a,status}:a));
+      if(selected?.id===appId) setSelected(p=>({...p,status}));
+      const labels = {shortlisted:'✓ Shortlisted',interview:'Interview scheduled',rejected:'Passed'};
+      showToast(labels[status]||'Updated');
+    } catch(e){ showToast('Failed','error'); }
+  };
+
+  const filtered = useMemo(()=>{
+    if(statusFilter==='all') return apps;
+    return apps.filter(a=>(a.status||'pending')===statusFilter);
+  },[apps,statusFilter]);
+
+  const counts = {
+    all: apps.length,
+    pending: apps.filter(a=>!a.status||a.status==='pending').length,
+    shortlisted: apps.filter(a=>a.status==='shortlisted').length,
+    interview: apps.filter(a=>a.status==='interview').length,
+    rejected: apps.filter(a=>a.status==='rejected').length,
+  };
+
+  const statusStyle = (status) => ({
+    shortlisted: {color:T.green,  bg:T.greenSoft,  border:T.greenBorder},
+    interview:   {color:T.blue,   bg:T.blueSoft,   border:T.blueBorder},
+    rejected:    {color:T.red,    bg:T.redSoft,    border:T.redBorder},
+    pending:     {color:T.muted,  bg:'transparent', border:T.border},
+  })[status||'pending'] || {color:T.muted,bg:'transparent',border:T.border};
+
+  return (
+    <div>
+      {/* Sub-header */}
+      <div style={{display:'flex',alignItems:'center',justifyContent:'space-between',marginBottom:20,flexWrap:'wrap',gap:10}}>
+        <div style={{display:'flex',alignItems:'center',gap:12}}>
+          <button onClick={onBack} style={{display:'flex',alignItems:'center',gap:5,padding:'6px 10px',borderRadius:6,border:`1px solid ${T.border}`,background:'transparent',color:T.muted,fontSize:12,cursor:'pointer',fontFamily:font}}
+            onMouseEnter={e=>{e.currentTarget.style.color=T.text;e.currentTarget.style.borderColor=T.borderHigh;}}
+            onMouseLeave={e=>{e.currentTarget.style.color=T.muted;e.currentTarget.style.borderColor=T.border;}}>
+            <ArrowLeft size={12}/> All jobs
+          </button>
+          <div style={{display:'flex',alignItems:'center',gap:8}}>
+            <span style={{fontSize:22}}>{job.logo||'🚀'}</span>
+            <div>
+              <p style={{fontSize:15,fontWeight:600,color:T.text,margin:0}}>{job.role}</p>
+              <p style={{fontSize:11,color:T.muted,margin:0}}>{job.company} · {job.location} · {job.stipend}</p>
+            </div>
+          </div>
+        </div>
+        <div style={{display:'flex',alignItems:'center',gap:8}}>
+          <Badge color={job.is_active?T.green:T.muted} bg={job.is_active?T.greenSoft:'transparent'} border={job.is_active?T.greenBorder:T.border}>
+            {job.is_active?'Active':'Paused'}
+          </Badge>
+          <span style={{fontSize:12,color:T.muted}}>{loading?'…':apps.length} applicant{apps.length!==1?'s':''}</span>
+        </div>
+      </div>
+
+      {/* Stats row */}
+      <div style={{display:'grid',gridTemplateColumns:'repeat(4,1fr)',gap:10,marginBottom:20}}>
+        <StatCard label="Total applied"  value={apps.length}           icon={Users}        color={T.blue}   T={T}/>
+        <StatCard label="Shortlisted"    value={counts.shortlisted}    icon={CheckCircle2} color={T.green}  T={T}/>
+        <StatCard label="Interview"      value={counts.interview}      icon={Calendar}     color={T.blue}   T={T}/>
+        <StatCard label="Avg match score"
+          value={apps.length>0?`${Math.round(apps.reduce((s,a)=>s+(a.match_score||0),0)/apps.length)}%`:'—'}
+          icon={Target} color={T.accent} T={T}/>
+      </div>
+
+      {/* Filter pills */}
+      <div style={{display:'flex',gap:6,marginBottom:14,flexWrap:'wrap'}}>
+        {[['all',`All ${counts.all}`],['pending',`New ${counts.pending}`],['shortlisted',`Shortlisted ${counts.shortlisted}`],['interview',`Interview ${counts.interview}`],['rejected',`Passed ${counts.rejected}`]].map(([v,l])=>(
+          <Pill key={v} active={statusFilter===v} onClick={()=>setSFilter(v)} T={T}>{l}</Pill>
+        ))}
+      </div>
+
+      {loading ? (
+        <div style={{textAlign:'center',padding:'48px',color:T.muted,fontSize:13,background:T.surface,border:`1px solid ${T.border}`,borderRadius:12}}>Loading applicants…</div>
+      ) : filtered.length===0 ? (
+        <div style={{textAlign:'center',padding:'52px 20px',background:T.surface,border:`1px solid ${T.border}`,borderRadius:12}}>
+          <div style={{fontSize:36,marginBottom:10}}>🎯</div>
+          <p style={{fontFamily:serif,fontSize:18,color:T.text,marginBottom:6}}>{apps.length===0?'No applicants yet.':'No applicants in this status.'}</p>
+          <p style={{fontSize:13,color:T.muted}}>{apps.length===0?'Share the job link to start getting applications.':'Try a different filter.'}</p>
+        </div>
+      ) : (
+        <div style={{display:'grid',gridTemplateColumns:selected?'1fr 340px':'1fr',gap:16}}>
+          {/* List */}
+          <div style={{display:'flex',flexDirection:'column',gap:6}}>
+            {/* Column headers */}
+            <div style={{display:'grid',gridTemplateColumns:'24px 2fr 1.5fr 1fr 70px 100px',gap:10,padding:'4px 14px',marginBottom:2}}>
+              {['#','Applicant','College','Skills','Score','Status'].map(h=>(
+                <span key={h} style={{fontSize:9,color:T.muted,letterSpacing:'0.08em',textTransform:'uppercase',fontWeight:500}}>{h}</span>
+              ))}
+            </div>
+
+            {filtered.map((app, idx)=>{
+              const s = app.student;
+              const isSel = selected?.id===app.id;
+              const score = app.match_score||0;
+              const scoreC = score>=75?T.green:score>=50?T.amber:T.red;
+              const ss = statusStyle(app.status);
+              return (
+                <div key={app.id} onClick={()=>setSelected(isSel?null:app)}
+                  style={{display:'grid',gridTemplateColumns:'24px 2fr 1.5fr 1fr 70px 100px',gap:10,alignItems:'center',padding:'10px 14px',background:isSel?T.accentSoft:T.surface,border:`1px solid ${isSel?T.accent+'60':T.border}`,borderRadius:10,cursor:'pointer',transition:'all 0.15s'}}
+                  onMouseEnter={e=>{if(!isSel)e.currentTarget.style.borderColor=T.borderHigh;}}
+                  onMouseLeave={e=>{if(!isSel)e.currentTarget.style.borderColor=T.border;}}>
+                  <span style={{fontSize:10,color:T.muted,fontWeight:500}}>#{idx+1}</span>
+                  <div style={{display:'flex',alignItems:'center',gap:8,minWidth:0}}>
+                    <Avatar name={s?.full_name||'?'} size={28} T={T}/>
+                    <div style={{minWidth:0}}>
+                      <p style={{fontSize:12,fontWeight:500,color:T.text,margin:0,overflow:'hidden',textOverflow:'ellipsis',whiteSpace:'nowrap'}}>{s?.full_name||'Unknown'}</p>
+                      <p style={{fontSize:10,color:T.muted,margin:0}}>Year {s?.year||'?'} · {s?.availability||'—'}</p>
+                    </div>
+                  </div>
+                  <p style={{fontSize:11,color:T.muted,margin:0,overflow:'hidden',textOverflow:'ellipsis',whiteSpace:'nowrap'}}>{s?.college||'—'}</p>
+                  <div style={{display:'flex',gap:3,overflow:'hidden'}}>
+                    {(s?.skills||[]).slice(0,2).map((sk,i)=>(
+                      <span key={i} style={{fontSize:9,padding:'2px 5px',borderRadius:4,background:T.blueSoft,border:`1px solid ${T.blueBorder}`,color:T.blue,whiteSpace:'nowrap'}}>{sk.name}</span>
+                    ))}
+                    {(s?.skills||[]).length===0 && <span style={{fontSize:9,color:T.muted}}>—</span>}
+                  </div>
+                  <span style={{fontFamily:serif,fontSize:15,color:scoreC,fontWeight:400}}>{score}%</span>
+                  <Badge color={ss.color} bg={ss.bg} border={ss.border}>
+                    {app.status||'New'}
+                  </Badge>
+                </div>
+              );
+            })}
+          </div>
+
+          {/* Candidate detail panel */}
+          {selected && (
+            <CandidatePanel app={selected} onClose={()=>setSelected(null)} onStatusChange={updateStatus} T={T}/>
+          )}
+        </div>
+      )}
+    </div>
+  );
+}
+
+// ─── CANDIDATE PANEL (inside job view) ───────────────────────────────────────
+function CandidatePanel({app, onClose, onStatusChange, T}) {
+  const s = app.student;
+  const score = app.match_score||0;
+  const breakdown = app.match_breakdown||{};
+  const scoreC = score>=75?T.green:score>=50?T.amber:T.red;
+  const scoreBg_ = score>=75?T.greenSoft:score>=50?T.amberSoft:T.redSoft;
+  const scoreBd = score>=75?T.greenBorder:score>=50?T.amberBorder:T.redBorder;
+
+  return (
+    <div style={{background:T.surface,border:`1px solid ${T.border}`,borderRadius:12,overflow:'hidden',position:'sticky',top:76}}>
+      <div style={{padding:'12px 16px',borderBottom:`1px solid ${T.border}`,background:T.surfaceAlt,display:'flex',alignItems:'center',justifyContent:'space-between'}}>
+        <SL T={T}>Candidate profile</SL>
+        <button onClick={onClose} style={{background:'transparent',border:'none',cursor:'pointer',color:T.muted,display:'flex'}}><X size={14}/></button>
+      </div>
+      <div style={{padding:18,overflowY:'auto',maxHeight:'calc(100vh - 160px)'}}>
+        {/* Identity */}
+        <div style={{display:'flex',alignItems:'flex-start',gap:12,marginBottom:16}}>
+          <Avatar name={s?.full_name||'?'} size={44} T={T}/>
+          <div style={{flex:1}}>
+            <p style={{fontSize:15,fontWeight:600,color:T.text,margin:0}}>{s?.full_name||'Unknown'}</p>
+            <p style={{fontSize:11,color:T.muted,margin:'2px 0 6px'}}>{s?.college||'—'} · Year {s?.year||'?'}</p>
+            <div style={{display:'flex',flexWrap:'wrap',gap:4}}>
+              {s?.availability && <Badge color={T.muted} border={T.border}>{s.availability}</Badge>}
+              {s?.work_preference && <Badge color={T.muted} border={T.border}>{s.work_preference}</Badge>}
+            </div>
+          </div>
+          <div style={{padding:'6px 12px',borderRadius:10,background:scoreBg_,border:`1.5px solid ${scoreBd}`,textAlign:'center',flexShrink:0}}>
+            <p style={{fontFamily:serif,fontSize:22,color:scoreC,margin:0,lineHeight:1}}>{score}%</p>
+            <p style={{fontSize:9,color:T.muted,margin:'2px 0 0'}}>match</p>
+          </div>
+        </div>
+
+        {/* Score breakdown */}
+        {Object.keys(breakdown).length>0 && (
+          <div style={{background:T.surfaceAlt,border:`1px solid ${T.border}`,borderRadius:10,padding:'12px 14px',marginBottom:14}}>
+            <SL T={T}>Score breakdown</SL>
+            {Object.entries(breakdown).map(([k,v])=>(
+              <div key={k} style={{display:'flex',alignItems:'center',gap:8,marginBottom:5}}>
+                <span style={{fontSize:10,color:T.sub,width:120,flexShrink:0,textTransform:'capitalize'}}>{k.replace(/([A-Z])/g,' $1').trim()}</span>
+                <div style={{flex:1,height:3,background:T.border,borderRadius:2,overflow:'hidden'}}>
+                  <div style={{height:'100%',width:`${Math.min(v*2.5,100)}%`,background:T.green,borderRadius:2}}/>
+                </div>
+                <span style={{fontSize:10,fontWeight:500,color:T.text,width:28,textAlign:'right'}}>{v}%</span>
+              </div>
+            ))}
+          </div>
+        )}
+
+        {/* Skills */}
+        {(s?.skills||[]).length>0 && (
+          <div style={{marginBottom:14}}>
+            <SL T={T}>Skills ({(s.skills||[]).length})</SL>
+            <div style={{display:'flex',flexWrap:'wrap',gap:5}}>
+              {(s.skills||[]).map((sk,i)=>(
+                <span key={i} style={{fontSize:10,padding:'3px 8px',borderRadius:6,background:T.blueSoft,border:`1px solid ${T.blueBorder}`,color:T.blue}}>
+                  {sk.name} <span style={{opacity:0.6}}>L{sk.level}</span>
+                </span>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {/* Projects */}
+        {(s?.projects||[]).length>0 && (
+          <div style={{marginBottom:14}}>
+            <SL T={T}>Projects ({(s.projects||[]).length})</SL>
+            {(s.projects||[]).slice(0,3).map((p,i)=>(
+              <div key={i} style={{padding:'8px 10px',borderRadius:8,border:`1px solid ${T.border}`,background:T.surfaceAlt,marginBottom:6}}>
+                <div style={{display:'flex',alignItems:'center',justifyContent:'space-between',marginBottom:3}}>
+                  <p style={{fontSize:11,fontWeight:500,color:T.text,margin:0}}>{p.name||p.title}</p>
+                  {p.link && <a href={p.link} target="_blank" rel="noopener noreferrer" style={{color:T.muted,display:'flex'}}><ExternalLink size={11}/></a>}
+                </div>
+                <div style={{display:'flex',flexWrap:'wrap',gap:3}}>
+                  {(Array.isArray(p.techStack)?p.techStack:[]).map((t,j)=>(
+                    <span key={j} style={{fontSize:9,padding:'1px 5px',borderRadius:4,border:`1px solid ${T.border}`,color:T.muted}}>{t}</span>
+                  ))}
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
+
+        {/* Contact links */}
+        <div style={{borderTop:`1px solid ${T.border}`,paddingTop:12,marginBottom:14}}>
+          <SL T={T}>Contact</SL>
+          {s?.email && <a href={`mailto:${s.email}`} style={{display:'flex',alignItems:'center',gap:6,fontSize:11,color:T.muted,textDecoration:'none',marginBottom:6}}><Mail size={11}/>{s.email}</a>}
+          {s?.phone && <div style={{display:'flex',alignItems:'center',gap:6,fontSize:11,color:T.muted,marginBottom:6}}><Phone size={11}/>{s.phone}</div>}
+          <div style={{display:'flex',gap:6,flexWrap:'wrap'}}>
+            {s?.github_url    && <a href={s.github_url}    target="_blank" rel="noopener noreferrer" style={{display:'flex',alignItems:'center',gap:4,fontSize:11,color:T.sub,padding:'4px 9px',borderRadius:20,border:`1px solid ${T.border}`,textDecoration:'none'}}><Github size={11}/> GitHub</a>}
+            {s?.linkedin_url  && <a href={s.linkedin_url}  target="_blank" rel="noopener noreferrer" style={{display:'flex',alignItems:'center',gap:4,fontSize:11,color:T.sub,padding:'4px 9px',borderRadius:20,border:`1px solid ${T.border}`,textDecoration:'none'}}><ExternalLink size={11}/> LinkedIn</a>}
+            {s?.portfolio_url && <a href={s.portfolio_url} target="_blank" rel="noopener noreferrer" style={{display:'flex',alignItems:'center',gap:4,fontSize:11,color:T.sub,padding:'4px 9px',borderRadius:20,border:`1px solid ${T.border}`,textDecoration:'none'}}><Globe size={11}/> Portfolio</a>}
+            {s?.resume_url    && <a href={s.resume_url}    target="_blank" rel="noopener noreferrer" style={{display:'flex',alignItems:'center',gap:4,fontSize:11,color:T.accent,padding:'4px 9px',borderRadius:20,border:`1px solid ${T.accent}30`,textDecoration:'none'}}><FileText size={11}/> Resume</a>}
+          </div>
+        </div>
+
+        {/* Application info */}
+        <div style={{padding:'8px 10px',borderRadius:8,background:T.surfaceAlt,border:`1px solid ${T.border}`,marginBottom:14}}>
+          <div style={{display:'flex',justifyContent:'space-between'}}>
+            <span style={{fontSize:10,color:T.muted}}>Applied</span>
+            <span style={{fontSize:11,color:T.text}}>{app.applied_at?new Date(app.applied_at).toLocaleDateString('en-IN',{day:'numeric',month:'short',year:'numeric',hour:'2-digit',minute:'2-digit'}):'—'}</span>
+          </div>
+        </div>
+
+        {/* Status action buttons */}
+        <div style={{borderTop:`1px solid ${T.border}`,paddingTop:12}}>
+          <SL T={T}>Update status</SL>
+          <div style={{display:'grid',gridTemplateColumns:'1fr 1fr 1fr',gap:6}}>
+            {[
+              {key:'shortlisted', label:'✓ Shortlist', activeC:T.green,  activeBg:T.greenSoft,  activeBd:T.greenBorder},
+              {key:'interview',   label:'📅 Interview', activeC:T.blue,   activeBg:T.blueSoft,   activeBd:T.blueBorder},
+              {key:'rejected',    label:'✕ Pass',       activeC:T.red,    activeBg:T.redSoft,    activeBd:T.redBorder},
+            ].map(opt=>{
+              const isActive = app.status===opt.key;
+              return (
+                <button key={opt.key} onClick={()=>onStatusChange(app.id,opt.key)}
+                  style={{padding:'9px 6px',borderRadius:8,fontSize:11,fontWeight:500,cursor:'pointer',fontFamily:font,transition:'all 0.15s',
+                    border:`1px solid ${isActive?opt.activeBd:opt.activeC+'40'}`,
+                    background:isActive?opt.activeBg:'transparent',
+                    color:isActive?opt.activeC:opt.activeC}}>
+                  {opt.label}
+                </button>
+              );
+            })}
+          </div>
+          {app.status && app.status!=='pending' && (
+            <p style={{fontSize:10,color:T.muted,textAlign:'center',marginTop:8}}>
+              Status: <strong style={{color:T.text,textTransform:'capitalize'}}>{app.status}</strong>
+              {' · '}<button onClick={()=>onStatusChange(app.id,'pending')} style={{background:'none',border:'none',fontSize:10,color:T.muted,cursor:'pointer',textDecoration:'underline',padding:0,fontFamily:font}}>Reset</button>
+            </p>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+}
+
 // ─── JOBS TAB ─────────────────────────────────────────────────────────────────
 function JobsTab({jobs:init,T,showToast}) {
-  const [jobs,setJobs]=useState(init);
-  const [showForm,setShowForm]=useState(false);
-  const [search,setSearch]=useState('');
+  const [jobs,setJobs]       = useState(init);
+  const [showForm,setShowForm] = useState(false);
+  const [search,setSearch]   = useState('');
+  const [viewingJob,setViewingJob] = useState(null); // null = list, job = candidates view
 
   useEffect(()=>setJobs(init),[init]);
+
+  // If drilling into a job's candidates, show that view
+  if(viewingJob) {
+    return <JobCandidatesView job={viewingJob} onBack={()=>setViewingJob(null)} T={T} showToast={showToast}/>;
+  }
 
   const filtered=useMemo(()=>{
     if(!search) return jobs;
@@ -752,9 +1085,9 @@ function JobsTab({jobs:init,T,showToast}) {
   return (
     <div>
       <div style={{display:'grid',gridTemplateColumns:'repeat(3,1fr)',gap:10,marginBottom:20}}>
-        <StatCard label="Total jobs" value={jobs.length} icon={Briefcase} color={T.accent} T={T}/>
-        <StatCard label="Active" value={jobs.filter(j=>j.is_active).length} icon={Activity} color={T.green} T={T}/>
-        <StatCard label="Total applicants" value={jobs.reduce((s,j)=>s+(j.current_applicants||0),0)} icon={Users} color={T.blue} T={T}/>
+        <StatCard label="Total jobs"      value={jobs.length}                                  icon={Briefcase} color={T.accent} T={T}/>
+        <StatCard label="Active"          value={jobs.filter(j=>j.is_active).length}           icon={Activity}  color={T.green}  T={T}/>
+        <StatCard label="Total applicants"value={jobs.reduce((s,j)=>s+(j.current_applicants||0),0)} icon={Users} color={T.blue} T={T}/>
       </div>
 
       <div style={{display:'flex',gap:8,marginBottom:14,alignItems:'center'}}>
@@ -790,15 +1123,17 @@ function JobsTab({jobs:init,T,showToast}) {
                   <Badge color={j.is_active?T.green:T.muted} bg={j.is_active?T.greenSoft:'transparent'} border={j.is_active?T.greenBorder:T.border}>
                     {j.is_active?'Active':'Paused'}
                   </Badge>
-                  <button onClick={()=>toggleJob(j)} style={{background:'transparent',border:`1px solid ${T.border}`,borderRadius:6,padding:'4px 6px',cursor:'pointer',color:T.muted,display:'flex'}} title={j.is_active?'Pause':'Activate'}>
+                  <button onClick={e=>{e.stopPropagation();toggleJob(j);}} style={{background:'transparent',border:`1px solid ${T.border}`,borderRadius:6,padding:'4px 6px',cursor:'pointer',color:T.muted,display:'flex'}} title={j.is_active?'Pause':'Activate'}>
                     {j.is_active?<EyeOff size={12}/>:<Eye size={12}/>}
                   </button>
-                  <button onClick={()=>deleteJob(j)} style={{background:'transparent',border:`1px solid ${T.border}`,borderRadius:6,padding:'4px 6px',cursor:'pointer',color:T.muted,display:'flex'}} title="Delete"
+                  <button onClick={e=>{e.stopPropagation();deleteJob(j);}} style={{background:'transparent',border:`1px solid ${T.border}`,borderRadius:6,padding:'4px 6px',cursor:'pointer',color:T.muted,display:'flex'}} title="Delete"
                     onMouseEnter={e=>e.currentTarget.style.color=T.red} onMouseLeave={e=>e.currentTarget.style.color=T.muted}>
                     <Trash2 size={12}/>
                   </button>
                 </div>
               </div>
+
+              {/* Applicant fill bar */}
               <div style={{display:'flex',justifyContent:'space-between',marginBottom:5}}>
                 <span style={{fontSize:10,color:T.muted}}>Applicants</span>
                 <span style={{fontSize:10,fontWeight:500,color:fc}}>{j.current_applicants||0}/{j.max_applicants||50}</span>
@@ -806,27 +1141,30 @@ function JobsTab({jobs:init,T,showToast}) {
               <div style={{height:4,background:T.surfaceAlt,borderRadius:2,overflow:'hidden',marginBottom:10}}>
                 <div style={{height:'100%',width:`${Math.min(fill*100,100)}%`,background:fc,borderRadius:2}}/>
               </div>
-              {j.share_slug && (
-                <CopyLink url={url} T={T}/>
-              )}
+
+              {/* View candidates button */}
+              <button onClick={()=>setViewingJob(j)}
+                style={{width:'100%',display:'flex',alignItems:'center',justifyContent:'center',gap:6,padding:'8px',borderRadius:8,border:`1px solid ${T.border}`,background:T.surfaceAlt,color:T.sub,fontSize:12,fontWeight:500,cursor:'pointer',fontFamily:font,marginBottom:8,transition:'all 0.15s'}}
+                onMouseEnter={e=>{e.currentTarget.style.background=T.accent;e.currentTarget.style.color='#fff';e.currentTarget.style.borderColor=T.accent;}}
+                onMouseLeave={e=>{e.currentTarget.style.background=T.surfaceAlt;e.currentTarget.style.color=T.sub;e.currentTarget.style.borderColor=T.border;}}>
+                <Users size={12}/> View {j.current_applicants||0} candidates <ChevronRight size={11}/>
+              </button>
+
+              {j.share_slug && <CopyLink url={url} T={T}/>}
             </div>
           );
         })}
+        {filtered.length===0 && !showForm && (
+          <div style={{gridColumn:'1/-1',textAlign:'center',padding:'48px',color:T.muted,fontSize:13,background:T.surface,border:`1px solid ${T.border}`,borderRadius:12}}>
+            <div style={{fontSize:36,marginBottom:10}}>📋</div>
+            <p style={{fontFamily:serif,fontSize:18,color:T.text,marginBottom:6}}>No jobs yet.</p>
+            <p style={{marginBottom:16}}>Post your first internship to get started.</p>
+            <button onClick={()=>setShowForm(true)} style={{display:'inline-flex',alignItems:'center',gap:6,padding:'9px 18px',borderRadius:8,border:'none',background:T.accent,color:'#fff',fontSize:13,fontWeight:500,cursor:'pointer',fontFamily:font}}>
+              <Plus size={13}/> Post first internship
+            </button>
+          </div>
+        )}
       </div>
-    </div>
-  );
-}
-
-function CopyLink({url,T}) {
-  const [copied,setCopied]=useState(false);
-  const copy=()=>{navigator.clipboard.writeText(url);setCopied(true);setTimeout(()=>setCopied(false),2000);};
-  return (
-    <div style={{display:'flex',gap:6,alignItems:'center',padding:'7px 10px',borderRadius:8,background:T.surfaceAlt,border:`1px solid ${T.border}`}}>
-      <Link2 size={11} style={{color:T.muted,flexShrink:0}}/>
-      <span style={{fontSize:10,color:T.muted,flex:1,overflow:'hidden',textOverflow:'ellipsis',whiteSpace:'nowrap'}}>{url}</span>
-      <button onClick={copy} style={{display:'flex',alignItems:'center',gap:4,padding:'3px 8px',borderRadius:6,border:`1px solid ${T.border}`,background:copied?T.greenSoft:T.surface,color:copied?T.green:T.sub,fontSize:10,cursor:'pointer',fontFamily:font,flexShrink:0}}>
-        {copied?<><Check size={9}/>Copied!</>:<><Copy size={9}/>Copy</>}
-      </button>
     </div>
   );
 }
