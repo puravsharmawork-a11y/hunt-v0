@@ -1,6 +1,6 @@
 // src/components/StudentOnboarding.jsx
-import React, { useState, useEffect, useRef } from 'react';
-import { User, Briefcase, Code, Rocket, CheckCircle2, ArrowRight, Plus, X, Github, Loader, Sun, Moon, Shield, GraduationCap, Link2, AlertCircle } from 'lucide-react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
+import { User, Briefcase, Code, Rocket, CheckCircle2, ArrowRight, Plus, X, Github, Loader, Sun, Moon, Shield, GraduationCap, Link2, AlertCircle, Upload } from 'lucide-react';
 import { createStudentProfile, uploadResume } from '../services/supabase';
 import { importFromGitHub, isValidGitHubUsername } from '../services/github';
 import { useNavigate } from 'react-router-dom';
@@ -42,8 +42,44 @@ function applyTokens(theme) {
   Object.entries(tokens[theme]).forEach(([k, v]) => root.style.setProperty(k, v));
 }
 
-// ─── Data ──────────────────────────────────────────────────────────────────────
+// ─── SVG Logos ─────────────────────────────────────────────────────────────────
+const LinkedInLogo = () => (
+  <svg width="16" height="16" viewBox="0 0 24 24" fill="#0A66C2" style={{ flexShrink: 0 }}>
+    <path d="M20.447 20.452h-3.554v-5.569c0-1.328-.027-3.037-1.852-3.037-1.853 0-2.136 1.445-2.136 2.939v5.667H9.351V9h3.414v1.561h.046c.477-.9 1.637-1.85 3.37-1.85 3.601 0 4.267 2.37 4.267 5.455v6.286zM5.337 7.433a2.062 2.062 0 0 1-2.063-2.065 2.064 2.064 0 1 1 2.063 2.065zm1.782 13.019H3.555V9h3.564v11.452zM22.225 0H1.771C.792 0 0 .774 0 1.729v20.542C0 23.227.792 24 1.771 24h20.451C23.2 24 24 23.227 24 22.271V1.729C24 .774 23.2 0 22.222 0h.003z"/>
+  </svg>
+);
 
+const GitHubLogo = ({ theme }) => (
+  <svg width="16" height="16" viewBox="0 0 24 24" fill={theme === 'dark' ? '#FAFAF8' : '#0A0A0A'} style={{ flexShrink: 0 }}>
+    <path d="M12 .297c-6.63 0-12 5.373-12 12 0 5.303 3.438 9.8 8.205 11.385.6.113.82-.258.82-.577 0-.285-.01-1.04-.015-2.04-3.338.724-4.042-1.61-4.042-1.61C4.422 18.07 3.633 17.7 3.633 17.7c-1.087-.744.084-.729.084-.729 1.205.084 1.838 1.236 1.838 1.236 1.07 1.835 2.809 1.305 3.495.998.108-.776.417-1.305.76-1.605-2.665-.3-5.466-1.332-5.466-5.93 0-1.31.465-2.38 1.235-3.22-.135-.303-.54-1.523.105-3.176 0 0 1.005-.322 3.3 1.23.96-.267 1.98-.399 3-.405 1.02.006 2.04.138 3 .405 2.28-1.552 3.285-1.23 3.285-1.23.645 1.653.24 2.873.12 3.176.765.84 1.23 1.91 1.23 3.22 0 4.61-2.805 5.625-5.475 5.92.42.36.81 1.096.81 2.22 0 1.606-.015 2.896-.015 3.286 0 .315.21.69.825.57C20.565 22.092 24 17.592 24 12.297c0-6.627-5.373-12-12-12"/>
+  </svg>
+);
+
+const LeetCodeLogo = () => (
+  <svg width="16" height="16" viewBox="0 0 24 24" fill="#FFA116" style={{ flexShrink: 0 }}>
+    <path d="M13.483 0a1.374 1.374 0 0 0-.961.438L7.116 6.226l-3.854 4.126a5.266 5.266 0 0 0-1.209 2.104 5.35 5.35 0 0 0-.125.513 5.527 5.527 0 0 0 .062 2.362 5.83 5.83 0 0 0 .349 1.017 5.938 5.938 0 0 0 1.271 1.818l4.277 4.193.039.038c2.248 2.165 5.852 2.133 8.063-.074l2.396-2.392c.54-.54.54-1.414.003-1.955a1.378 1.378 0 0 0-1.951-.003l-2.396 2.392a3.021 3.021 0 0 1-4.205.038l-.02-.019-4.276-4.193c-.652-.64-.972-1.469-.948-2.263a2.68 2.68 0 0 1 .066-.523 2.545 2.545 0 0 1 .619-1.164L9.13 8.114c1.058-1.134 3.204-1.27 4.43-.278l3.501 2.831c.593.48 1.461.387 1.94-.207a1.384 1.384 0 0 0-.207-1.943l-3.5-2.831c-.8-.647-1.766-1.045-2.774-1.202l2.015-2.158A1.384 1.384 0 0 0 13.483 0zm-2.866 12.815a1.38 1.38 0 0 0-1.38 1.382 1.38 1.38 0 0 0 1.38 1.382H19.79a1.38 1.38 0 0 0 1.38-1.382 1.38 1.38 0 0 0-1.38-1.382z"/>
+  </svg>
+);
+
+const CodeChefLogo = () => (
+  <svg width="16" height="16" viewBox="0 0 24 24" fill="#5B4638" style={{ flexShrink: 0 }}>
+    <path d="M11.257.004C5.858-.114 1.83 4.33 1.945 9.728c-.014 2.76 1.202 5.205 3.15 6.87L4.4 18.45l1.967 2.307.87-1.02c1.54 1.024 3.394 1.615 5.396 1.615 2.003 0 3.856-.59 5.397-1.614l.87 1.02 1.966-2.308-.696-1.852c1.948-1.666 3.164-4.11 3.15-6.87.115-5.398-3.913-9.842-9.313-9.724h.25zm.25 1.528c4.737-.105 8.648 3.647 8.544 8.196.01 2.42-1.044 4.578-2.73 6.062l-.366.318.814 2.167-.84.984-.82-.963-.392.272A9.084 9.084 0 0 1 11.5 19.82a9.081 9.081 0 0 1-4.217-1.052l-.392-.272-.82.963-.84-.984.813-2.167-.366-.318C3.993 14.507 2.94 12.35 2.95 9.728 2.844 5.18 6.756 1.426 11.493 1.532h.014z"/>
+  </svg>
+);
+
+const CodeForcesLogo = () => (
+  <svg width="16" height="16" viewBox="0 0 24 24" fill="#1F8ACB" style={{ flexShrink: 0 }}>
+    <path d="M4.5 7.5A1.5 1.5 0 0 1 6 9v10.5A1.5 1.5 0 0 1 4.5 21h-3A1.5 1.5 0 0 1 0 19.5V9a1.5 1.5 0 0 1 1.5-1.5h3zm9-4.5A1.5 1.5 0 0 1 15 4.5v15a1.5 1.5 0 0 1-1.5 1.5h-3A1.5 1.5 0 0 1 9 19.5v-15A1.5 1.5 0 0 1 10.5 3h3zm9 7.5A1.5 1.5 0 0 1 24 12v7.5A1.5 1.5 0 0 1 22.5 21h-3a1.5 1.5 0 0 1-1.5-1.5V12a1.5 1.5 0 0 1 1.5-1.5h3z"/>
+  </svg>
+);
+
+const KaggleLogo = () => (
+  <svg width="16" height="16" viewBox="0 0 24 24" fill="#20BEFF" style={{ flexShrink: 0 }}>
+    <path d="M18.825 23.859c-.022.092-.117.141-.281.141h-3.139c-.187 0-.351-.082-.492-.248l-5.178-6.589-1.448 1.374v5.111c0 .235-.117.352-.351.352H5.505c-.236 0-.354-.117-.354-.352V.353c0-.233.118-.353.354-.353h2.431c.234 0 .351.12.351.353v14.343l6.203-6.272c.165-.165.33-.246.495-.246h3.239c.144 0 .237.05.285.14.046.094.034.2-.038.32l-6.321 6.025 6.495 8.076c.086.104.1.208.073.3z"/>
+  </svg>
+);
+
+// ─── Data ──────────────────────────────────────────────────────────────────────
 const SKILL_OPTIONS = [
   { id: 'sk-001', name: 'JavaScript', category: 'Language' },
   { id: 'sk-002', name: 'Python', category: 'Language' },
@@ -138,28 +174,18 @@ const INDIA_STATES = [
 ];
 
 const STEPS = [
-  { num: 1, label: 'Basics',     icon: User },
-  { num: 2, label: 'Links',      icon: Link2 },
-  { num: 3, label: 'Skills',     icon: Code },
-  { num: 4, label: 'Work Auth',  icon: Shield },
-  { num: 5, label: 'Education',  icon: GraduationCap },
-  { num: 6, label: 'Finish',     icon: Rocket },
+  { num: 1, label: 'Basics',    icon: User },
+  { num: 2, label: 'Links',     icon: Link2 },
+  { num: 3, label: 'Skills',    icon: Code },
+  { num: 4, label: 'Work Auth', icon: Shield },
+  { num: 5, label: 'Education', icon: GraduationCap },
+  { num: 6, label: 'Finish',    icon: Rocket },
 ];
 
-// ─── Shared style helpers ───────────────────────────────────────────────────────
-
-const inputCls = `
-  w-full px-4 py-3 rounded-lg text-sm font-normal
-  transition-colors duration-150 outline-none
-  bg-[var(--bg-subtle)] border border-[var(--border)]
-  text-[var(--text)] placeholder:text-[var(--text-dim)]
-  focus:border-[var(--focus)]
-`.replace(/\s+/g, ' ').trim();
-
+const inputCls = `w-full px-4 py-3 rounded-lg text-sm font-normal transition-colors duration-150 outline-none bg-[var(--bg-subtle)] border border-[var(--border)] text-[var(--text)] placeholder:text-[var(--text-dim)] focus:border-[var(--focus)]`;
 const labelCls = 'block text-xs font-medium tracking-widest uppercase text-[var(--text-dim)] mb-2';
 
-// ─── Component ─────────────────────────────────────────────────────────────────
-
+// ─── Main Component ────────────────────────────────────────────────────────────
 export default function StudentOnboarding() {
   const navigate = useNavigate();
   const [theme, setTheme] = useState('light');
@@ -168,61 +194,47 @@ export default function StudentOnboarding() {
   const [githubImporting, setGithubImporting] = useState(false);
   const [githubUsername, setGithubUsername] = useState('');
   const [activeCategory, setActiveCategory] = useState(SKILL_CATEGORIES[0]);
+  // FIX 1: extraLinks lives at top level — never re-created inside a component
   const [extraLinks, setExtraLinks] = useState(['']);
+  // FIX 2: warnings only after user presses Continue on step 2
+  const [step2Attempted, setStep2Attempted] = useState(false);
+  // FIX 3: work auth error state
+  const [workAuthError, setWorkAuthError] = useState(false);
+  // FIX 4: drag state for resume
+  const [dragOver, setDragOver] = useState(false);
   const contentRef = useRef(null);
+  const fileInputRef = useRef(null);
 
   const [formData, setFormData] = useState({
-    // Step 1 – Basics
+    // Step 1
     fullName: '', email: '', phone: '',
-
-    // Step 2 – Links
+    // Step 2 — all controlled at top level so inputs never remount
     linkedinUrl: '', githubUrl: '', portfolioUrl: '',
-    otherLinks: [],
-    leetcodeUsername: '', codechefUsername: '', codeforces: '', kaggleUsername: '',
-
-    // Step 3 – Skills + Projects
+    leetcodeUsername: '', codechefUsername: '', codeforcesUsername: '', kaggleUsername: '',
+    // Step 3
     skills: [], projects: [],
-
-    // Step 4 – Work Authorization
+    // Step 4
     dob: '', state: '', city: '', pincode: '',
-    workFromDifferentCountry: false,
-    confirmWorkAuth: false,
-    confirmStayInIndia: false,
+    workFromDifferentCountry: false, confirmWorkAuth: false, confirmStayInIndia: false,
     signatureName: '', signatureText: '',
-
-    // Step 5 – Education + Experience
+    // Step 5
     education: [{ school: '', degree: '', major: '', gpa: '', startYear: '', endYear: '' }],
     workExperience: [{ company: '', role: '', startYear: '', endYear: '', city: '', description: '' }],
-
-    // Step 6 – Finish
-    preferredRoles: [],
-    availability: 'Immediate', workPreference: 'remote',
-    resume: null,
+    // Step 6
+    preferredRoles: [], availability: 'Immediate', workPreference: 'remote',
+    resume: null, noResume: false,
   });
 
-  const [newProject, setNewProject] = useState({
-    title: '', description: '', techStack: '', projectUrl: '', githubUrl: ''
-  });
+  const [newProject, setNewProject] = useState({ title: '', description: '', techStack: '', projectUrl: '', githubUrl: '' });
 
   useEffect(() => { applyTokens(theme); }, [theme]);
-
-  // Scroll content to top on step change
-  useEffect(() => {
-    if (contentRef.current) contentRef.current.scrollTop = 0;
-  }, [currentStep]);
+  useEffect(() => { if (contentRef.current) contentRef.current.scrollTop = 0; }, [currentStep]);
 
   const toggleTheme = () => setTheme(t => t === 'light' ? 'dark' : 'light');
-
-  const totalSteps = STEPS.length;
-
-  // ── Handlers ─────────────────────────────────────────────────────────────────
-
-  const hi = (field, value) => setFormData(prev => ({ ...prev, [field]: value }));
+  const hi = useCallback((field, value) => setFormData(prev => ({ ...prev, [field]: value })), []);
 
   const handleGitHubImport = async () => {
-    if (!githubUsername.trim() || !isValidGitHubUsername(githubUsername)) {
-      alert('Enter a valid GitHub username'); return;
-    }
+    if (!githubUsername.trim() || !isValidGitHubUsername(githubUsername)) { alert('Enter a valid GitHub username'); return; }
     setGithubImporting(true);
     try {
       const result = await importFromGitHub(githubUsername);
@@ -240,73 +252,67 @@ export default function StudentOnboarding() {
     finally { setGithubImporting(false); }
   };
 
-  // Skills
-  const addSkill = (skill) => {
-    if (formData.skills.find(s => s.name === skill.name)) return;
-    setFormData(prev => ({ ...prev, skills: [...prev.skills, { id: Date.now(), name: skill.name, level: 3, category: skill.category }] }));
-  };
-  const removeSkill = (id) => setFormData(prev => ({ ...prev, skills: prev.skills.filter(s => s.id !== id) }));
-  const updateLevel = (id, level) => setFormData(prev => ({ ...prev, skills: prev.skills.map(s => s.id === id ? { ...s, level } : s) }));
+  const addSkill = useCallback((skill) => {
+    setFormData(prev => {
+      if (prev.skills.find(s => s.name === skill.name)) return prev;
+      return { ...prev, skills: [...prev.skills, { id: Date.now(), name: skill.name, level: 3, category: skill.category }] };
+    });
+  }, []);
+  const removeSkill = useCallback((id) => setFormData(prev => ({ ...prev, skills: prev.skills.filter(s => s.id !== id) })), []);
+  const updateLevel = useCallback((id, level) => setFormData(prev => ({ ...prev, skills: prev.skills.map(s => s.id === id ? { ...s, level } : s) })), []);
 
-  // Projects
   const addProject = () => {
     if (!newProject.title || !newProject.techStack) return;
-    setFormData(prev => ({
-      ...prev,
-      projects: [...prev.projects, { ...newProject, techStack: newProject.techStack.split(',').map(t => t.trim()), id: Date.now() }]
-    }));
+    setFormData(prev => ({ ...prev, projects: [...prev.projects, { ...newProject, techStack: newProject.techStack.split(',').map(t => t.trim()), id: Date.now() }] }));
     setNewProject({ title: '', description: '', techStack: '', projectUrl: '', githubUrl: '' });
   };
   const removeProject = (id) => setFormData(prev => ({ ...prev, projects: prev.projects.filter(p => p.id !== id) }));
 
-  // Education
   const updateEducation = (idx, field, value) => {
-    const updated = [...formData.education];
-    updated[idx] = { ...updated[idx], [field]: value };
-    hi('education', updated);
+    const updated = [...formData.education]; updated[idx] = { ...updated[idx], [field]: value }; hi('education', updated);
   };
   const addEducation = () => hi('education', [...formData.education, { school: '', degree: '', major: '', gpa: '', startYear: '', endYear: '' }]);
   const removeEducation = (idx) => hi('education', formData.education.filter((_, i) => i !== idx));
 
-  // Work Experience
   const updateWorkExp = (idx, field, value) => {
-    const updated = [...formData.workExperience];
-    updated[idx] = { ...updated[idx], [field]: value };
-    hi('workExperience', updated);
+    const updated = [...formData.workExperience]; updated[idx] = { ...updated[idx], [field]: value }; hi('workExperience', updated);
   };
   const addWorkExp = () => hi('workExperience', [...formData.workExperience, { company: '', role: '', startYear: '', endYear: '', city: '', description: '' }]);
   const removeWorkExp = (idx) => hi('workExperience', formData.workExperience.filter((_, i) => i !== idx));
 
-  // Roles
   const toggleRole = (role) => setFormData(prev => ({
-    ...prev,
-    preferredRoles: prev.preferredRoles.includes(role)
-      ? prev.preferredRoles.filter(r => r !== role)
-      : [...prev.preferredRoles, role]
+    ...prev, preferredRoles: prev.preferredRoles.includes(role) ? prev.preferredRoles.filter(r => r !== role) : [...prev.preferredRoles, role]
   }));
 
-  // Extra links
-  const addExtraLink = () => setExtraLinks(prev => [...prev, '']);
-  const updateExtraLink = (idx, val) => {
-    const updated = [...extraLinks];
-    updated[idx] = val;
-    setExtraLinks(updated);
-  };
-  const removeExtraLink = (idx) => setExtraLinks(prev => prev.filter((_, i) => i !== idx));
+  // FIX 1: extra links handlers — pure setExtraLinks, no re-render of whole form
+  const addExtraLink = useCallback(() => setExtraLinks(prev => [...prev, '']), []);
+  const updateExtraLink = useCallback((idx, val) => setExtraLinks(prev => { const u = [...prev]; u[idx] = val; return u; }), []);
+  const removeExtraLink = useCallback((idx) => setExtraLinks(prev => prev.filter((_, i) => i !== idx)), []);
 
   const handleNext = () => {
     if (currentStep === 1 && !formData.fullName) { alert('Please enter your name'); return; }
-    if (currentStep < totalSteps) setCurrentStep(s => s + 1);
+    if (currentStep === 2) setStep2Attempted(true);
+    // FIX 3: block on step 4 if checkboxes not ticked
+    if (currentStep === 4 && (!formData.confirmWorkAuth || !formData.confirmStayInIndia)) {
+      setWorkAuthError(true); return;
+    }
+    setWorkAuthError(false);
+    if (currentStep < STEPS.length) setCurrentStep(s => s + 1);
   };
   const handleBack = () => { if (currentStep > 1) setCurrentStep(s => s - 1); };
 
+  // FIX 4: drop handler
+  const handleDrop = (e) => {
+    e.preventDefault(); setDragOver(false);
+    const file = e.dataTransfer.files[0];
+    if (file && file.type === 'application/pdf') hi('resume', file);
+  };
+
   const calculateCompleteness = () => {
     let s = 0;
-    if (formData.fullName) s += 10; if (formData.email) s += 5;
-    if (formData.phone) s += 5;
+    if (formData.fullName) s += 10; if (formData.email) s += 5; if (formData.phone) s += 5;
     if (formData.linkedinUrl) s += 8; if (formData.githubUrl) s += 7;
-    if (formData.skills.length >= 3) s += 20;
-    if (formData.projects.length >= 1) s += 15;
+    if (formData.skills.length >= 3) s += 20; if (formData.projects.length >= 1) s += 15;
     if (formData.preferredRoles.length > 0) s += 10;
     if (formData.education[0]?.school) s += 10;
     if (formData.resume) s += 5; if (formData.portfolioUrl) s += 5;
@@ -320,113 +326,98 @@ export default function StudentOnboarding() {
       if (formData.resume) resumeUrl = await uploadResume(formData.resume);
       await createStudentProfile({
         full_name: formData.fullName, email: formData.email, phone: formData.phone,
-        skills: formData.skills, projects: formData.projects,
-        preferred_roles: formData.preferredRoles,
+        skills: formData.skills, projects: formData.projects, preferred_roles: formData.preferredRoles,
         availability: formData.availability, work_preference: formData.workPreference,
-        github_url: formData.githubUrl, linkedin_url: formData.linkedinUrl,
-        portfolio_url: formData.portfolioUrl,
+        github_url: formData.githubUrl, linkedin_url: formData.linkedinUrl, portfolio_url: formData.portfolioUrl,
         education: formData.education, work_experience: formData.workExperience,
-        work_auth: {
-          dob: formData.dob, state: formData.state, city: formData.city,
-          pincode: formData.pincode, confirmed: formData.confirmWorkAuth,
-        },
-        resume_url: resumeUrl,
-        profile_completeness: calculateCompleteness(),
+        work_auth: { dob: formData.dob, state: formData.state, city: formData.city, pincode: formData.pincode, confirmed: formData.confirmWorkAuth },
+        resume_url: resumeUrl, profile_completeness: calculateCompleteness(),
       });
       const pendingSlug = localStorage.getItem('apply_after_login');
-      if (pendingSlug) { localStorage.removeItem('apply_after_login'); navigate(`/apply/${pendingSlug}`); }
-      else navigate('/swipe');
+      if (pendingSlug) { localStorage.removeItem('apply_after_login'); navigate(`/apply/${pendingSlug}`); } else navigate('/swipe');
     } catch (e) { alert('Failed: ' + e.message); }
     finally { setIsSubmitting(false); }
   };
 
   const completeness = calculateCompleteness();
   const catSkills = SKILL_OPTIONS.filter(s => s.category === activeCategory);
-  const missingLinkedin = !formData.linkedinUrl;
-  const missingGithub = !formData.githubUrl;
+  const showLinkedinWarn = step2Attempted && !formData.linkedinUrl;
+  const showGithubWarn = step2Attempted && !formData.githubUrl;
 
-  // ── Step renderers ────────────────────────────────────────────────────────────
+  // ── Steps ─────────────────────────────────────────────────────────────────────
 
-  // STEP 1 — Basics (name, email, phone only)
   const Step1 = () => (
     <div>
-      <StepHeader
-        label="01 — Basics"
-        title={<>Tell us who<br /><em>you are.</em></>}
-        sub="We only show recruiters what matters — your work, not your college name."
-      />
+      <StepHeader label="01 — Basics" title={<>Tell us who<br /><em>you are.</em></>}
+        sub="We only show recruiters what matters — your work, not your college name." />
       <div className="grid md:grid-cols-2 gap-4">
         <div className="md:col-span-2">
           <label className={labelCls}>Full Name <span className="text-[var(--green)]">*</span></label>
-          <input type="text" value={formData.fullName} onChange={e => hi('fullName', e.target.value)}
-            placeholder="Priya Sharma" className={inputCls} />
+          <input type="text" value={formData.fullName} onChange={e => hi('fullName', e.target.value)} placeholder="Priya Sharma" className={inputCls} />
         </div>
         <div>
           <label className={labelCls}>Email <span className="text-[var(--green)]">*</span></label>
-          <input type="email" value={formData.email} onChange={e => hi('email', e.target.value)}
-            placeholder="priya@email.com" className={inputCls} />
+          <input type="email" value={formData.email} onChange={e => hi('email', e.target.value)} placeholder="priya@email.com" className={inputCls} />
         </div>
         <div>
           <label className={labelCls}>Phone</label>
-          <input type="tel" value={formData.phone} onChange={e => hi('phone', e.target.value)}
-            placeholder="+91 98765 43210" className={inputCls} />
+          <input type="tel" value={formData.phone} onChange={e => hi('phone', e.target.value)} placeholder="+91 98765 43210" className={inputCls} />
         </div>
       </div>
     </div>
   );
 
-  // STEP 2 — Links
+  // FIX 1 + FIX 2: Step2 reads from formData (top-level), not local state — inputs never lose focus
   const Step2 = () => (
     <div>
-      <StepHeader
-        label="02 — Links"
-        title={<>Your online<br /><em>presence.</em></>}
-        sub="LinkedIn and GitHub are essential — they're how recruiters verify your work."
-      />
-
-      {/* LinkedIn + GitHub — highlighted if missing */}
+      <StepHeader label="02 — Links" title={<>Your online<br /><em>presence.</em></>}
+        sub="LinkedIn and GitHub are essential — they're how recruiters verify your work." />
       <div className="space-y-4 mb-6">
+
+        {/* LinkedIn */}
         <div>
           <label className={labelCls}>
-            LinkedIn URL <span className="text-[var(--green)]">*</span>
-            {missingLinkedin && <span className="ml-2 text-amber-500 normal-case tracking-normal font-normal">— important</span>}
+            <span className="flex items-center gap-2 flex-wrap">
+              <LinkedInLogo /> LinkedIn URL <span className="text-[var(--green)]">*</span>
+              {showLinkedinWarn && <span style={{ color: '#f59e0b', fontWeight: 400, textTransform: 'none', letterSpacing: 'normal' }}>— important</span>}
+            </span>
           </label>
-          <input
-            type="url" value={formData.linkedinUrl} onChange={e => hi('linkedinUrl', e.target.value)}
+          <input type="url" value={formData.linkedinUrl} onChange={e => hi('linkedinUrl', e.target.value)}
             placeholder="https://www.linkedin.com/in/..."
-            className={inputCls + (missingLinkedin ? ' border-amber-400 focus:border-amber-500' : '')}
-          />
-          {missingLinkedin && (
-            <p className="mt-1.5 text-xs text-amber-500 flex items-center gap-1">
+            className={inputCls} style={showLinkedinWarn ? { borderColor: '#fbbf24' } : {}} />
+          {showLinkedinWarn && (
+            <p className="mt-1.5 text-xs flex items-center gap-1" style={{ color: '#f59e0b' }}>
               <AlertCircle className="w-3.5 h-3.5" /> Recruiters look at this first. Add it to boost your match score.
             </p>
           )}
         </div>
 
+        {/* GitHub */}
         <div>
           <label className={labelCls}>
-            GitHub URL <span className="text-[var(--green)]">*</span>
-            {missingGithub && <span className="ml-2 text-amber-500 normal-case tracking-normal font-normal">— important</span>}
+            <span className="flex items-center gap-2 flex-wrap">
+              <GitHubLogo theme={theme} /> GitHub URL <span className="text-[var(--green)]">*</span>
+              {showGithubWarn && <span style={{ color: '#f59e0b', fontWeight: 400, textTransform: 'none', letterSpacing: 'normal' }}>— important</span>}
+            </span>
           </label>
-          <input
-            type="url" value={formData.githubUrl} onChange={e => hi('githubUrl', e.target.value)}
+          <input type="url" value={formData.githubUrl} onChange={e => hi('githubUrl', e.target.value)}
             placeholder="https://github.com/yourname"
-            className={inputCls + (missingGithub ? ' border-amber-400 focus:border-amber-500' : '')}
-          />
-          {missingGithub && (
-            <p className="mt-1.5 text-xs text-amber-500 flex items-center gap-1">
+            className={inputCls} style={showGithubWarn ? { borderColor: '#fbbf24' } : {}} />
+          {showGithubWarn && (
+            <p className="mt-1.5 text-xs flex items-center gap-1" style={{ color: '#f59e0b' }}>
               <AlertCircle className="w-3.5 h-3.5" /> Your GitHub shows real proof of work. Don't skip this.
             </p>
           )}
         </div>
 
+        {/* Portfolio */}
         <div>
           <label className={labelCls}>Portfolio</label>
           <input type="url" value={formData.portfolioUrl} onChange={e => hi('portfolioUrl', e.target.value)}
             placeholder="https://yourportfolio.com" className={inputCls} />
         </div>
 
-        {/* Other links */}
+        {/* Other Links — extraLinks is top-level state, inputs never remount */}
         <div>
           <label className={labelCls}>Other Links</label>
           <div className="space-y-2">
@@ -436,37 +427,43 @@ export default function StudentOnboarding() {
                   placeholder="https://example.com" className={inputCls + ' flex-1'} />
                 {extraLinks.length > 1 && (
                   <button onClick={() => removeExtraLink(idx)}
-                    className="px-3 text-[var(--text-dim)] hover:text-[var(--text)] border border-[var(--border)] rounded-lg transition-colors">
+                    className="px-3 rounded-lg border transition-colors"
+                    style={{ borderColor: 'var(--border)', color: 'var(--text-dim)' }}>
                     <X className="w-4 h-4" />
                   </button>
                 )}
               </div>
             ))}
-            <button onClick={addExtraLink}
-              className="flex items-center gap-1.5 text-sm text-[var(--text-dim)] hover:text-[var(--text)] transition-colors">
+            <button onClick={addExtraLink} className="flex items-center gap-1.5 text-sm transition-colors" style={{ color: 'var(--text-dim)' }}>
               <Plus className="w-4 h-4" /> Add more links
             </button>
           </div>
         </div>
       </div>
 
-      {/* Other Profiles */}
-      <div className="pt-5 border-t border-[var(--border)]">
+      {/* Other Profiles — also reads from formData top-level */}
+      <div className="pt-5" style={{ borderTop: '1px solid var(--border)' }}>
         <label className={labelCls}>Other Profiles</label>
         <div className="space-y-2">
           {[
-            { field: 'leetcodeUsername',  placeholder: 'leetcode-username',   icon: '⚡' },
-            { field: 'codechefUsername',  placeholder: 'codechef-username',   icon: '👨‍🍳' },
-            { field: 'codeforces',        placeholder: 'codeforces-username', icon: '🏆' },
-            { field: 'kaggleUsername',    placeholder: 'kaggle-username',     icon: '📊' },
-          ].map(({ field, placeholder, icon }) => (
-            <div key={field} className="flex items-center gap-3 px-4 py-3 rounded-lg border border-[var(--border)] bg-[var(--bg-subtle)]">
-              <span className="text-base w-5 text-center">{icon}</span>
-              <input type="text" value={formData[field]} onChange={e => hi(field, e.target.value)}
+            { field: 'leetcodeUsername',   placeholder: 'LeetCode username',   Logo: LeetCodeLogo },
+            { field: 'codechefUsername',   placeholder: 'CodeChef username',   Logo: CodeChefLogo },
+            { field: 'codeforcesUsername', placeholder: 'Codeforces username', Logo: CodeForcesLogo },
+            { field: 'kaggleUsername',     placeholder: 'Kaggle username',     Logo: KaggleLogo },
+          ].map(({ field, placeholder, Logo }) => (
+            <div key={field} className="flex items-center gap-3 px-4 py-3 rounded-lg border"
+              style={{ borderColor: 'var(--border)', background: 'var(--bg-subtle)' }}>
+              <Logo theme={theme} />
+              <input
+                type="text"
+                value={formData[field]}
+                onChange={e => hi(field, e.target.value)}
                 placeholder={placeholder}
-                className="flex-1 bg-transparent outline-none text-sm text-[var(--text)] placeholder:text-[var(--text-dim)]" />
+                style={{ flex: 1, background: 'transparent', outline: 'none', fontSize: '0.875rem', color: 'var(--text)' }}
+                className="placeholder:text-[var(--text-dim)]"
+              />
               {formData[field] && (
-                <button onClick={() => hi(field, '')} className="text-[var(--text-dim)] hover:text-[var(--text)]">
+                <button onClick={() => hi(field, '')} style={{ color: 'var(--text-dim)' }}>
                   <X className="w-4 h-4" />
                 </button>
               )}
@@ -477,111 +474,94 @@ export default function StudentOnboarding() {
     </div>
   );
 
-  // STEP 3 — Skills + Projects (combined, unchanged internally)
   const Step3 = () => (
     <div>
-      <StepHeader
-        label="03 — Skills & Projects"
-        title={<>What can you<br /><em>build & show?</em></>}
-        sub="Add your skills and the projects that prove them. This is your signal."
-      />
+      <StepHeader label="03 — Skills & Projects" title={<>What can you<br /><em>build & show?</em></>}
+        sub="Add your skills and the projects that prove them. This is your signal." />
 
-      {/* LinkedIn / GitHub missing warning */}
-      {(missingLinkedin || missingGithub) && (
-        <div className="mb-6 p-4 rounded-lg border border-amber-400/40 bg-amber-500/5 flex items-start gap-3">
-          <AlertCircle className="w-4 h-4 text-amber-500 flex-shrink-0 mt-0.5" />
+      {step2Attempted && (showLinkedinWarn || showGithubWarn) && (
+        <div className="mb-6 p-4 rounded-lg border flex items-start gap-3"
+          style={{ borderColor: 'rgba(251,191,36,0.4)', background: 'rgba(245,158,11,0.05)' }}>
+          <AlertCircle className="w-4 h-4 flex-shrink-0 mt-0.5" style={{ color: '#f59e0b' }} />
           <div>
-            <p className="text-sm font-medium text-amber-600 dark:text-amber-400">
-              {missingLinkedin && missingGithub
-                ? 'LinkedIn and GitHub not added'
-                : missingLinkedin ? 'LinkedIn not added' : 'GitHub not added'}
+            <p className="text-sm font-medium" style={{ color: 'var(--text)' }}>
+              {showLinkedinWarn && showGithubWarn ? 'LinkedIn and GitHub not added' : showLinkedinWarn ? 'LinkedIn not added' : 'GitHub not added'}
             </p>
-            <p className="text-xs text-[var(--text-dim)] mt-0.5">
+            <p className="text-xs mt-0.5" style={{ color: 'var(--text-dim)' }}>
               These are the most important signals for recruiters.{' '}
-              <button onClick={() => setCurrentStep(2)} className="underline text-[var(--text-mid)] hover:text-[var(--text)]">
-                Go back and add them.
-              </button>
+              <button onClick={() => setCurrentStep(2)} className="underline" style={{ color: 'var(--text-mid)' }}>Go back and add them.</button>
             </p>
           </div>
         </div>
       )}
 
       {/* GitHub import */}
-      <div className="mb-6 p-4 rounded-lg border border-[var(--border)] bg-[var(--bg-subtle)]">
+      <div className="mb-6 p-4 rounded-lg border" style={{ borderColor: 'var(--border)', background: 'var(--bg-subtle)' }}>
         <div className="flex items-center gap-3 mb-3">
-          <Github className="w-4 h-4 text-[var(--text-mid)]" />
-          <span className="text-sm font-medium text-[var(--text)]">Import from GitHub</span>
-          <span className="text-xs text-[var(--text-dim)]">— auto-fill skills & projects</span>
+          <Github className="w-4 h-4" style={{ color: 'var(--text-mid)' }} />
+          <span className="text-sm font-medium" style={{ color: 'var(--text)' }}>Import from GitHub</span>
+          <span className="text-xs" style={{ color: 'var(--text-dim)' }}>— auto-fill skills & projects</span>
         </div>
         <div className="flex gap-2">
           <input type="text" value={githubUsername} onChange={e => setGithubUsername(e.target.value)}
             placeholder="username" className={inputCls + ' flex-1'} />
           <button onClick={handleGitHubImport} disabled={githubImporting}
-            className="px-5 py-3 text-sm font-medium rounded-lg transition-opacity bg-[var(--text)] text-[var(--bg)] hover:opacity-80 disabled:opacity-40 flex items-center gap-2 whitespace-nowrap">
+            className="px-5 py-3 text-sm font-medium rounded-lg transition-opacity hover:opacity-80 disabled:opacity-40 flex items-center gap-2 whitespace-nowrap"
+            style={{ background: 'var(--text)', color: 'var(--bg)' }}>
             {githubImporting ? <><Loader className="w-4 h-4 animate-spin" />Importing…</> : 'Import'}
           </button>
         </div>
       </div>
 
-      {/* ── SKILLS ── */}
+      {/* Skills */}
       <div className="mb-8">
         <p className={labelCls}>Skills</p>
-
-        {/* Category tabs */}
         <div className="flex flex-wrap gap-2 mb-4">
           {SKILL_CATEGORIES.map(cat => (
             <button key={cat} onClick={() => setActiveCategory(cat)}
-              className={`px-3 py-1.5 text-xs font-medium rounded-full border transition-colors duration-150 ${
-                activeCategory === cat
-                  ? 'bg-[var(--text)] text-[var(--bg)] border-[var(--text)]'
-                  : 'bg-transparent text-[var(--text-mid)] border-[var(--border)] hover:border-[var(--border-mid)]'
-              }`}>
+              className="px-3 py-1.5 text-xs font-medium rounded-full border transition-colors duration-150"
+              style={activeCategory === cat
+                ? { background: 'var(--text)', color: 'var(--bg)', borderColor: 'var(--text)' }
+                : { background: 'transparent', color: 'var(--text-mid)', borderColor: 'var(--border)' }}>
               {cat}
             </button>
           ))}
         </div>
-
-        {/* Skill pills */}
         <div className="flex flex-wrap gap-2 mb-5">
           {catSkills.map(skill => {
             const added = formData.skills.some(s => s.name === skill.name);
             return (
               <button key={skill.id} onClick={() => addSkill(skill)}
-                className={`px-3 py-1.5 text-sm rounded-lg border transition-all duration-150 ${
-                  added
-                    ? 'bg-[var(--green-tint)] border-[var(--green)] text-[var(--green-text)] cursor-default'
-                    : 'bg-transparent border-[var(--border)] text-[var(--text-mid)] hover:border-[var(--border-mid)] hover:text-[var(--text)]'
-                }`}>
+                className="px-3 py-1.5 text-sm rounded-lg border transition-all duration-150"
+                style={added
+                  ? { background: 'var(--green-tint)', borderColor: 'var(--green)', color: 'var(--green-text)', cursor: 'default' }
+                  : { background: 'transparent', borderColor: 'var(--border)', color: 'var(--text-mid)' }}>
                 {skill.name}{added && ' ✓'}
               </button>
             );
           })}
         </div>
-
-        {/* Selected skills */}
         {formData.skills.length > 0 && (
           <div>
             <p className={labelCls}>Selected — {formData.skills.length} skill{formData.skills.length !== 1 && 's'}</p>
             <div className="space-y-2">
               {formData.skills.map(skill => (
-                <div key={skill.id} className="flex items-center gap-3 px-4 py-3 rounded-lg border border-[var(--border)] bg-[var(--bg-subtle)]">
-                  <span className="text-sm font-medium text-[var(--text)] flex-1">{skill.name}</span>
+                <div key={skill.id} className="flex items-center gap-3 px-4 py-3 rounded-lg border"
+                  style={{ borderColor: 'var(--border)', background: 'var(--bg-subtle)' }}>
+                  <span className="text-sm font-medium flex-1" style={{ color: 'var(--text)' }}>{skill.name}</span>
                   <div className="flex gap-1">
                     {[1,2,3,4,5].map(lv => (
                       <button key={lv} onClick={() => updateLevel(skill.id, lv)}
-                        className={`w-7 h-7 rounded text-xs font-medium transition-colors duration-100 ${
-                          skill.level >= lv
-                            ? 'bg-[var(--green)] text-white'
-                            : 'bg-[var(--bg)] border border-[var(--border)] text-[var(--text-dim)]'
-                        }`}>
+                        className="w-7 h-7 rounded text-xs font-medium transition-colors duration-100"
+                        style={skill.level >= lv
+                          ? { background: 'var(--green)', color: '#fff' }
+                          : { background: 'var(--bg)', border: '1px solid var(--border)', color: 'var(--text-dim)' }}>
                         {lv}
                       </button>
                     ))}
                   </div>
-                  <span className="text-xs text-[var(--text-dim)] w-20 text-right">{LEVEL_LABELS[skill.level]}</span>
-                  <button onClick={() => removeSkill(skill.id)} className="text-[var(--text-dim)] hover:text-[var(--text)] ml-1">
-                    <X className="w-4 h-4" />
-                  </button>
+                  <span className="text-xs w-20 text-right" style={{ color: 'var(--text-dim)' }}>{LEVEL_LABELS[skill.level]}</span>
+                  <button onClick={() => removeSkill(skill.id)} style={{ color: 'var(--text-dim)' }} className="ml-1"><X className="w-4 h-4" /></button>
                 </div>
               ))}
             </div>
@@ -589,65 +569,51 @@ export default function StudentOnboarding() {
         )}
       </div>
 
-      {/* ── PROJECTS ── */}
-      <div className="pt-6 border-t border-[var(--border)]">
+      {/* Projects */}
+      <div className="pt-6" style={{ borderTop: '1px solid var(--border)' }}>
         <p className={labelCls}>Projects</p>
-
-        <div className="p-4 rounded-lg border border-[var(--border)] bg-[var(--bg-subtle)] space-y-3 mb-4">
+        <div className="p-4 rounded-lg border space-y-3 mb-4" style={{ borderColor: 'var(--border)', background: 'var(--bg-subtle)' }}>
           <div className="grid md:grid-cols-2 gap-3">
             <div>
               <label className={labelCls}>Project title <span className="text-[var(--green)]">*</span></label>
-              <input type="text" value={newProject.title}
-                onChange={e => setNewProject({ ...newProject, title: e.target.value })}
-                placeholder="E-commerce Dashboard" className={inputCls} />
+              <input type="text" value={newProject.title} onChange={e => setNewProject({ ...newProject, title: e.target.value })} placeholder="E-commerce Dashboard" className={inputCls} />
             </div>
             <div>
               <label className={labelCls}>Tech stack <span className="text-[var(--green)]">*</span></label>
-              <input type="text" value={newProject.techStack}
-                onChange={e => setNewProject({ ...newProject, techStack: e.target.value })}
-                placeholder="React, Node.js, PostgreSQL" className={inputCls} />
+              <input type="text" value={newProject.techStack} onChange={e => setNewProject({ ...newProject, techStack: e.target.value })} placeholder="React, Node.js, PostgreSQL" className={inputCls} />
             </div>
           </div>
           <div>
             <label className={labelCls}>Description</label>
-            <textarea value={newProject.description} rows={2}
-              onChange={e => setNewProject({ ...newProject, description: e.target.value })}
-              placeholder="What does this project do?" className={inputCls + ' resize-none'} />
+            <textarea value={newProject.description} rows={2} onChange={e => setNewProject({ ...newProject, description: e.target.value })} placeholder="What does this project do?" className={inputCls + ' resize-none'} />
           </div>
           <div className="grid md:grid-cols-2 gap-3">
             <div>
               <label className={labelCls}>Live URL</label>
-              <input type="url" value={newProject.projectUrl}
-                onChange={e => setNewProject({ ...newProject, projectUrl: e.target.value })}
-                placeholder="https://" className={inputCls} />
+              <input type="url" value={newProject.projectUrl} onChange={e => setNewProject({ ...newProject, projectUrl: e.target.value })} placeholder="https://" className={inputCls} />
             </div>
             <div>
               <label className={labelCls}>GitHub URL</label>
-              <input type="url" value={newProject.githubUrl}
-                onChange={e => setNewProject({ ...newProject, githubUrl: e.target.value })}
-                placeholder="https://github.com/…" className={inputCls} />
+              <input type="url" value={newProject.githubUrl} onChange={e => setNewProject({ ...newProject, githubUrl: e.target.value })} placeholder="https://github.com/…" className={inputCls} />
             </div>
           </div>
-          <button onClick={addProject}
-            className="w-full py-3 rounded-lg text-sm font-medium border border-dashed border-[var(--border-mid)] text-[var(--text-mid)] hover:border-[var(--text)] hover:text-[var(--text)] transition-colors flex items-center justify-center gap-2">
+          <button onClick={addProject} className="w-full py-3 rounded-lg text-sm font-medium border border-dashed transition-colors flex items-center justify-center gap-2"
+            style={{ borderColor: 'var(--border-mid)', color: 'var(--text-mid)' }}>
             <Plus className="w-4 h-4" /> Add project
           </button>
         </div>
-
         {formData.projects.length > 0 && (
           <div className="space-y-3">
             {formData.projects.map(p => (
-              <div key={p.id} className="p-4 rounded-lg border border-[var(--border)] bg-[var(--bg-card)]">
+              <div key={p.id} className="p-4 rounded-lg border" style={{ borderColor: 'var(--border)', background: 'var(--bg-card)' }}>
                 <div className="flex items-start justify-between mb-1">
-                  <span className="font-medium text-[var(--text)] text-sm">{p.title || p.name}</span>
-                  <button onClick={() => removeProject(p.id)} className="text-[var(--text-dim)] hover:text-[var(--text)] ml-3">
-                    <X className="w-4 h-4" />
-                  </button>
+                  <span className="font-medium text-sm" style={{ color: 'var(--text)' }}>{p.title || p.name}</span>
+                  <button onClick={() => removeProject(p.id)} style={{ color: 'var(--text-dim)' }} className="ml-3"><X className="w-4 h-4" /></button>
                 </div>
-                {p.description && <p className="text-xs text-[var(--text-dim)] mb-2">{p.description}</p>}
+                {p.description && <p className="text-xs mb-2" style={{ color: 'var(--text-dim)' }}>{p.description}</p>}
                 <div className="flex flex-wrap gap-1.5">
                   {(Array.isArray(p.techStack) ? p.techStack : [p.techStack]).map((t, i) => (
-                    <span key={i} className="px-2 py-0.5 text-xs rounded border border-[var(--border)] text-[var(--text-mid)]">{t}</span>
+                    <span key={i} className="px-2 py-0.5 text-xs rounded border" style={{ borderColor: 'var(--border)', color: 'var(--text-mid)' }}>{t}</span>
                   ))}
                 </div>
               </div>
@@ -658,33 +624,23 @@ export default function StudentOnboarding() {
     </div>
   );
 
-  // STEP 4 — Work Authorization
+  // FIX 3: Work auth with validation
   const Step4 = () => (
     <div>
-      <StepHeader
-        label="04 — Work Authorization"
-        title={<>Your work<br /><em>eligibility.</em></>}
-        sub="Please ensure you meet local employment requirements. Accurate info helps recruiters process faster."
-      />
-
+      <StepHeader label="04 — Work Authorization" title={<>Your work<br /><em>eligibility.</em></>}
+        sub="Please ensure you meet local employment requirements. Accurate info helps recruiters process faster." />
       <div className="space-y-5">
-        {/* DOB */}
         <div>
           <label className={labelCls}>Date of Birth <span className="text-[var(--green)]">*</span></label>
           <input type="date" value={formData.dob} onChange={e => hi('dob', e.target.value)} className={inputCls} />
         </div>
-
-        {/* Location */}
-        <div className="pt-4 border-t border-[var(--border)]">
-          <p className="text-sm font-medium text-[var(--text)] mb-1">Location of Residence</p>
-          <p className="text-xs text-[var(--text-dim)] mb-4">
-            Where you're based for most of the year. This may differ from your home address.
-          </p>
+        <div className="pt-4" style={{ borderTop: '1px solid var(--border)' }}>
+          <p className="text-sm font-medium mb-1" style={{ color: 'var(--text)' }}>Location of Residence</p>
+          <p className="text-xs mb-4" style={{ color: 'var(--text-dim)' }}>Where you're based for most of the year. This may differ from your home address.</p>
           <div className="grid md:grid-cols-2 gap-4">
             <div className="md:col-span-2">
               <label className={labelCls}>Country</label>
-              <input type="text" value="India" disabled
-                className={inputCls + ' opacity-60 cursor-not-allowed'} />
+              <input type="text" value="India" disabled className={inputCls} style={{ opacity: 0.6, cursor: 'not-allowed' }} />
             </div>
             <div>
               <label className={labelCls}>State / Province <span className="text-[var(--green)]">*</span></label>
@@ -695,79 +651,71 @@ export default function StudentOnboarding() {
             </div>
             <div>
               <label className={labelCls}>City <span className="text-[var(--green)]">*</span></label>
-              <input type="text" value={formData.city} onChange={e => hi('city', e.target.value)}
-                placeholder="Mumbai" className={inputCls} />
+              <input type="text" value={formData.city} onChange={e => hi('city', e.target.value)} placeholder="Mumbai" className={inputCls} />
             </div>
             <div>
               <label className={labelCls}>Postal Code <span className="text-[var(--green)]">*</span></label>
-              <input type="text" value={formData.pincode} onChange={e => hi('pincode', e.target.value)}
-                placeholder="400001" className={inputCls} />
+              <input type="text" value={formData.pincode} onChange={e => hi('pincode', e.target.value)} placeholder="400001" className={inputCls} />
             </div>
           </div>
         </div>
 
-        {/* Working from different country */}
         <label className="flex items-start gap-3 cursor-pointer">
-          <input type="checkbox" checked={formData.workFromDifferentCountry}
-            onChange={e => hi('workFromDifferentCountry', e.target.checked)}
-            className="mt-0.5 accent-[var(--green)]" />
-          <span className="text-sm text-[var(--text-mid)]">
-            I will be physically working from a different country while performing services through HUNT.
-          </span>
+          <input type="checkbox" checked={formData.workFromDifferentCountry} onChange={e => hi('workFromDifferentCountry', e.target.checked)} className="mt-0.5 accent-[var(--green)]" />
+          <span className="text-sm" style={{ color: 'var(--text-mid)' }}>I will be physically working from a different country while performing services through HUNT.</span>
         </label>
 
-        {/* Work auth confirmations */}
-        <div className="space-y-4 pt-4 border-t border-[var(--border)]">
+        {workAuthError && (
+          <div className="p-3 rounded-lg border flex items-center gap-2" style={{ borderColor: 'rgba(239,68,68,0.4)', background: 'rgba(239,68,68,0.05)' }}>
+            <AlertCircle className="w-4 h-4 flex-shrink-0" style={{ color: '#ef4444' }} />
+            <p className="text-sm" style={{ color: '#ef4444' }}>Please confirm both authorizations below to continue.</p>
+          </div>
+        )}
+
+        <div className="space-y-4 pt-4" style={{ borderTop: '1px solid var(--border)' }}>
           <label className="flex items-start gap-3 cursor-pointer">
             <input type="checkbox" checked={formData.confirmWorkAuth}
-              onChange={e => hi('confirmWorkAuth', e.target.checked)}
+              onChange={e => { hi('confirmWorkAuth', e.target.checked); if (e.target.checked && formData.confirmStayInIndia) setWorkAuthError(false); }}
               className="mt-0.5 accent-[var(--green)]" />
             <div>
-              <p className="text-sm font-medium text-[var(--text)] mb-1">
+              <p className="text-sm font-medium mb-1" style={{ color: workAuthError && !formData.confirmWorkAuth ? '#ef4444' : 'var(--text)' }}>
                 I confirm that I am legally authorized to work from India. <span className="text-[var(--green)]">*</span>
               </p>
-              <p className="text-xs text-[var(--text-dim)] leading-relaxed">
-                By checking this, you confirm you have all necessary permits and rights to work from your indicated country,
-                and agree to hold HUNT harmless from any liability arising from failure to maintain proper work authorization.
+              <p className="text-xs leading-relaxed" style={{ color: 'var(--text-dim)' }}>
+                By checking this, you confirm you have all necessary permits and rights to work from your indicated country, and agree to hold HUNT harmless from any liability arising from failure to maintain proper work authorization.
               </p>
             </div>
           </label>
-
           <label className="flex items-start gap-3 cursor-pointer">
             <input type="checkbox" checked={formData.confirmStayInIndia}
-              onChange={e => hi('confirmStayInIndia', e.target.checked)}
+              onChange={e => { hi('confirmStayInIndia', e.target.checked); if (e.target.checked && formData.confirmWorkAuth) setWorkAuthError(false); }}
               className="mt-0.5 accent-[var(--green)]" />
             <div>
-              <p className="text-sm font-medium text-[var(--text)] mb-1">
+              <p className="text-sm font-medium mb-1" style={{ color: workAuthError && !formData.confirmStayInIndia ? '#ef4444' : 'var(--text)' }}>
                 I agree to remain working from India and notify HUNT in writing prior to any change. <span className="text-[var(--green)]">*</span>
               </p>
-              <p className="text-xs text-[var(--text-dim)] leading-relaxed">
-                By checking this, you agree to only work from the specified country unless prior written notice is given to HUNT,
-                and to maintain proper work authorization for any future country.
+              <p className="text-xs leading-relaxed" style={{ color: 'var(--text-dim)' }}>
+                By checking this, you agree to only work from the specified country unless prior written notice is given to HUNT, and to maintain proper work authorization for any future country.
               </p>
             </div>
           </label>
         </div>
 
-        {/* Digital Signature */}
-        <div className="pt-4 border-t border-[var(--border)]">
-          <p className="text-sm font-medium text-[var(--text)] mb-1">Digital Signature</p>
-          <p className="text-xs text-[var(--text-dim)] mb-4">Please provide your digital signature to confirm your agreement.</p>
+        <div className="pt-4" style={{ borderTop: '1px solid var(--border)' }}>
+          <p className="text-sm font-medium mb-1" style={{ color: 'var(--text)' }}>Digital Signature</p>
+          <p className="text-xs mb-4" style={{ color: 'var(--text-dim)' }}>Please provide your digital signature to confirm your agreement.</p>
           <div className="grid md:grid-cols-3 gap-4">
             <div>
               <label className={labelCls}>Full Name <span className="text-[var(--green)]">*</span></label>
-              <input type="text" value={formData.signatureName} onChange={e => hi('signatureName', e.target.value)}
-                placeholder={formData.fullName || 'Your full name'} className={inputCls} />
+              <input type="text" value={formData.signatureName} onChange={e => hi('signatureName', e.target.value)} placeholder={formData.fullName || 'Your full name'} className={inputCls} />
             </div>
             <div>
               <label className={labelCls}>Signature <span className="text-[var(--green)]">*</span></label>
-              <input type="text" value={formData.signatureText} onChange={e => hi('signatureText', e.target.value)}
-                placeholder="Ex: John Doe" className={inputCls} />
+              <input type="text" value={formData.signatureText} onChange={e => hi('signatureText', e.target.value)} placeholder="Ex: Priya Sharma" className={inputCls} />
             </div>
             <div>
               <label className={labelCls}>Date</label>
-              <input type="text" value={new Date().toLocaleDateString('en-US')} disabled
-                className={inputCls + ' opacity-60 cursor-not-allowed'} />
+              <input type="text" value={new Date().toLocaleDateString('en-US')} disabled className={inputCls} style={{ opacity: 0.6, cursor: 'not-allowed' }} />
             </div>
           </div>
         </div>
@@ -775,164 +723,83 @@ export default function StudentOnboarding() {
     </div>
   );
 
-  // STEP 5 — Education + Work Experience
   const Step5 = () => {
     const yearOptions = Array.from({ length: 30 }, (_, i) => new Date().getFullYear() - i);
     return (
       <div>
-        <StepHeader
-          label="05 — Education & Experience"
-          title={<>Confirm and add<br /><em>experiences.</em></>}
-          sub="Review your details. Projects you added in Skills will be attached automatically."
-        />
-
-        {/* Education */}
+        <StepHeader label="05 — Education & Experience" title={<>Confirm and add<br /><em>experiences.</em></>}
+          sub="Review your details. Projects you added in Skills will be attached automatically." />
         <div className="mb-8">
           <p className={labelCls}>Education</p>
           <div className="space-y-4">
             {formData.education.map((edu, idx) => (
-              <div key={idx} className="p-4 rounded-lg border border-[var(--border)] bg-[var(--bg-subtle)] relative">
+              <div key={idx} className="p-4 rounded-lg border relative" style={{ borderColor: 'var(--border)', background: 'var(--bg-subtle)' }}>
                 {formData.education.length > 1 && (
-                  <button onClick={() => removeEducation(idx)}
-                    className="absolute top-3 right-3 text-[var(--text-dim)] hover:text-[var(--text)]">
-                    <X className="w-4 h-4" />
-                  </button>
+                  <button onClick={() => removeEducation(idx)} className="absolute top-3 right-3" style={{ color: 'var(--text-dim)' }}><X className="w-4 h-4" /></button>
                 )}
                 <div className="grid md:grid-cols-2 gap-3">
-                  <div>
-                    <label className={labelCls}>School</label>
-                    <input type="text" value={edu.school} onChange={e => updateEducation(idx, 'school', e.target.value)}
-                      placeholder="Ex: VJTI Mumbai" className={inputCls} />
-                  </div>
-                  <div>
-                    <label className={labelCls}>Degree</label>
-                    <input type="text" value={edu.degree} onChange={e => updateEducation(idx, 'degree', e.target.value)}
-                      placeholder="Ex: B.Tech Computer Science" className={inputCls} />
-                  </div>
-                  <div>
-                    <label className={labelCls}>Start Year</label>
-                    <select value={edu.startYear} onChange={e => updateEducation(idx, 'startYear', e.target.value)} className={inputCls}>
-                      <option value="">Select year</option>
-                      {yearOptions.map(y => <option key={y} value={y}>{y}</option>)}
-                    </select>
-                  </div>
-                  <div>
-                    <label className={labelCls}>End Year</label>
-                    <select value={edu.endYear} onChange={e => updateEducation(idx, 'endYear', e.target.value)} className={inputCls}>
-                      <option value="">Select year</option>
-                      {yearOptions.map(y => <option key={y} value={y}>{y}</option>)}
-                    </select>
-                  </div>
-                  <div>
-                    <label className={labelCls}>Major</label>
-                    <input type="text" value={edu.major} onChange={e => updateEducation(idx, 'major', e.target.value)}
-                      placeholder="Ex: Computer Science" className={inputCls} />
-                  </div>
-                  <div>
-                    <label className={labelCls}>GPA / CGPA</label>
-                    <input type="text" value={edu.gpa} onChange={e => updateEducation(idx, 'gpa', e.target.value)}
-                      placeholder="Ex: 8.5 / 10" className={inputCls} />
-                  </div>
+                  <div><label className={labelCls}>School</label><input type="text" value={edu.school} onChange={e => updateEducation(idx, 'school', e.target.value)} placeholder="Ex: VJTI Mumbai" className={inputCls} /></div>
+                  <div><label className={labelCls}>Degree</label><input type="text" value={edu.degree} onChange={e => updateEducation(idx, 'degree', e.target.value)} placeholder="Ex: B.Tech Computer Science" className={inputCls} /></div>
+                  <div><label className={labelCls}>Start Year</label><select value={edu.startYear} onChange={e => updateEducation(idx, 'startYear', e.target.value)} className={inputCls}><option value="">Select year</option>{yearOptions.map(y => <option key={y} value={y}>{y}</option>)}</select></div>
+                  <div><label className={labelCls}>End Year</label><select value={edu.endYear} onChange={e => updateEducation(idx, 'endYear', e.target.value)} className={inputCls}><option value="">Select year</option>{yearOptions.map(y => <option key={y} value={y}>{y}</option>)}</select></div>
+                  <div><label className={labelCls}>Major</label><input type="text" value={edu.major} onChange={e => updateEducation(idx, 'major', e.target.value)} placeholder="Ex: Computer Science" className={inputCls} /></div>
+                  <div><label className={labelCls}>GPA / CGPA</label><input type="text" value={edu.gpa} onChange={e => updateEducation(idx, 'gpa', e.target.value)} placeholder="Ex: 8.5 / 10" className={inputCls} /></div>
                 </div>
               </div>
             ))}
-            <button onClick={addEducation}
-              className="flex items-center gap-1.5 text-sm text-[var(--text-dim)] hover:text-[var(--text)] transition-colors">
-              <Plus className="w-4 h-4" /> Add education
-            </button>
+            <button onClick={addEducation} className="flex items-center gap-1.5 text-sm transition-colors" style={{ color: 'var(--text-dim)' }}><Plus className="w-4 h-4" /> Add education</button>
           </div>
         </div>
-
-        {/* Work Experience */}
-        <div className="pt-6 border-t border-[var(--border)]">
+        <div className="pt-6" style={{ borderTop: '1px solid var(--border)' }}>
           <p className={labelCls}>Work Experience</p>
           <div className="space-y-4">
             {formData.workExperience.map((exp, idx) => (
-              <div key={idx} className="p-4 rounded-lg border border-[var(--border)] bg-[var(--bg-subtle)] relative">
+              <div key={idx} className="p-4 rounded-lg border relative" style={{ borderColor: 'var(--border)', background: 'var(--bg-subtle)' }}>
                 {formData.workExperience.length > 1 && (
-                  <button onClick={() => removeWorkExp(idx)}
-                    className="absolute top-3 right-3 text-[var(--text-dim)] hover:text-[var(--text)]">
-                    <X className="w-4 h-4" />
-                  </button>
+                  <button onClick={() => removeWorkExp(idx)} className="absolute top-3 right-3" style={{ color: 'var(--text-dim)' }}><X className="w-4 h-4" /></button>
                 )}
                 <div className="grid md:grid-cols-2 gap-3">
-                  <div>
-                    <label className={labelCls}>Company</label>
-                    <input type="text" value={exp.company} onChange={e => updateWorkExp(idx, 'company', e.target.value)}
-                      placeholder="Ex: Razorpay" className={inputCls} />
-                  </div>
-                  <div>
-                    <label className={labelCls}>Role</label>
-                    <input type="text" value={exp.role} onChange={e => updateWorkExp(idx, 'role', e.target.value)}
-                      placeholder="Ex: Software Intern" className={inputCls} />
-                  </div>
-                  <div>
-                    <label className={labelCls}>Start Year</label>
-                    <select value={exp.startYear} onChange={e => updateWorkExp(idx, 'startYear', e.target.value)} className={inputCls}>
-                      <option value="">Select year</option>
-                      {yearOptions.map(y => <option key={y} value={y}>{y}</option>)}
-                    </select>
-                  </div>
-                  <div>
-                    <label className={labelCls}>End Year</label>
-                    <select value={exp.endYear} onChange={e => updateWorkExp(idx, 'endYear', e.target.value)} className={inputCls}>
-                      <option value="">Select year</option>
-                      {yearOptions.map(y => <option key={y} value={y}>{y}</option>)}
-                    </select>
-                  </div>
-                  <div>
-                    <label className={labelCls}>City</label>
-                    <input type="text" value={exp.city} onChange={e => updateWorkExp(idx, 'city', e.target.value)}
-                      placeholder="Ex: Bangalore" className={inputCls} />
-                  </div>
+                  <div><label className={labelCls}>Company</label><input type="text" value={exp.company} onChange={e => updateWorkExp(idx, 'company', e.target.value)} placeholder="Ex: Razorpay" className={inputCls} /></div>
+                  <div><label className={labelCls}>Role</label><input type="text" value={exp.role} onChange={e => updateWorkExp(idx, 'role', e.target.value)} placeholder="Ex: Software Intern" className={inputCls} /></div>
+                  <div><label className={labelCls}>Start Year</label><select value={exp.startYear} onChange={e => updateWorkExp(idx, 'startYear', e.target.value)} className={inputCls}><option value="">Select year</option>{yearOptions.map(y => <option key={y} value={y}>{y}</option>)}</select></div>
+                  <div><label className={labelCls}>End Year</label><select value={exp.endYear} onChange={e => updateWorkExp(idx, 'endYear', e.target.value)} className={inputCls}><option value="">Select year</option>{yearOptions.map(y => <option key={y} value={y}>{y}</option>)}</select></div>
+                  <div><label className={labelCls}>City</label><input type="text" value={exp.city} onChange={e => updateWorkExp(idx, 'city', e.target.value)} placeholder="Ex: Bangalore" className={inputCls} /></div>
                 </div>
                 <div className="mt-3">
                   <label className={labelCls}>Description</label>
-                  <textarea value={exp.description} rows={3}
-                    onChange={e => updateWorkExp(idx, 'description', e.target.value)}
-                    placeholder="Ex: Built REST APIs for payment gateway processing 10k+ transactions/day..."
-                    className={inputCls + ' resize-none mt-0'} />
+                  <textarea value={exp.description} rows={3} onChange={e => updateWorkExp(idx, 'description', e.target.value)}
+                    placeholder="Ex: Built REST APIs for payment gateway processing 10k+ transactions/day..." className={inputCls + ' resize-none'} />
                 </div>
               </div>
             ))}
-            <button onClick={addWorkExp}
-              className="flex items-center gap-1.5 text-sm text-[var(--text-dim)] hover:text-[var(--text)] transition-colors">
-              <Plus className="w-4 h-4" /> Add work experience
-            </button>
+            <button onClick={addWorkExp} className="flex items-center gap-1.5 text-sm transition-colors" style={{ color: 'var(--text-dim)' }}><Plus className="w-4 h-4" /> Add work experience</button>
           </div>
         </div>
       </div>
     );
   };
 
-  // STEP 6 — Finish (roles, availability, resume, completeness — links removed)
+  // FIX 4: Resume drop zone
   const Step6 = () => (
     <div>
-      <StepHeader
-        label="06 — Finish"
-        title={<>Almost there.<br /><em>Set preferences.</em></>}
-        sub="What kind of roles and setup works best for you?"
-      />
-
+      <StepHeader label="06 — Finish" title={<>Almost there.<br /><em>Set preferences.</em></>}
+        sub="What kind of roles and setup works best for you?" />
       <div className="space-y-6">
-        {/* Roles */}
         <div>
           <label className={labelCls}>Preferred roles</label>
           <div className="grid grid-cols-2 gap-2">
             {ROLE_OPTIONS.map(role => (
               <button key={role} onClick={() => toggleRole(role)}
-                className={`px-4 py-3 rounded-lg text-sm text-left transition-all border ${
-                  formData.preferredRoles.includes(role)
-                    ? 'bg-[var(--green-tint)] border-[var(--green)] text-[var(--green-text)] font-medium'
-                    : 'bg-transparent border-[var(--border)] text-[var(--text-mid)] hover:border-[var(--border-mid)]'
-                }`}>
+                className="px-4 py-3 rounded-lg text-sm text-left transition-all border"
+                style={formData.preferredRoles.includes(role)
+                  ? { background: 'var(--green-tint)', borderColor: 'var(--green)', color: 'var(--green-text)', fontWeight: 500 }
+                  : { background: 'transparent', borderColor: 'var(--border)', color: 'var(--text-mid)' }}>
                 {role}
               </button>
             ))}
           </div>
         </div>
 
-        {/* Selects */}
         <div className="grid md:grid-cols-2 gap-4">
           <div>
             <label className={labelCls}>Availability</label>
@@ -953,35 +820,67 @@ export default function StudentOnboarding() {
           </div>
         </div>
 
-        {/* Resume */}
+        {/* FIX 4: Resume section matching screenshot */}
         <div>
-          <label className={labelCls}>Resume (PDF)</label>
-          <label className="flex items-center gap-3 px-4 py-3 rounded-lg border border-dashed border-[var(--border-mid)] bg-[var(--bg-subtle)] cursor-pointer hover:border-[var(--border-mid)] transition-colors">
-            <span className="text-sm text-[var(--text-dim)]">
-              {formData.resume ? formData.resume.name : 'Drop your resume here or browse files — PDF up to 3MB'}
-            </span>
-            <input type="file" accept=".pdf" onChange={e => hi('resume', e.target.files[0])} className="sr-only" />
-            <span className="ml-auto text-xs px-3 py-1.5 rounded border border-[var(--border)] text-[var(--text-mid)] whitespace-nowrap">Browse</span>
+          <label className={labelCls}>Resume</label>
+          <p className="text-sm mb-3" style={{ color: 'var(--text-mid)' }}>Autofill your profile in seconds by uploading your resume</p>
+
+          {/* Tip pill */}
+          <div className="inline-flex items-center gap-2 px-3 py-2 rounded-full border mb-4 text-xs"
+            style={{ borderColor: 'var(--green)', background: 'var(--green-tint)', color: 'var(--green-text)' }}>
+            <span>💡</span>
+            <span>Tip: Hiring managers are more likely to reach out when they see a resume attached</span>
+          </div>
+
+          {!formData.resume ? (
+            <div
+              onDrop={handleDrop}
+              onDragOver={e => { e.preventDefault(); setDragOver(true); }}
+              onDragLeave={() => setDragOver(false)}
+              onClick={() => fileInputRef.current?.click()}
+              className="cursor-pointer rounded-xl border-2 border-dashed flex flex-col items-center justify-center py-12 px-6 text-center transition-colors duration-150"
+              style={{
+                borderColor: dragOver ? 'var(--green)' : 'var(--border-mid)',
+                background: dragOver ? 'var(--green-tint)' : 'var(--bg-subtle)',
+              }}>
+              {/* Upload icon in circle */}
+              <div className="w-14 h-14 rounded-full flex items-center justify-center mb-4"
+                style={{ background: 'var(--bg-card)', border: '1px solid var(--border)' }}>
+                <Upload className="w-6 h-6" style={{ color: 'var(--text-dim)' }} />
+              </div>
+              <p className="text-sm font-medium mb-1" style={{ color: 'var(--text)' }}>Drop your resume here</p>
+              <p className="text-sm" style={{ color: 'var(--text-mid)' }}>
+                or <span style={{ color: 'var(--green)', textDecoration: 'underline' }}>browse files</span> on your computer
+              </p>
+              <p className="text-xs mt-2" style={{ color: 'var(--text-dim)' }}>Supports PDF up to 3MB</p>
+              <input ref={fileInputRef} type="file" accept=".pdf" className="sr-only"
+                onChange={e => { if (e.target.files?.[0]) hi('resume', e.target.files[0]); }} />
+            </div>
+          ) : (
+            <div className="flex items-center gap-3 px-4 py-3 rounded-xl border"
+              style={{ borderColor: 'var(--green)', background: 'var(--green-tint)' }}>
+              <CheckCircle2 className="w-5 h-5 flex-shrink-0" style={{ color: 'var(--green)' }} />
+              <span className="text-sm flex-1" style={{ color: 'var(--text)' }}>{formData.resume.name}</span>
+              <button onClick={() => hi('resume', null)} style={{ color: 'var(--text-dim)' }}><X className="w-4 h-4" /></button>
+            </div>
+          )}
+
+          <label className="flex items-center gap-2 mt-3 cursor-pointer">
+            <input type="checkbox" checked={formData.noResume} onChange={e => hi('noResume', e.target.checked)} className="accent-[var(--green)]" />
+            <span className="text-sm" style={{ color: 'var(--text-mid)' }}>I don't have a resume</span>
           </label>
-          <p className="text-xs text-[var(--text-dim)] mt-1.5 flex items-center gap-1">
-            <CheckCircle2 className="w-3.5 h-3.5 text-[var(--green)]" />
-            Tip: Recruiters are more likely to reach out when they see a resume attached.
-          </p>
         </div>
 
         {/* Completeness */}
-        <div className="p-4 rounded-lg border border-[var(--border)] bg-[var(--bg-subtle)]">
+        <div className="p-4 rounded-lg border" style={{ borderColor: 'var(--border)', background: 'var(--bg-subtle)' }}>
           <div className="flex items-center justify-between mb-3">
-            <span className="text-sm font-medium text-[var(--text)]">Profile completeness</span>
-            <span className="font-serif text-2xl text-[var(--green)]" style={{ fontFamily: "'Editorial New', Georgia, serif" }}>
-              {completeness}%
-            </span>
+            <span className="text-sm font-medium" style={{ color: 'var(--text)' }}>Profile completeness</span>
+            <span className="text-2xl" style={{ fontFamily: "'Editorial New', Georgia, serif", color: 'var(--green)' }}>{completeness}%</span>
           </div>
-          <div className="h-1.5 rounded-full bg-[var(--border)] overflow-hidden">
-            <div className="h-full rounded-full bg-[var(--green)] transition-all duration-500"
-              style={{ width: `${completeness}%` }} />
+          <div className="h-1.5 rounded-full overflow-hidden" style={{ background: 'var(--border)' }}>
+            <div className="h-full rounded-full transition-all duration-500" style={{ width: `${completeness}%`, background: 'var(--green)' }} />
           </div>
-          <p className="text-xs text-[var(--text-dim)] mt-2">
+          <p className="text-xs mt-2" style={{ color: 'var(--text-dim)' }}>
             {completeness >= 80 ? 'Ready to start swiping — strong profile.' : 'Add more to improve your match scores.'}
           </p>
         </div>
@@ -996,24 +895,19 @@ export default function StudentOnboarding() {
     <div className="h-screen flex flex-col overflow-hidden transition-colors duration-300"
       style={{ background: 'var(--bg)', color: 'var(--text)', fontFamily: "'DM Sans', system-ui, sans-serif" }}>
 
-      {/* ── Nav (sticky, never scrolls) ── */}
-      <nav style={{ borderBottom: '1px solid var(--border)', background: 'var(--bg)' }}
-        className="flex-shrink-0 z-50 flex items-center justify-between px-6 md:px-12 py-4">
-        <span style={{ fontFamily: "'DM Sans', system-ui, sans-serif", letterSpacing: '0.12em' }}
-          className="text-base font-medium">HUNT</span>
-        <span className="text-xs tracking-widest uppercase" style={{ color: 'var(--text-dim)' }}>
-          Build your profile
-        </span>
-        <button onClick={toggleTheme}
-          className="w-9 h-9 rounded-full flex items-center justify-center border border-[var(--border)] transition-colors hover:border-[var(--border-mid)]"
-          style={{ background: 'var(--bg-subtle)', color: 'var(--text-mid)' }}>
+      {/* Nav */}
+      <nav className="flex-shrink-0 z-50 flex items-center justify-between px-6 md:px-12 py-4"
+        style={{ borderBottom: '1px solid var(--border)', background: 'var(--bg)' }}>
+        <span className="text-base font-medium" style={{ letterSpacing: '0.12em' }}>HUNT</span>
+        <span className="text-xs tracking-widest uppercase" style={{ color: 'var(--text-dim)' }}>Build your profile</span>
+        <button onClick={toggleTheme} className="w-9 h-9 rounded-full flex items-center justify-center border transition-colors"
+          style={{ border: '1px solid var(--border)', background: 'var(--bg-subtle)', color: 'var(--text-mid)' }}>
           {theme === 'light' ? <Moon className="w-4 h-4" /> : <Sun className="w-4 h-4" />}
         </button>
       </nav>
 
-      {/* ── Progress bar (sticky, never scrolls) ── */}
-      <div className="flex-shrink-0 px-6 md:px-12 py-5"
-        style={{ borderBottom: '1px solid var(--border)', background: 'var(--bg)' }}>
+      {/* FIX 5: Progress bar — no bottom border */}
+      <div className="flex-shrink-0 px-6 md:px-12 py-5" style={{ background: 'var(--bg)' }}>
         <div className="max-w-2xl mx-auto">
           <div className="flex items-center justify-between">
             {STEPS.map((s, i) => {
@@ -1022,19 +916,15 @@ export default function StudentOnboarding() {
               return (
                 <React.Fragment key={s.num}>
                   <div className="flex flex-col items-center gap-1.5">
-                    <div className={`w-8 h-8 rounded-full flex items-center justify-center text-xs font-medium transition-all duration-200 border ${
-                      active  ? 'border-[var(--text)] text-[var(--bg)]'
-                      : done  ? 'border-[var(--green)] text-[var(--green-text)]'
-                               : 'border-[var(--border)] text-[var(--text-dim)]'
-                    }`}
+                    <div className="w-8 h-8 rounded-full flex items-center justify-center text-xs font-medium transition-all duration-200 border"
                       style={{
-                        background: active ? 'var(--text)' : done ? 'var(--green-tint)' : 'var(--bg)'
+                        borderColor: active ? 'var(--text)' : done ? 'var(--green)' : 'var(--border)',
+                        background: active ? 'var(--text)' : done ? 'var(--green-tint)' : 'var(--bg)',
+                        color: active ? 'var(--bg)' : done ? 'var(--green-text)' : 'var(--text-dim)',
                       }}>
                       {done ? <CheckCircle2 className="w-4 h-4" /> : s.num}
                     </div>
-                    <span className="text-xs hidden md:block" style={{ color: active ? 'var(--text)' : 'var(--text-dim)' }}>
-                      {s.label}
-                    </span>
+                    <span className="text-xs hidden md:block" style={{ color: active ? 'var(--text)' : 'var(--text-dim)' }}>{s.label}</span>
                   </div>
                   {i < STEPS.length - 1 && (
                     <div className="flex-1 mx-2 h-px" style={{ background: currentStep > s.num ? 'var(--green)' : 'var(--border)' }} />
@@ -1046,24 +936,20 @@ export default function StudentOnboarding() {
         </div>
       </div>
 
-      {/* ── Scrollable content area ── */}
+      {/* Scrollable content */}
       <div ref={contentRef} className="flex-1 overflow-y-auto">
         <div className="max-w-2xl mx-auto px-6 py-10">
-          {/* Card */}
-          <div className="rounded-xl border p-6 md:p-10 mb-8"
-            style={{ background: 'var(--bg-card)', borderColor: 'var(--border)' }}>
+          <div className="rounded-xl border p-6 md:p-10 mb-8" style={{ background: 'var(--bg-card)', borderColor: 'var(--border)' }}>
             <CurrentStepComponent />
           </div>
-
-          {/* Navigation */}
           <div className="flex items-center justify-between pb-12">
             <button onClick={handleBack} disabled={currentStep === 1}
               className="px-6 py-3 text-sm font-medium rounded-lg border transition-colors disabled:opacity-30"
               style={{ borderColor: 'var(--border)', color: 'var(--text-mid)', background: 'transparent' }}>
               Back
             </button>
-            <span className="text-xs" style={{ color: 'var(--text-dim)' }}>{currentStep} / {totalSteps}</span>
-            {currentStep < totalSteps ? (
+            <span className="text-xs" style={{ color: 'var(--text-dim)' }}>{currentStep} / {STEPS.length}</span>
+            {currentStep < STEPS.length ? (
               <button onClick={handleNext}
                 className="px-6 py-3 text-sm font-medium rounded-lg flex items-center gap-2 transition-opacity hover:opacity-80"
                 style={{ background: 'var(--text)', color: 'var(--bg)' }}>
@@ -1073,9 +959,7 @@ export default function StudentOnboarding() {
               <button onClick={handleSubmit} disabled={isSubmitting}
                 className="px-6 py-3 text-sm font-medium rounded-lg flex items-center gap-2 transition-opacity hover:opacity-80 disabled:opacity-40"
                 style={{ background: 'var(--green)', color: '#fff' }}>
-                {isSubmitting
-                  ? <><Loader className="w-4 h-4 animate-spin" /> Creating…</>
-                  : <><CheckCircle2 className="w-4 h-4" /> Complete profile</>}
+                {isSubmitting ? <><Loader className="w-4 h-4 animate-spin" /> Creating…</> : <><CheckCircle2 className="w-4 h-4" /> Complete profile</>}
               </button>
             )}
           </div>
@@ -1085,20 +969,15 @@ export default function StudentOnboarding() {
   );
 }
 
-// ── Sub-component ───────────────────────────────────────────────────────────────
 function StepHeader({ label, title, sub }) {
   return (
     <div className="mb-8">
-      <p className="text-xs font-medium tracking-widest uppercase mb-4" style={{ color: 'var(--text-dim)' }}>
-        {label}
-      </p>
+      <p className="text-xs font-medium tracking-widest uppercase mb-4" style={{ color: 'var(--text-dim)' }}>{label}</p>
       <h2 className="text-4xl md:text-5xl font-normal leading-none mb-4 tracking-tight"
         style={{ fontFamily: "'Editorial New', Georgia, serif", color: 'var(--text)' }}>
         {title}
       </h2>
-      <p className="text-sm font-light leading-relaxed" style={{ color: 'var(--text-mid)', maxWidth: '380px' }}>
-        {sub}
-      </p>
+      <p className="text-sm font-light leading-relaxed" style={{ color: 'var(--text-mid)', maxWidth: '380px' }}>{sub}</p>
     </div>
   );
 }
