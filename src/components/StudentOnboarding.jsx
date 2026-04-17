@@ -486,14 +486,14 @@ export default function StudentOnboarding() {
           <label className={labelCls}>
             <span className="flex items-center gap-2 flex-wrap">
               <LinkedInLogo /> LinkedIn URL <span className="text-[var(--green)]">*</span>
-              {showLinkedinWarn && <span style={{ color: '#f59e0b', fontWeight: 400, textTransform: 'none', letterSpacing: 'normal' }}>— important</span>}
+              {showLinkedinWarn && <span style={{ color: '#ef4444', fontWeight: 400, textTransform: 'none', letterSpacing: 'normal' }}>— important</span>}
             </span>
           </label>
           <input type="url" value={formData.linkedinUrl} onChange={e => hi('linkedinUrl', e.target.value)}
             placeholder="https://www.linkedin.com/in/..." className={inputCls}
-            style={showLinkedinWarn ? { borderColor: '#fbbf24' } : {}} />
+            style={showLinkedinWarn ? { borderColor: '#ef4444' } : {}} />
           {showLinkedinWarn && (
-            <p className="mt-1.5 text-xs flex items-center gap-1" style={{ color: '#f59e0b' }}>
+            <p className="mt-1.5 text-xs flex items-center gap-1" style={{ color: '#ef4444' }}>
               <AlertCircle className="w-3.5 h-3.5" /> Recruiters look at this first. Add it to boost your match score.
             </p>
           )}
@@ -502,14 +502,14 @@ export default function StudentOnboarding() {
           <label className={labelCls}>
             <span className="flex items-center gap-2 flex-wrap">
               <GitHubLogo theme={theme} /> GitHub URL <span className="text-[var(--green)]">*</span>
-              {showGithubWarn && <span style={{ color: '#f59e0b', fontWeight: 400, textTransform: 'none', letterSpacing: 'normal' }}>— important</span>}
+              {showGithubWarn && <span style={{ color: '#ef4444', fontWeight: 400, textTransform: 'none', letterSpacing: 'normal' }}>— important</span>}
             </span>
           </label>
           <input type="url" value={formData.githubUrl} onChange={e => hi('githubUrl', e.target.value)}
             placeholder="https://github.com/yourname" className={inputCls}
-            style={showGithubWarn ? { borderColor: '#fbbf24' } : {}} />
+            style={showGithubWarn ? { borderColor: '#ef4444' } : {}} />
           {showGithubWarn && (
-            <p className="mt-1.5 text-xs flex items-center gap-1" style={{ color: '#f59e0b' }}>
+            <p className="mt-1.5 text-xs flex items-center gap-1" style={{ color: '#ef4444' }}>
               <AlertCircle className="w-3.5 h-3.5" /> Your GitHub shows real proof of work. Don't skip this.
             </p>
           )}
@@ -590,8 +590,8 @@ export default function StudentOnboarding() {
         sub="Add your skills and the projects that prove them. This is your signal." />
       {step2Attempted && (showLinkedinWarn || showGithubWarn) && (
         <div className="mb-6 p-4 rounded-lg border flex items-start gap-3"
-          style={{ borderColor: 'rgba(251,191,36,0.4)', background: 'rgba(245,158,11,0.05)' }}>
-          <AlertCircle className="w-4 h-4 flex-shrink-0 mt-0.5" style={{ color: '#f59e0b' }} />
+          style={{ borderColor: 'rgba(239,68,68,0.4)', background: 'rgba(239,68,68,0.05)' }}>
+          <AlertCircle className="w-4 h-4 flex-shrink-0 mt-0.5" style={{ color: '#ef4444' }} />
           <div>
             <p className="text-sm font-medium" style={{ color: 'var(--text)' }}>
               {showLinkedinWarn && showGithubWarn ? 'LinkedIn and GitHub not added' : showLinkedinWarn ? 'LinkedIn not added' : 'GitHub not added'}
