@@ -207,7 +207,7 @@ const STEPS = [
 ];
 
 const inputCls = `w-full px-4 py-3 rounded-lg text-sm font-normal transition-colors duration-150 outline-none bg-[var(--bg-subtle)] border border-[var(--border)] text-[var(--text)] placeholder:text-[var(--text-dim)] focus:border-[var(--focus)]`;
-const labelCls = 'block text-xs font-medium tracking-widest uppercase text-[var(--text-dim)] mb-2';
+const labelCls = 'block text-xs font-medium tracking-widest uppercase text-[var(--text)] mb-2';
 // Section headings (Education, Work Experience, Skills, Projects, etc.) use this
 const sectionLabelCls = 'block text-xs font-semibold tracking-widest uppercase mb-2' ;
 
@@ -315,6 +315,9 @@ export default function StudentOnboarding() {
   const [githubUsername, setGithubUsername] = useState('');
   const [activeCategory, setActiveCategory] = useState(SKILL_CATEGORIES[0]);
   const [extraLinks, setExtraLinks] = useState(['']);
+  // Which platform profile rows are currently shown (user can remove rows)
+  const ALL_PROFILES = ['leetcodeUsername','codechefUsername','codeforcesUsername','kaggleUsername','hackerrankUsername','codingninjaUsername','gfgUsername','codestudioUsername'];
+  const [visibleProfiles, setVisibleProfiles] = useState(ALL_PROFILES);
   const [step2Attempted, setStep2Attempted] = useState(false);
   const [workAuthError, setWorkAuthError] = useState(false);
   const [dragOver, setDragOver] = useState(false);
@@ -540,32 +543,42 @@ export default function StudentOnboarding() {
       <div className="pt-5" style={{ borderTop: '1px solid var(--border)' }}>
         <label className={sectionLabelCls} style={{ color: 'var(--text)' }}>Other Profiles</label>
         <div className="space-y-2">
-          {[
-            { field: 'leetcodeUsername',    placeholder: 'LeetCode username',    Logo: LeetCodeLogo },
-            { field: 'codechefUsername',    placeholder: 'CodeChef username',    Logo: CodeChefLogo },
-            { field: 'codeforcesUsername',  placeholder: 'Codeforces username',  Logo: CodeForcesLogo },
-            { field: 'kaggleUsername',      placeholder: 'Kaggle username',      Logo: KaggleLogo },
-            { field: 'hackerrankUsername',  placeholder: 'HackerRank username',  Logo: HackerRankLogo },
-            { field: 'codingninjaUsername', placeholder: 'Coding Ninjas username', Logo: CodingNinjaLogo },
-            { field: 'gfgUsername',         placeholder: 'GeeksForGeeks username', Logo: GeeksForGeeksLogo },
-            { field: 'codestudioUsername',  placeholder: 'CodeStudio username',  Logo: CodeStudioLogo },
-          ].map(({ field, placeholder, Logo }) => (
-            <div key={field} className="flex items-center gap-3 px-4 py-3 rounded-lg border"
-              style={{ borderColor: 'var(--border)', background: 'var(--bg-subtle)' }}>
-              <Logo theme={theme} />
-              <input type="text" value={formData[field]} onChange={e => hi(field, e.target.value)}
-                placeholder={placeholder}
-                style={{ flex: 1, background: 'transparent', outline: 'none', fontSize: '0.875rem', color: 'var(--text)' }}
-                className="placeholder:text-[var(--text-dim)]" />
-              <button
-                onClick={() => hi(field, '')}
-                style={{ color: formData[field] ? 'var(--text-dim)' : 'var(--border-mid)', flexShrink: 0 }}
-                tabIndex={-1}
-              >
-                <X className="w-4 h-4" />
-              </button>
-            </div>
-          ))}
+          {(() => {
+            const PROFILE_META = {
+              leetcodeUsername:   { placeholder: 'LeetCode username',     Logo: LeetCodeLogo },
+              codechefUsername:   { placeholder: 'CodeChef username',     Logo: CodeChefLogo },
+              codeforcesUsername: { placeholder: 'Codeforces username',   Logo: CodeForcesLogo },
+              kaggleUsername:     { placeholder: 'Kaggle username',       Logo: KaggleLogo },
+              hackerrankUsername: { placeholder: 'HackerRank username',   Logo: HackerRankLogo },
+              codingninjaUsername:{ placeholder: 'Coding Ninjas username', Logo: CodingNinjaLogo },
+              gfgUsername:        { placeholder: 'GeeksForGeeks username', Logo: GeeksForGeeksLogo },
+              codestudioUsername: { placeholder: 'CodeStudio username',   Logo: CodeStudioLogo },
+            };
+            return visibleProfiles.map((field) => {
+              const { placeholder, Logo } = PROFILE_META[field];
+              return (
+                <div key={field} className="flex items-center gap-3 px-4 py-3 rounded-lg border"
+                  style={{ borderColor: 'var(--border)', background: 'var(--bg-subtle)' }}>
+                  <Logo theme={theme} />
+                  <input type="text" value={formData[field]} onChange={e => hi(field, e.target.value)}
+                    placeholder={placeholder}
+                    style={{ flex: 1, background: 'transparent', outline: 'none', fontSize: '0.875rem', color: 'var(--text)' }}
+                    className="placeholder:text-[var(--text-dim)]" />
+                  <button
+                    onClick={() => {
+                      hi(field, '');
+                      setVisibleProfiles(prev => prev.filter(f => f !== field));
+                    }}
+                    style={{ color: 'var(--text-dim)', flexShrink: 0 }}
+                    tabIndex={-1}
+                    title="Remove this platform"
+                  >
+                    <X className="w-4 h-4" />
+                  </button>
+                </div>
+              );
+            });
+          })()}
         </div>
       </div>
     </div>
