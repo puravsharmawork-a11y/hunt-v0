@@ -6,7 +6,8 @@ import {
   AlertCircle, CheckCircle2, ChevronRight, Zap, Award, LogOut,
   Sun, Moon, Home, Users, User, Bell, BookOpen,
   Compass, BellRing, Maximize2, Minimize2, SlidersHorizontal,
-  LayoutGrid, LayoutList, Sparkles, Search, Filter
+  LayoutGrid, LayoutList, Sparkles, Search, Filter, Bookmark,
+  ClipboardList, FileText, Star, Link
 } from 'lucide-react';
 import {
   getStudentProfile, getActiveJobs, createApplication,
@@ -230,7 +231,7 @@ function FilterPanel({ filters, onChange, onClose, jobs }) {
 }
 
 // ─── Job grid card ─────────────────────────────────────────────────────────────
-function JobGridCard({ job, matchData, isSelected, onClick }) {
+function JobGridCard({ job, matchData, isSelected, onClick, isSaved, onSave }) {
   const scoreColor = s => s >= 75 ? 'var(--green)' : s >= 50 ? 'var(--amber)' : 'var(--red)';
   const scoreBg    = s => s >= 75 ? 'var(--green-tint)' : s >= 50 ? 'var(--amber-tint)' : 'var(--red-tint)';
 
@@ -246,16 +247,15 @@ function JobGridCard({ job, matchData, isSelected, onClick }) {
     onMouseEnter={e => { if (!isSelected) e.currentTarget.style.borderColor = 'var(--border-mid)'; }}
     onMouseLeave={e => { if (!isSelected) e.currentTarget.style.borderColor = 'var(--border)'; }}
     >
-      {/* Apply badge on hover — shown via isSelected for simplicity */}
-      {isSelected && (
-        <div style={{
-          position: 'absolute', top: '14px', right: '14px',
-          display: 'flex', alignItems: 'center', gap: '4px',
-          fontSize: '11px', fontWeight: 600, color: 'var(--text)',
-        }}>
-          Apply <ChevronRight size={12} />
-        </div>
-      )}
+      {/* Bookmark button */}
+      <button onClick={e => { e.stopPropagation(); onSave(job); }} style={{
+        position: 'absolute', top: '12px', right: '12px',
+        background: 'none', border: 'none', cursor: 'pointer', padding: '4px',
+        color: isSaved ? 'var(--green)' : 'var(--text-dim)',
+        display: 'flex', alignItems: 'center',
+      }} title={isSaved ? 'Unsave' : 'Save'}>
+        <Bookmark size={14} fill={isSaved ? 'var(--green)' : 'none'} />
+      </button>
 
       <div style={{ display: 'flex', alignItems: 'flex-start', gap: '12px', marginBottom: '12px' }}>
         <span style={{ fontSize: '28px', lineHeight: 1, flexShrink: 0 }}>{job.logo}</span>
@@ -318,7 +318,7 @@ function JobGridCard({ job, matchData, isSelected, onClick }) {
 }
 
 // ─── Job detail panel ──────────────────────────────────────────────────────────
-function JobDetailPanel({ job, matchData, isMaximized, onToggleMaximize, onClose, onApply, applying, canApply }) {
+function JobDetailPanel({ job, matchData, isMaximized, onToggleMaximize, onClose, onApply, applying, canApply, isSaved, onSave }) {
   const scoreColor = s => s >= 75 ? 'var(--green)' : s >= 50 ? 'var(--amber)' : 'var(--red)';
   const scoreBg    = s => s >= 75 ? 'var(--green-tint)' : s >= 50 ? 'var(--amber-tint)' : 'var(--red-tint)';
   const compColor  = c => c === 'High' ? 'var(--red)' : c === 'Medium' ? 'var(--amber)' : 'var(--green)';
@@ -340,6 +340,10 @@ function JobDetailPanel({ job, matchData, isMaximized, onToggleMaximize, onClose
           <button onClick={onToggleMaximize} style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--text-dim)', padding: '4px', borderRadius: '4px', display: 'flex', alignItems: 'center' }}
             title={isMaximized ? 'Minimize' : 'Maximize'}>
             {isMaximized ? <Minimize2 size={14} /> : <Maximize2 size={14} />}
+          </button>
+          <button onClick={() => onSave(job)} style={{ background: 'none', border: 'none', cursor: 'pointer', color: isSaved ? 'var(--green)' : 'var(--text-dim)', padding: '4px', borderRadius: '4px', display: 'flex', alignItems: 'center' }}
+            title={isSaved ? 'Unsave' : 'Save'}>
+            <Bookmark size={14} fill={isSaved ? 'var(--green)' : 'none'} />
           </button>
         </div>
         <button onClick={onClose} style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--text-dim)', padding: '4px', borderRadius: '4px', display: 'flex', alignItems: 'center' }}>
@@ -619,7 +623,7 @@ export default function StudentDashboard() {
   const [allJobs, setAllJobs] = useState([]);
   const [weeklyApplications, setWeeklyApplications] = useState(0);
   const [applying, setApplying] = useState(false);
-  const [activeTab, setActiveTab] = useState('explore');
+  const [activeTab, setActiveTab] = useState('home');
   const [showWelcome, setShowWelcome] = useState(true);
   const [showGuide, setShowGuide] = useState(true);
   const [notified, setNotified] = useState(false);
@@ -633,6 +637,8 @@ export default function StudentDashboard() {
   const [huntFastActive, setHuntFastActive] = useState(false);
   const [filters, setFilters] = useState({ role: '', location: '', minMatch: 0, stipend: 'Any', duration: 'Any', skill: '' });
   const [appliedJobs, setAppliedJobs] = useState([]);
+  const [savedJobs, setSavedJobs] = useState([]);
+  const [homeSubTab, setHomeSubTab] = useState('applications');
 
   const WEEKLY_LIMIT = 5;
   const remainingApplications = WEEKLY_LIMIT - weeklyApplications;
@@ -710,6 +716,10 @@ export default function StudentDashboard() {
 
   const handleSignOut = async () => { try { await signOut(); navigate('/'); } catch (e) { console.error(e); } };
   const dismissWelcome = () => { setShowWelcome(false); if (studentProfile?.id) localStorage.setItem(`hunt-welcomed-${studentProfile.id}`, '1'); };
+  const handleSaveToggle = (job) => {
+    setSavedJobs(prev => prev.some(j => j.id === job.id) ? prev.filter(j => j.id !== job.id) : [...prev, job]);
+  };
+  const isJobSaved = (jobId) => savedJobs.some(j => j.id === jobId);
   const activeFiltersCount = Object.entries(filters).filter(([k, v]) => v && v !== 'Any' && v !== 0 && v !== '').length;
 
   if (loading) return <LoadingScreen />;
@@ -791,16 +801,169 @@ export default function StudentDashboard() {
         {/* ── HOME ── */}
         {activeTab === 'home' && (
           <div style={{ flex: 1, overflowY: 'auto', padding: '28px 36px', animation: 'hunt-fade-in 0.3s ease' }}>
-            <div style={{ maxWidth: '640px' }}>
-              {showWelcome && <WelcomeCard name={studentProfile?.full_name} completeness={studentProfile?.profile_completeness || 0} onDismiss={dismissWelcome} />}
-              {showGuide && <QuickGuideCard onDismiss={() => setShowGuide(false)} />}
-              {!showWelcome && !showGuide && (
-                <div style={{ background: 'var(--bg-card)', border: '1px solid var(--border)', borderRadius: '14px', padding: '36px', textAlign: 'center' }}>
-                  <p style={{ fontSize: '28px', marginBottom: '10px' }}>🏠</p>
-                  <h3 style={{ fontFamily: "'Editorial New', Georgia, serif", fontSize: '18px', color: 'var(--text)', marginBottom: '4px' }}>Home feed</h3>
-                  <p style={{ fontSize: '12px', color: 'var(--text-dim)' }}>Activity and insights coming soon.</p>
+            <div style={{ maxWidth: '780px' }}>
+
+              {/* Welcome / greeting */}
+              <div style={{ marginBottom: '24px' }}>
+                <p style={{ fontSize: '10px', fontWeight: 600, letterSpacing: '0.1em', textTransform: 'uppercase', color: 'var(--text-dim)', marginBottom: '4px' }}>Home</p>
+                <h1 style={{ fontFamily: "'Editorial New', Georgia, serif", fontSize: '26px', fontWeight: 400, color: 'var(--text)' }}>
+                  Welcome back, <em>{studentProfile?.full_name?.split(' ')[0] || 'there'}.</em>
+                </h1>
+              </div>
+
+              {/* ── Important tasks ── */}
+              {(() => {
+                const tasks = [];
+                const p = studentProfile;
+                if (!p?.profile_completeness || p.profile_completeness < 100)
+                  tasks.push({ id: 'profile', title: 'Complete your profile', desc: `You're ${p?.profile_completeness || 0}% done — finish to improve match scores.`, cta: 'Complete now', action: () => navigate('/onboarding'), pct: p?.profile_completeness || 0 });
+                if (!p?.linkedin_url)
+                  tasks.push({ id: 'linkedin', title: 'Link LinkedIn', desc: 'Recruiters always check LinkedIn first. Add it to boost visibility.', cta: 'Add LinkedIn', action: () => navigate('/profile') });
+                if (!p?.github_url)
+                  tasks.push({ id: 'github', title: 'Add GitHub', desc: 'Your GitHub is proof of work. It directly improves your match score.', cta: 'Add GitHub', action: () => navigate('/profile') });
+                if (!p?.resume_url)
+                  tasks.push({ id: 'resume', title: 'Upload resume', desc: 'Hiring managers are more likely to reach out when they see a resume.', cta: 'Upload now', action: () => navigate('/profile') });
+                if (tasks.length === 0) return null;
+                return (
+                  <div style={{ marginBottom: '28px' }}>
+                    <p style={{ fontSize: '11px', fontWeight: 600, color: 'var(--text-dim)', marginBottom: '12px' }}>
+                      Important tasks ({tasks.length})
+                    </p>
+                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '12px' }}>
+                      {tasks.slice(0, 3).map(task => (
+                        <div key={task.id} style={{ background: 'var(--bg-card)', border: '1px solid var(--border)', borderRadius: '12px', padding: '16px 18px', display: 'flex', flexDirection: 'column', gap: '10px', position: 'relative' }}>
+                          <div>
+                            <p style={{ fontSize: '13px', fontWeight: 600, color: 'var(--text)', marginBottom: '4px' }}>{task.title}</p>
+                            <p style={{ fontSize: '11px', color: 'var(--text-dim)', lineHeight: 1.5 }}>{task.desc}</p>
+                          </div>
+                          {task.pct !== undefined && (
+                            <div>
+                              <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '4px' }}>
+                                <span style={{ fontSize: '10px', color: 'var(--text-dim)' }}>Progress</span>
+                                <span style={{ fontSize: '10px', fontWeight: 600, color: 'var(--green)' }}>{task.pct}%</span>
+                              </div>
+                              <div style={{ height: '3px', background: 'var(--border)', borderRadius: '999px', overflow: 'hidden' }}>
+                                <div style={{ height: '100%', width: `${task.pct}%`, background: 'var(--green)', borderRadius: '999px' }} />
+                              </div>
+                            </div>
+                          )}
+                          <button onClick={task.action} style={{ padding: '8px 14px', borderRadius: '7px', border: 'none', cursor: 'pointer', background: 'var(--text)', color: 'var(--bg)', fontSize: '12px', fontWeight: 600, alignSelf: 'flex-start' }}>
+                            {task.cta}
+                          </button>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                );
+              })()}
+
+              {/* ── Sub-tabs ── */}
+              <div style={{ borderBottom: '1px solid var(--border)', marginBottom: '20px', display: 'flex', gap: '0' }}>
+                {[
+                  { id: 'applications', label: 'Applications' },
+                  { id: 'saved',        label: 'Saved' },
+                  { id: 'offers',       label: 'Offers' },
+                  { id: 'assessments',  label: 'Assessments' },
+                ].map(t => (
+                  <button key={t.id} onClick={() => setHomeSubTab(t.id)} style={{
+                    padding: '10px 18px', background: 'none', border: 'none', cursor: 'pointer',
+                    fontSize: '13px', fontWeight: homeSubTab === t.id ? 600 : 400,
+                    color: homeSubTab === t.id ? 'var(--text)' : 'var(--text-dim)',
+                    borderBottom: homeSubTab === t.id ? '2px solid var(--text)' : '2px solid transparent',
+                    marginBottom: '-1px', transition: 'color 0.15s',
+                  }}>{t.label}</button>
+                ))}
+              </div>
+
+              {/* Applications */}
+              {homeSubTab === 'applications' && (
+                appliedJobs.length === 0 ? (
+                  <div style={{ textAlign: 'center', padding: '48px 20px' }}>
+                    <ClipboardList size={28} style={{ color: 'var(--text-dim)', marginBottom: '12px' }} />
+                    <p style={{ fontFamily: "'Editorial New', Georgia, serif", fontSize: '16px', color: 'var(--text)', marginBottom: '4px' }}>No applications yet</p>
+                    <p style={{ fontSize: '12px', color: 'var(--text-dim)', marginBottom: '16px' }}>All your applications will be visible here</p>
+                    <button onClick={() => setActiveTab('explore')} style={{ padding: '8px 16px', borderRadius: '7px', border: '1px solid var(--border)', background: 'transparent', color: 'var(--text-mid)', fontSize: '12px', cursor: 'pointer' }}>
+                      Explore opportunities
+                    </button>
+                  </div>
+                ) : (
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                    {appliedJobs.map((job, i) => (
+                      <div key={i} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '14px 18px', borderRadius: '10px', background: 'var(--bg-card)', border: '1px solid var(--border)' }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                          <span style={{ fontSize: '22px' }}>{job.logo}</span>
+                          <div>
+                            <p style={{ fontSize: '13px', fontWeight: 600, color: 'var(--text)' }}>{job.role}</p>
+                            <p style={{ fontSize: '11px', color: 'var(--text-dim)' }}>{job.company} · Applied</p>
+                          </div>
+                        </div>
+                        <div style={{ fontFamily: "'Editorial New', Georgia, serif", fontSize: '16px', color: 'var(--green)' }}>{job.matchScore}%</div>
+                      </div>
+                    ))}
+                  </div>
+                )
+              )}
+
+              {/* Saved */}
+              {homeSubTab === 'saved' && (
+                savedJobs.length === 0 ? (
+                  <div style={{ textAlign: 'center', padding: '48px 20px' }}>
+                    <Bookmark size={28} style={{ color: 'var(--text-dim)', marginBottom: '12px' }} />
+                    <p style={{ fontFamily: "'Editorial New', Georgia, serif", fontSize: '16px', color: 'var(--text)', marginBottom: '4px' }}>Nothing saved yet</p>
+                    <p style={{ fontSize: '12px', color: 'var(--text-dim)', marginBottom: '16px' }}>Save listings to easily find them later</p>
+                    <button onClick={() => setActiveTab('explore')} style={{ padding: '8px 16px', borderRadius: '7px', border: '1px solid var(--border)', background: 'transparent', color: 'var(--text-mid)', fontSize: '12px', cursor: 'pointer' }}>
+                      Explore opportunities
+                    </button>
+                  </div>
+                ) : (
+                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '10px' }}>
+                    {savedJobs.map(job => (
+                      <div key={job.id} style={{ background: 'var(--bg-card)', border: '1px solid var(--border)', borderRadius: '12px', padding: '16px 18px', position: 'relative' }}>
+                        <button onClick={() => handleSaveToggle(job)} style={{ position: 'absolute', top: '12px', right: '12px', background: 'none', border: 'none', cursor: 'pointer', color: 'var(--green)' }}>
+                          <Bookmark size={14} fill='var(--green)' />
+                        </button>
+                        <div style={{ display: 'flex', gap: '10px', marginBottom: '10px' }}>
+                          <span style={{ fontSize: '24px' }}>{job.logo}</span>
+                          <div>
+                            <p style={{ fontSize: '10px', fontWeight: 600, letterSpacing: '0.1em', textTransform: 'uppercase', color: 'var(--text-dim)', marginBottom: '2px' }}>{job.company}</p>
+                            <p style={{ fontFamily: "'Editorial New', Georgia, serif", fontSize: '14px', color: 'var(--text)' }}>{job.role}</p>
+                          </div>
+                        </div>
+                        <div style={{ display: 'flex', gap: '10px', flexWrap: 'wrap', marginBottom: '10px' }}>
+                          {[{ Icon: Briefcase, val: job.stipend }, { Icon: MapPin, val: job.location }].map(({ Icon, val }) => (
+                            <div key={val} style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
+                              <Icon size={11} style={{ color: 'var(--text-dim)' }} />
+                              <span style={{ fontSize: '11px', color: 'var(--text-dim)' }}>{val}</span>
+                            </div>
+                          ))}
+                        </div>
+                        <button onClick={() => { setActiveTab('explore'); handleJobClick(job); }} style={{ padding: '7px 14px', borderRadius: '6px', border: '1px solid var(--border)', background: 'transparent', color: 'var(--text-mid)', fontSize: '11px', cursor: 'pointer' }}>
+                          View & apply
+                        </button>
+                      </div>
+                    ))}
+                  </div>
+                )
+              )}
+
+              {/* Offers — coming soon */}
+              {homeSubTab === 'offers' && (
+                <div style={{ textAlign: 'center', padding: '48px 20px' }}>
+                  <Star size={28} style={{ color: 'var(--text-dim)', marginBottom: '12px' }} />
+                  <p style={{ fontFamily: "'Editorial New', Georgia, serif", fontSize: '16px', color: 'var(--text)', marginBottom: '4px' }}>No offers yet</p>
+                  <p style={{ fontSize: '12px', color: 'var(--text-dim)' }}>All your offers will be visible here once recruiters reach out</p>
                 </div>
               )}
+
+              {/* Assessments — coming soon */}
+              {homeSubTab === 'assessments' && (
+                <div style={{ textAlign: 'center', padding: '48px 20px' }}>
+                  <FileText size={28} style={{ color: 'var(--text-dim)', marginBottom: '12px' }} />
+                  <p style={{ fontFamily: "'Editorial New', Georgia, serif", fontSize: '16px', color: 'var(--text)', marginBottom: '4px' }}>Assessments coming soon</p>
+                  <p style={{ fontSize: '12px', color: 'var(--text-dim)', maxWidth: '300px', margin: '4px auto 0' }}>Skill verifications and tests will appear here to boost your profile score</p>
+                </div>
+              )}
+
             </div>
           </div>
         )}
@@ -904,7 +1067,7 @@ export default function StudentDashboard() {
                 ) : (
                   <div style={{ display: 'grid', gridTemplateColumns: selectedJob ? '1fr' : 'repeat(2, 1fr)', gap: '10px', marginTop: '8px' }}>
                     {displayedJobs.map(job => (
-                      <JobGridCard key={job.id} job={job} matchData={job._match} isSelected={selectedJob?.id === job.id} onClick={() => handleJobClick(job)} />
+                      <JobGridCard key={job.id} job={job} matchData={job._match} isSelected={selectedJob?.id === job.id} onClick={() => handleJobClick(job)} isSaved={isJobSaved(job.id)} onSave={handleSaveToggle} />
                     ))}
                   </div>
                 )}
@@ -926,6 +1089,8 @@ export default function StudentDashboard() {
                   onApply={() => handleApply(selectedJob, selectedMatch)}
                   applying={applying}
                   canApply={canApply}
+                  isSaved={isJobSaved(selectedJob?.id)}
+                  onSave={handleSaveToggle}
                 />
               </div>
             )}
