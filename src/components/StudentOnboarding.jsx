@@ -174,16 +174,110 @@ const INDIA_STATES = [
 ];
 
 const STEPS = [
-  { num: 1, label: 'Basics',    icon: User },
-  { num: 2, label: 'Links',     icon: Link2 },
-  { num: 3, label: 'Skills',    icon: Code },
-  { num: 4, label: 'Work Auth', icon: Shield },
-  { num: 5, label: 'Education', icon: GraduationCap },
-  { num: 6, label: 'Finish',    icon: Rocket },
+  { num: 1, label: 'Basics',    },
+  { num: 2, label: 'Links',     },
+  { num: 3, label: 'Skills',    },
+  { num: 4, label: 'Work Auth', },
+  { num: 5, label: 'Education', },
+  { num: 6, label: 'Finish',    },
 ];
 
 const inputCls = `w-full px-4 py-3 rounded-lg text-sm font-normal transition-colors duration-150 outline-none bg-[var(--bg-subtle)] border border-[var(--border)] text-[var(--text)] placeholder:text-[var(--text-dim)] focus:border-[var(--focus)]`;
 const labelCls = 'block text-xs font-medium tracking-widest uppercase text-[var(--text-dim)] mb-2';
+
+// ─── Progress Bar Component ────────────────────────────────────────────────────
+// Design: full-width thin line with a floating pill showing current step
+function StepProgress({ currentStep, totalSteps, steps }) {
+  const pct = ((currentStep - 1) / (totalSteps - 1)) * 100;
+  const currentLabel = steps[currentStep - 1]?.label;
+
+  return (
+    <div style={{ padding: '0 0 0 0' }}>
+      {/* Top row: label left, fraction right */}
+      <div style={{
+        display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+        marginBottom: '10px',
+      }}>
+        <span style={{
+          fontSize: '11px', fontWeight: 600, letterSpacing: '0.1em',
+          textTransform: 'uppercase', color: 'var(--text)',
+        }}>
+          {currentLabel}
+        </span>
+        <span style={{
+          fontSize: '11px', letterSpacing: '0.05em',
+          color: 'var(--text-dim)', fontVariantNumeric: 'tabular-nums',
+        }}>
+          {currentStep} <span style={{ color: 'var(--border-mid)' }}>/</span> {totalSteps}
+        </span>
+      </div>
+
+      {/* Track */}
+      <div style={{
+        position: 'relative',
+        height: '2px',
+        background: 'var(--border)',
+        borderRadius: '999px',
+      }}>
+        {/* Filled portion */}
+        <div style={{
+          position: 'absolute', top: 0, left: 0,
+          height: '100%',
+          width: `${pct}%`,
+          background: 'var(--green)',
+          borderRadius: '999px',
+          transition: 'width 0.4s cubic-bezier(0.4, 0, 0.2, 1)',
+        }} />
+
+        {/* Tick marks for each step */}
+        {steps.map((s) => {
+          const tickPct = ((s.num - 1) / (totalSteps - 1)) * 100;
+          const done = currentStep > s.num;
+          const active = currentStep === s.num;
+          return (
+            <div key={s.num} style={{
+              position: 'absolute',
+              top: '50%',
+              left: `${tickPct}%`,
+              transform: 'translate(-50%, -50%)',
+              width: active ? '8px' : done ? '6px' : '5px',
+              height: active ? '8px' : done ? '6px' : '5px',
+              borderRadius: '50%',
+              background: active ? 'var(--green)' : done ? 'var(--green)' : 'var(--border-mid)',
+              border: active ? '2px solid var(--bg)' : done ? '1.5px solid var(--bg)' : 'none',
+              boxShadow: active ? '0 0 0 2px var(--green)' : 'none',
+              transition: 'all 0.3s ease',
+              zIndex: 2,
+            }} />
+          );
+        })}
+      </div>
+
+      {/* Step labels below — only show immediate neighbors for minimal feel */}
+      <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: '8px' }}>
+        {steps.map((s) => {
+          const done = currentStep > s.num;
+          const active = currentStep === s.num;
+          // Only show label for done/active/next — hide distant future steps
+          const show = done || active || s.num === currentStep + 1;
+          return (
+            <span key={s.num} style={{
+              fontSize: '10px',
+              letterSpacing: '0.06em',
+              textTransform: 'uppercase',
+              color: active ? 'var(--green)' : done ? 'var(--text-dim)' : 'var(--border-mid)',
+              opacity: show ? 1 : 0,
+              transition: 'all 0.3s ease',
+              fontWeight: active ? 600 : 400,
+            }}>
+              {s.label}
+            </span>
+          );
+        })}
+      </div>
+    </div>
+  );
+}
 
 // ─── Main Component ────────────────────────────────────────────────────────────
 export default function StudentOnboarding() {
@@ -217,8 +311,6 @@ export default function StudentOnboarding() {
   const [newProject, setNewProject] = useState({ title: '', description: '', techStack: '', projectUrl: '', githubUrl: '' });
 
   useEffect(() => { applyTokens(theme); }, [theme]);
-
-  // Scroll window to top on step change (single scrollbar — window scroll)
   useEffect(() => { window.scrollTo({ top: 0, behavior: 'smooth' }); }, [currentStep]);
 
   const toggleTheme = () => setTheme(t => t === 'light' ? 'dark' : 'light');
@@ -332,7 +424,7 @@ export default function StudentOnboarding() {
   const showLinkedinWarn = step2Attempted && !formData.linkedinUrl;
   const showGithubWarn = step2Attempted && !formData.githubUrl;
 
-  // ── Steps ─────────────────────────────────────────────────────────────────────
+  // ── Steps (unchanged) ────────────────────────────────────────────────────────
 
   const Step1 = () => (
     <div>
@@ -836,16 +928,11 @@ export default function StudentOnboarding() {
   const CurrentStepComponent = stepComponents[currentStep - 1];
 
   return (
-    // ── Normal page flow — single window scrollbar, no overflow tricks ──
     <div style={{ background: 'var(--bg)', color: 'var(--text)', fontFamily: "'DM Sans', system-ui, sans-serif", minHeight: '100vh' }}>
 
-      {/* Nav — sticky via position:sticky top-0 */}
+      {/* Nav */}
       <nav className="flex items-center justify-between px-6 md:px-12 py-4"
-        style={{
-          position: 'sticky', top: 0, zIndex: 50,
-          borderBottom: '1px solid var(--border)',
-          background: 'var(--bg)',
-        }}>
+        style={{ position: 'sticky', top: 0, zIndex: 50, borderBottom: '1px solid var(--border)', background: 'var(--bg)' }}>
         <span className="text-base font-medium" style={{ letterSpacing: '0.12em' }}>HUNT</span>
         <span className="text-xs tracking-widest uppercase" style={{ color: 'var(--text-dim)' }}>Build your profile</span>
         <button onClick={toggleTheme} className="w-9 h-9 rounded-full flex items-center justify-center border transition-colors"
@@ -854,41 +941,15 @@ export default function StudentOnboarding() {
         </button>
       </nav>
 
-      {/* Progress bar — sticky just below nav */}
-      <div className="px-6 md:px-12 py-5"
-        style={{
-          position: 'sticky', top: '57px', zIndex: 40,
-          background: 'var(--bg)',
-        }}>
+      {/* Progress bar — new design, sticky below nav */}
+      <div className="px-6 md:px-12 py-4"
+        style={{ position: 'sticky', top: '57px', zIndex: 40, background: 'var(--bg)' }}>
         <div className="max-w-2xl mx-auto">
-          <div className="flex items-center justify-between">
-            {STEPS.map((s, i) => {
-              const done = currentStep > s.num;
-              const active = currentStep === s.num;
-              return (
-                <React.Fragment key={s.num}>
-                  <div className="flex flex-col items-center gap-1.5">
-                    <div className="w-8 h-8 rounded-full flex items-center justify-center text-xs font-medium transition-all duration-200 border"
-                      style={{
-                        borderColor: active ? 'var(--text)' : done ? 'var(--green)' : 'var(--border)',
-                        background: active ? 'var(--text)' : done ? 'var(--green-tint)' : 'var(--bg)',
-                        color: active ? 'var(--bg)' : done ? 'var(--green-text)' : 'var(--text-dim)',
-                      }}>
-                      {done ? <CheckCircle2 className="w-4 h-4" /> : s.num}
-                    </div>
-                    <span className="text-xs hidden md:block" style={{ color: active ? 'var(--text)' : 'var(--text-dim)' }}>{s.label}</span>
-                  </div>
-                  {i < STEPS.length - 1 && (
-                    <div className="flex-1 mx-2 h-px" style={{ background: currentStep > s.num ? 'var(--green)' : 'var(--border)' }} />
-                  )}
-                </React.Fragment>
-              );
-            })}
-          </div>
+          <StepProgress currentStep={currentStep} totalSteps={STEPS.length} steps={STEPS} />
         </div>
       </div>
 
-      {/* Page content — normal flow, no overflow container */}
+      {/* Content */}
       <div className="max-w-2xl mx-auto px-6 py-10 pb-20">
         <div className="rounded-xl border p-6 md:p-10 mb-8"
           style={{ background: 'var(--bg-card)', borderColor: 'var(--border)' }}>
