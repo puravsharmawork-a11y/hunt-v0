@@ -753,9 +753,6 @@ export default function StudentDashboard() {
                 style={{ display: 'flex', alignItems: 'center', gap: '9px', width: '100%', padding: '9px 11px', borderRadius: '7px', border: 'none', cursor: 'pointer', marginBottom: '1px', background: active ? 'var(--bg-subtle)' : 'transparent', color: active ? 'var(--text)' : 'var(--text-dim)', fontSize: '13px', fontWeight: active ? 600 : 400, textAlign: 'left', transition: 'background 0.12s' }}>
                 <Icon size={15} style={{ flexShrink: 0 }} />
                 {label}
-                {id === 'explore' && displayedJobs.length > 0 && (
-                  <span style={{ marginLeft: 'auto', fontSize: '10px', fontWeight: 600, background: 'var(--green)', color: '#fff', borderRadius: '10px', padding: '1px 5px' }}>{displayedJobs.length}</span>
-                )}
               </button>
             );
           })}
