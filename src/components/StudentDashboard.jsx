@@ -830,8 +830,8 @@ export default function StudentDashboard() {
                 return (
                   <div style={{ marginBottom: '32px' }}>
                     <p style={{ fontSize: '11px', fontWeight: 600, color: 'var(--text-dim)', marginBottom: '14px' }}>Important tasks ({tasks.length})</p>
-                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '14px' }}>
-                      {tasks.slice(0, 3).map(task => (
+                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(260px, 1fr))', gap: '14px' }}>
+                      {tasks.map(task => (
                         <div key={task.id} style={{ background: 'var(--bg-card)', border: '1px solid var(--border)', borderRadius: '12px', padding: '18px 20px', display: 'flex', flexDirection: 'column', gap: '12px' }}>
                           <div>
                             <p style={{ fontSize: '13px', fontWeight: 600, color: 'var(--text)', marginBottom: '5px' }}>{task.title}</p>
@@ -854,7 +854,7 @@ export default function StudentDashboard() {
                         </div>
                       ))}
                     </div>
-                    {tasks.length > 3 && <p style={{ fontSize: '11px', color: 'var(--text-dim)', marginTop: '10px' }}>+{tasks.length - 3} more task{tasks.length - 3 > 1 ? 's' : ''}</p>}
+
                   </div>
                 );
               })()}
