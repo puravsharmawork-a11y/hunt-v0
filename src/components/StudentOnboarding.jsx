@@ -79,6 +79,30 @@ const KaggleLogo = () => (
   </svg>
 );
 
+const HackerRankLogo = () => (
+  <svg width="16" height="16" viewBox="0 0 24 24" fill="#00EA64" style={{ flexShrink: 0 }}>
+    <path d="M12 0c1.285 0 9.75 4.886 10.392 6 .645 1.115.645 11.885 0 13-.642 1.114-9.107 6-10.392 6-1.284 0-9.75-4.886-10.392-6C.963 17.885.963 7.115 1.608 6 2.25 4.886 10.715 0 12 0zm2.295 6.799c-.141 0-.258.115-.258.258v4.035H9.963V7.057c0-.143-.117-.258-.258-.258c-.095 0-3.873 2.103-3.873 4.658v.088c0 2.555 3.778 4.659 3.873 4.659.141 0 .258-.116.258-.258V11.91h4.074v4.036c0 .141.117.258.258.258.094 0 3.872-2.104 3.872-4.659v-.088c0-2.555-3.778-4.658-3.872-4.658z"/>
+  </svg>
+);
+
+const CodingNinjaLogo = () => (
+  <svg width="16" height="16" viewBox="0 0 24 24" fill="#F97316" style={{ flexShrink: 0 }}>
+    <path d="M12 2C6.477 2 2 6.477 2 12s4.477 10 10 10 10-4.477 10-10S17.523 2 12 2zm-1.5 14.5v-9l7 4.5-7 4.5z"/>
+  </svg>
+);
+
+const GeeksForGeeksLogo = () => (
+  <svg width="16" height="16" viewBox="0 0 24 24" fill="#2F8D46" style={{ flexShrink: 0 }}>
+    <path d="M21.45 14.315c-.143.28-.334.532-.565.745a3.691 3.691 0 0 1-1.104.695 4.51 4.51 0 0 1-3.116-.016 3.79 3.79 0 0 1-1.106-.712 3.382 3.382 0 0 1-.565-.747H12v3.953c.005.44.372.794.82.794h.428v.59H6.752v-.59h.428a.822.822 0 0 0 .82-.794v-9.42a.822.822 0 0 0-.82-.794h-.428v-.59h5.252l-.004.59h-.428a.822.822 0 0 0-.82.794v3.953h2.994a3.69 3.69 0 0 1 .566-.747 3.79 3.79 0 0 1 1.106-.712 4.51 4.51 0 0 1 3.116-.016c.41.159.778.39 1.104.695.231.213.422.465.565.745.149.29.235.606.253.927v.01a2.2 2.2 0 0 1-.253.95zm-3.024-.863a2.45 2.45 0 0 0-.974-.196c-.353 0-.687.067-.974.196a2.27 2.27 0 0 0-.73.527 2.31 2.31 0 0 0 0 3.079 2.27 2.27 0 0 0 .73.527c.287.13.621.196.974.196s.687-.067.974-.196a2.27 2.27 0 0 0 .73-.527 2.31 2.31 0 0 0 0-3.079 2.27 2.27 0 0 0-.73-.527z"/>
+  </svg>
+);
+
+const CodeStudioLogo = () => (
+  <svg width="16" height="16" viewBox="0 0 24 24" fill="#F97316" style={{ flexShrink: 0 }}>
+    <path d="M12 1L3 5v6c0 5.55 3.84 10.74 9 12 5.16-1.26 9-6.45 9-12V5l-9-4zm-1 6l4 4-4 4-1.5-1.5L11 13l-1.5-1.5L11 10 9.5 8.5 11 7zm2 0l1.5 1.5L13 10l1.5 1.5L13 13l1.5 1.5L13 15l-1-1 3.5-3.5L13 7z"/>
+  </svg>
+);
+
 // ─── Data ──────────────────────────────────────────────────────────────────────
 const SKILL_OPTIONS = [
   { id: 'sk-001', name: 'JavaScript', category: 'Language' },
@@ -184,6 +208,8 @@ const STEPS = [
 
 const inputCls = `w-full px-4 py-3 rounded-lg text-sm font-normal transition-colors duration-150 outline-none bg-[var(--bg-subtle)] border border-[var(--border)] text-[var(--text)] placeholder:text-[var(--text-dim)] focus:border-[var(--focus)]`;
 const labelCls = 'block text-xs font-medium tracking-widest uppercase text-[var(--text-dim)] mb-2';
+// Section headings (Education, Work Experience, Skills, Projects, etc.) use this
+const sectionLabelCls = 'block text-xs font-semibold tracking-widest uppercase mb-2' ;
 
 // ─── Progress Bar Component ────────────────────────────────────────────────────
 // Design: full-width thin line with a floating pill showing current step
@@ -298,6 +324,7 @@ export default function StudentOnboarding() {
     fullName: '', email: '', phone: '',
     linkedinUrl: '', githubUrl: '', portfolioUrl: '',
     leetcodeUsername: '', codechefUsername: '', codeforcesUsername: '', kaggleUsername: '',
+    hackerrankUsername: '', codingninjaUsername: '', gfgUsername: '', codestudioUsername: '',
     skills: [], projects: [],
     dob: '', state: '', city: '', pincode: '',
     workFromDifferentCountry: false, confirmWorkAuth: false, confirmStayInIndia: false,
@@ -511,13 +538,17 @@ export default function StudentOnboarding() {
         </div>
       </div>
       <div className="pt-5" style={{ borderTop: '1px solid var(--border)' }}>
-        <label className={labelCls}>Other Profiles</label>
+        <label className={sectionLabelCls} style={{ color: 'var(--text)' }}>Other Profiles</label>
         <div className="space-y-2">
           {[
-            { field: 'leetcodeUsername',   placeholder: 'LeetCode username',   Logo: LeetCodeLogo },
-            { field: 'codechefUsername',   placeholder: 'CodeChef username',   Logo: CodeChefLogo },
-            { field: 'codeforcesUsername', placeholder: 'Codeforces username', Logo: CodeForcesLogo },
-            { field: 'kaggleUsername',     placeholder: 'Kaggle username',     Logo: KaggleLogo },
+            { field: 'leetcodeUsername',    placeholder: 'LeetCode username',    Logo: LeetCodeLogo },
+            { field: 'codechefUsername',    placeholder: 'CodeChef username',    Logo: CodeChefLogo },
+            { field: 'codeforcesUsername',  placeholder: 'Codeforces username',  Logo: CodeForcesLogo },
+            { field: 'kaggleUsername',      placeholder: 'Kaggle username',      Logo: KaggleLogo },
+            { field: 'hackerrankUsername',  placeholder: 'HackerRank username',  Logo: HackerRankLogo },
+            { field: 'codingninjaUsername', placeholder: 'Coding Ninjas username', Logo: CodingNinjaLogo },
+            { field: 'gfgUsername',         placeholder: 'GeeksForGeeks username', Logo: GeeksForGeeksLogo },
+            { field: 'codestudioUsername',  placeholder: 'CodeStudio username',  Logo: CodeStudioLogo },
           ].map(({ field, placeholder, Logo }) => (
             <div key={field} className="flex items-center gap-3 px-4 py-3 rounded-lg border"
               style={{ borderColor: 'var(--border)', background: 'var(--bg-subtle)' }}>
@@ -526,9 +557,13 @@ export default function StudentOnboarding() {
                 placeholder={placeholder}
                 style={{ flex: 1, background: 'transparent', outline: 'none', fontSize: '0.875rem', color: 'var(--text)' }}
                 className="placeholder:text-[var(--text-dim)]" />
-              {formData[field] && (
-                <button onClick={() => hi(field, '')} style={{ color: 'var(--text-dim)' }}><X className="w-4 h-4" /></button>
-              )}
+              <button
+                onClick={() => hi(field, '')}
+                style={{ color: formData[field] ? 'var(--text-dim)' : 'var(--border-mid)', flexShrink: 0 }}
+                tabIndex={-1}
+              >
+                <X className="w-4 h-4" />
+              </button>
             </div>
           ))}
         </div>
@@ -572,7 +607,7 @@ export default function StudentOnboarding() {
         </div>
       </div>
       <div className="mb-8">
-        <p className={labelCls}>Skills</p>
+        <p className={sectionLabelCls} style={{ color: 'var(--text)' }}>Skills</p>
         <div className="flex flex-wrap gap-2 mb-4">
           {SKILL_CATEGORIES.map(cat => (
             <button key={cat} onClick={() => setActiveCategory(cat)}
@@ -600,7 +635,7 @@ export default function StudentOnboarding() {
         </div>
         {formData.skills.length > 0 && (
           <div>
-            <p className={labelCls}>Selected — {formData.skills.length} skill{formData.skills.length !== 1 && 's'}</p>
+            <p className={sectionLabelCls} style={{ color: 'var(--text)' }}>Selected — {formData.skills.length} skill{formData.skills.length !== 1 && 's'}</p>
             <div className="space-y-2">
               {formData.skills.map(skill => (
                 <div key={skill.id} className="flex items-center gap-3 px-4 py-3 rounded-lg border"
@@ -626,7 +661,7 @@ export default function StudentOnboarding() {
         )}
       </div>
       <div className="pt-6" style={{ borderTop: '1px solid var(--border)' }}>
-        <p className={labelCls}>Projects</p>
+        <p className={sectionLabelCls} style={{ color: 'var(--text)' }}>Projects</p>
         <div className="p-4 rounded-lg border space-y-3 mb-4" style={{ borderColor: 'var(--border)', background: 'var(--bg-subtle)' }}>
           <div className="grid md:grid-cols-2 gap-3">
             <div>
@@ -780,7 +815,7 @@ export default function StudentOnboarding() {
         <StepHeader label="05 — Education & Experience" title={<>Confirm and add<br /><em>experiences.</em></>}
           sub="Review your details. Projects you added in Skills will be attached automatically." />
         <div className="mb-8">
-          <p className={labelCls}>Education</p>
+          <p className={sectionLabelCls} style={{ color: 'var(--text)' }}>Education</p>
           <div className="space-y-4">
             {formData.education.map((edu, idx) => (
               <div key={idx} className="p-4 rounded-lg border relative" style={{ borderColor: 'var(--border)', background: 'var(--bg-subtle)' }}>
@@ -801,7 +836,7 @@ export default function StudentOnboarding() {
           </div>
         </div>
         <div className="pt-6" style={{ borderTop: '1px solid var(--border)' }}>
-          <p className={labelCls}>Work Experience</p>
+          <p className={sectionLabelCls} style={{ color: 'var(--text)' }}>Work Experience</p>
           <div className="space-y-4">
             {formData.workExperience.map((exp, idx) => (
               <div key={idx} className="p-4 rounded-lg border relative" style={{ borderColor: 'var(--border)', background: 'var(--bg-subtle)' }}>
