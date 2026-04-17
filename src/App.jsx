@@ -4,7 +4,7 @@ import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { onAuthStateChange } from './services/supabase';
 import LandingPage from './components/LandingPage';
 import StudentOnboarding from './components/StudentOnboarding';
-import SwipeFeed from './components/SwipeFeed';
+import StudentDashboard from './components/StudentDashboard';
 import StudentProfile from './components/StudentProfile';
 import RecruiterOnboarding from './components/RecruiterOnboarding';
 import RecruiterDashboard from './components/RecruiterDashboard';
@@ -51,8 +51,8 @@ function App() {
           element={user ? <StudentOnboarding /> : <Navigate to="/" />} 
         />
         <Route 
-          path="/swipe" 
-          element={user ? <SwipeFeed /> : <Navigate to="/" />} 
+          path="/student/dashboard" 
+          element={user ? <StudentDashboard /> : <Navigate to="/" />} 
         />
         <Route 
           path="/profile" 
