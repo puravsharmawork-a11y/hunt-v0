@@ -51,7 +51,7 @@ function App() {
           element={user ? <StudentOnboarding /> : <Navigate to="/" />} 
         />
         <Route 
-          path="/student/dashboard" 
+          path="/swipe" 
           element={user ? <StudentDashboard /> : <Navigate to="/" />} 
         />
         <Route 
