@@ -1,6 +1,6 @@
 // src/components/StudentOnboarding.jsx
 import React, { useState, useEffect, useRef, useCallback } from 'react';
-import { User, Briefcase, Code, Rocket, CheckCircle2, ArrowRight, Plus, X, Github, Loader, Sun, Moon, Shield, GraduationCap, Link2, AlertCircle, Upload } from 'lucide-react';
+import { User, Code, Rocket, CheckCircle2, ArrowRight, Plus, X, Github, Loader, Sun, Moon, Shield, GraduationCap, Link2, AlertCircle, Upload } from 'lucide-react';
 import { createStudentProfile, uploadResume } from '../services/supabase';
 import { importFromGitHub, isValidGitHubUsername } from '../services/github';
 import { useNavigate } from 'react-router-dom';
@@ -194,33 +194,22 @@ export default function StudentOnboarding() {
   const [githubImporting, setGithubImporting] = useState(false);
   const [githubUsername, setGithubUsername] = useState('');
   const [activeCategory, setActiveCategory] = useState(SKILL_CATEGORIES[0]);
-  // FIX 1: extraLinks lives at top level — never re-created inside a component
   const [extraLinks, setExtraLinks] = useState(['']);
-  // FIX 2: warnings only after user presses Continue on step 2
   const [step2Attempted, setStep2Attempted] = useState(false);
-  // FIX 3: work auth error state
   const [workAuthError, setWorkAuthError] = useState(false);
-  // FIX 4: drag state for resume
   const [dragOver, setDragOver] = useState(false);
-  const contentRef = useRef(null);
   const fileInputRef = useRef(null);
 
   const [formData, setFormData] = useState({
-    // Step 1
     fullName: '', email: '', phone: '',
-    // Step 2 — all controlled at top level so inputs never remount
     linkedinUrl: '', githubUrl: '', portfolioUrl: '',
     leetcodeUsername: '', codechefUsername: '', codeforcesUsername: '', kaggleUsername: '',
-    // Step 3
     skills: [], projects: [],
-    // Step 4
     dob: '', state: '', city: '', pincode: '',
     workFromDifferentCountry: false, confirmWorkAuth: false, confirmStayInIndia: false,
     signatureName: '', signatureText: '',
-    // Step 5
     education: [{ school: '', degree: '', major: '', gpa: '', startYear: '', endYear: '' }],
     workExperience: [{ company: '', role: '', startYear: '', endYear: '', city: '', description: '' }],
-    // Step 6
     preferredRoles: [], availability: 'Immediate', workPreference: 'remote',
     resume: null, noResume: false,
   });
@@ -228,7 +217,9 @@ export default function StudentOnboarding() {
   const [newProject, setNewProject] = useState({ title: '', description: '', techStack: '', projectUrl: '', githubUrl: '' });
 
   useEffect(() => { applyTokens(theme); }, [theme]);
-  useEffect(() => { if (contentRef.current) contentRef.current.scrollTop = 0; }, [currentStep]);
+
+  // Scroll window to top on step change (single scrollbar — window scroll)
+  useEffect(() => { window.scrollTo({ top: 0, behavior: 'smooth' }); }, [currentStep]);
 
   const toggleTheme = () => setTheme(t => t === 'light' ? 'dark' : 'light');
   const hi = useCallback((field, value) => setFormData(prev => ({ ...prev, [field]: value })), []);
@@ -284,7 +275,6 @@ export default function StudentOnboarding() {
     ...prev, preferredRoles: prev.preferredRoles.includes(role) ? prev.preferredRoles.filter(r => r !== role) : [...prev.preferredRoles, role]
   }));
 
-  // FIX 1: extra links handlers — pure setExtraLinks, no re-render of whole form
   const addExtraLink = useCallback(() => setExtraLinks(prev => [...prev, '']), []);
   const updateExtraLink = useCallback((idx, val) => setExtraLinks(prev => { const u = [...prev]; u[idx] = val; return u; }), []);
   const removeExtraLink = useCallback((idx) => setExtraLinks(prev => prev.filter((_, i) => i !== idx)), []);
@@ -292,7 +282,6 @@ export default function StudentOnboarding() {
   const handleNext = () => {
     if (currentStep === 1 && !formData.fullName) { alert('Please enter your name'); return; }
     if (currentStep === 2) setStep2Attempted(true);
-    // FIX 3: block on step 4 if checkboxes not ticked
     if (currentStep === 4 && (!formData.confirmWorkAuth || !formData.confirmStayInIndia)) {
       setWorkAuthError(true); return;
     }
@@ -301,7 +290,6 @@ export default function StudentOnboarding() {
   };
   const handleBack = () => { if (currentStep > 1) setCurrentStep(s => s - 1); };
 
-  // FIX 4: drop handler
   const handleDrop = (e) => {
     e.preventDefault(); setDragOver(false);
     const file = e.dataTransfer.files[0];
@@ -367,14 +355,11 @@ export default function StudentOnboarding() {
     </div>
   );
 
-  // FIX 1 + FIX 2: Step2 reads from formData (top-level), not local state — inputs never lose focus
   const Step2 = () => (
     <div>
       <StepHeader label="02 — Links" title={<>Your online<br /><em>presence.</em></>}
         sub="LinkedIn and GitHub are essential — they're how recruiters verify your work." />
       <div className="space-y-4 mb-6">
-
-        {/* LinkedIn */}
         <div>
           <label className={labelCls}>
             <span className="flex items-center gap-2 flex-wrap">
@@ -383,16 +368,14 @@ export default function StudentOnboarding() {
             </span>
           </label>
           <input type="url" value={formData.linkedinUrl} onChange={e => hi('linkedinUrl', e.target.value)}
-            placeholder="https://www.linkedin.com/in/..."
-            className={inputCls} style={showLinkedinWarn ? { borderColor: '#fbbf24' } : {}} />
+            placeholder="https://www.linkedin.com/in/..." className={inputCls}
+            style={showLinkedinWarn ? { borderColor: '#fbbf24' } : {}} />
           {showLinkedinWarn && (
             <p className="mt-1.5 text-xs flex items-center gap-1" style={{ color: '#f59e0b' }}>
               <AlertCircle className="w-3.5 h-3.5" /> Recruiters look at this first. Add it to boost your match score.
             </p>
           )}
         </div>
-
-        {/* GitHub */}
         <div>
           <label className={labelCls}>
             <span className="flex items-center gap-2 flex-wrap">
@@ -401,23 +384,19 @@ export default function StudentOnboarding() {
             </span>
           </label>
           <input type="url" value={formData.githubUrl} onChange={e => hi('githubUrl', e.target.value)}
-            placeholder="https://github.com/yourname"
-            className={inputCls} style={showGithubWarn ? { borderColor: '#fbbf24' } : {}} />
+            placeholder="https://github.com/yourname" className={inputCls}
+            style={showGithubWarn ? { borderColor: '#fbbf24' } : {}} />
           {showGithubWarn && (
             <p className="mt-1.5 text-xs flex items-center gap-1" style={{ color: '#f59e0b' }}>
               <AlertCircle className="w-3.5 h-3.5" /> Your GitHub shows real proof of work. Don't skip this.
             </p>
           )}
         </div>
-
-        {/* Portfolio */}
         <div>
           <label className={labelCls}>Portfolio</label>
           <input type="url" value={formData.portfolioUrl} onChange={e => hi('portfolioUrl', e.target.value)}
             placeholder="https://yourportfolio.com" className={inputCls} />
         </div>
-
-        {/* Other Links — extraLinks is top-level state, inputs never remount */}
         <div>
           <label className={labelCls}>Other Links</label>
           <div className="space-y-2">
@@ -426,8 +405,7 @@ export default function StudentOnboarding() {
                 <input type="url" value={link} onChange={e => updateExtraLink(idx, e.target.value)}
                   placeholder="https://example.com" className={inputCls + ' flex-1'} />
                 {extraLinks.length > 1 && (
-                  <button onClick={() => removeExtraLink(idx)}
-                    className="px-3 rounded-lg border transition-colors"
+                  <button onClick={() => removeExtraLink(idx)} className="px-3 rounded-lg border transition-colors"
                     style={{ borderColor: 'var(--border)', color: 'var(--text-dim)' }}>
                     <X className="w-4 h-4" />
                   </button>
@@ -440,8 +418,6 @@ export default function StudentOnboarding() {
           </div>
         </div>
       </div>
-
-      {/* Other Profiles — also reads from formData top-level */}
       <div className="pt-5" style={{ borderTop: '1px solid var(--border)' }}>
         <label className={labelCls}>Other Profiles</label>
         <div className="space-y-2">
@@ -454,18 +430,12 @@ export default function StudentOnboarding() {
             <div key={field} className="flex items-center gap-3 px-4 py-3 rounded-lg border"
               style={{ borderColor: 'var(--border)', background: 'var(--bg-subtle)' }}>
               <Logo theme={theme} />
-              <input
-                type="text"
-                value={formData[field]}
-                onChange={e => hi(field, e.target.value)}
+              <input type="text" value={formData[field]} onChange={e => hi(field, e.target.value)}
                 placeholder={placeholder}
                 style={{ flex: 1, background: 'transparent', outline: 'none', fontSize: '0.875rem', color: 'var(--text)' }}
-                className="placeholder:text-[var(--text-dim)]"
-              />
+                className="placeholder:text-[var(--text-dim)]" />
               {formData[field] && (
-                <button onClick={() => hi(field, '')} style={{ color: 'var(--text-dim)' }}>
-                  <X className="w-4 h-4" />
-                </button>
+                <button onClick={() => hi(field, '')} style={{ color: 'var(--text-dim)' }}><X className="w-4 h-4" /></button>
               )}
             </div>
           ))}
@@ -478,7 +448,6 @@ export default function StudentOnboarding() {
     <div>
       <StepHeader label="03 — Skills & Projects" title={<>What can you<br /><em>build & show?</em></>}
         sub="Add your skills and the projects that prove them. This is your signal." />
-
       {step2Attempted && (showLinkedinWarn || showGithubWarn) && (
         <div className="mb-6 p-4 rounded-lg border flex items-start gap-3"
           style={{ borderColor: 'rgba(251,191,36,0.4)', background: 'rgba(245,158,11,0.05)' }}>
@@ -494,8 +463,6 @@ export default function StudentOnboarding() {
           </div>
         </div>
       )}
-
-      {/* GitHub import */}
       <div className="mb-6 p-4 rounded-lg border" style={{ borderColor: 'var(--border)', background: 'var(--bg-subtle)' }}>
         <div className="flex items-center gap-3 mb-3">
           <Github className="w-4 h-4" style={{ color: 'var(--text-mid)' }} />
@@ -512,8 +479,6 @@ export default function StudentOnboarding() {
           </button>
         </div>
       </div>
-
-      {/* Skills */}
       <div className="mb-8">
         <p className={labelCls}>Skills</p>
         <div className="flex flex-wrap gap-2 mb-4">
@@ -568,8 +533,6 @@ export default function StudentOnboarding() {
           </div>
         )}
       </div>
-
-      {/* Projects */}
       <div className="pt-6" style={{ borderTop: '1px solid var(--border)' }}>
         <p className={labelCls}>Projects</p>
         <div className="p-4 rounded-lg border space-y-3 mb-4" style={{ borderColor: 'var(--border)', background: 'var(--bg-subtle)' }}>
@@ -624,7 +587,6 @@ export default function StudentOnboarding() {
     </div>
   );
 
-  // FIX 3: Work auth with validation
   const Step4 = () => (
     <div>
       <StepHeader label="04 — Work Authorization" title={<>Your work<br /><em>eligibility.</em></>}
@@ -659,19 +621,16 @@ export default function StudentOnboarding() {
             </div>
           </div>
         </div>
-
         <label className="flex items-start gap-3 cursor-pointer">
           <input type="checkbox" checked={formData.workFromDifferentCountry} onChange={e => hi('workFromDifferentCountry', e.target.checked)} className="mt-0.5 accent-[var(--green)]" />
           <span className="text-sm" style={{ color: 'var(--text-mid)' }}>I will be physically working from a different country while performing services through HUNT.</span>
         </label>
-
         {workAuthError && (
           <div className="p-3 rounded-lg border flex items-center gap-2" style={{ borderColor: 'rgba(239,68,68,0.4)', background: 'rgba(239,68,68,0.05)' }}>
             <AlertCircle className="w-4 h-4 flex-shrink-0" style={{ color: '#ef4444' }} />
             <p className="text-sm" style={{ color: '#ef4444' }}>Please confirm both authorizations below to continue.</p>
           </div>
         )}
-
         <div className="space-y-4 pt-4" style={{ borderTop: '1px solid var(--border)' }}>
           <label className="flex items-start gap-3 cursor-pointer">
             <input type="checkbox" checked={formData.confirmWorkAuth}
@@ -700,7 +659,6 @@ export default function StudentOnboarding() {
             </div>
           </label>
         </div>
-
         <div className="pt-4" style={{ borderTop: '1px solid var(--border)' }}>
           <p className="text-sm font-medium mb-1" style={{ color: 'var(--text)' }}>Digital Signature</p>
           <p className="text-xs mb-4" style={{ color: 'var(--text-dim)' }}>Please provide your digital signature to confirm your agreement.</p>
@@ -779,7 +737,6 @@ export default function StudentOnboarding() {
     );
   };
 
-  // FIX 4: Resume drop zone
   const Step6 = () => (
     <div>
       <StepHeader label="06 — Finish" title={<>Almost there.<br /><em>Set preferences.</em></>}
@@ -799,7 +756,6 @@ export default function StudentOnboarding() {
             ))}
           </div>
         </div>
-
         <div className="grid md:grid-cols-2 gap-4">
           <div>
             <label className={labelCls}>Availability</label>
@@ -819,19 +775,14 @@ export default function StudentOnboarding() {
             </select>
           </div>
         </div>
-
-        {/* FIX 4: Resume section matching screenshot */}
         <div>
           <label className={labelCls}>Resume</label>
           <p className="text-sm mb-3" style={{ color: 'var(--text-mid)' }}>Autofill your profile in seconds by uploading your resume</p>
-
-          {/* Tip pill */}
           <div className="inline-flex items-center gap-2 px-3 py-2 rounded-full border mb-4 text-xs"
             style={{ borderColor: 'var(--green)', background: 'var(--green-tint)', color: 'var(--green-text)' }}>
             <span>💡</span>
             <span>Tip: Hiring managers are more likely to reach out when they see a resume attached</span>
           </div>
-
           {!formData.resume ? (
             <div
               onDrop={handleDrop}
@@ -839,11 +790,7 @@ export default function StudentOnboarding() {
               onDragLeave={() => setDragOver(false)}
               onClick={() => fileInputRef.current?.click()}
               className="cursor-pointer rounded-xl border-2 border-dashed flex flex-col items-center justify-center py-12 px-6 text-center transition-colors duration-150"
-              style={{
-                borderColor: dragOver ? 'var(--green)' : 'var(--border-mid)',
-                background: dragOver ? 'var(--green-tint)' : 'var(--bg-subtle)',
-              }}>
-              {/* Upload icon in circle */}
+              style={{ borderColor: dragOver ? 'var(--green)' : 'var(--border-mid)', background: dragOver ? 'var(--green-tint)' : 'var(--bg-subtle)' }}>
               <div className="w-14 h-14 rounded-full flex items-center justify-center mb-4"
                 style={{ background: 'var(--bg-card)', border: '1px solid var(--border)' }}>
                 <Upload className="w-6 h-6" style={{ color: 'var(--text-dim)' }} />
@@ -864,14 +811,11 @@ export default function StudentOnboarding() {
               <button onClick={() => hi('resume', null)} style={{ color: 'var(--text-dim)' }}><X className="w-4 h-4" /></button>
             </div>
           )}
-
           <label className="flex items-center gap-2 mt-3 cursor-pointer">
             <input type="checkbox" checked={formData.noResume} onChange={e => hi('noResume', e.target.checked)} className="accent-[var(--green)]" />
             <span className="text-sm" style={{ color: 'var(--text-mid)' }}>I don't have a resume</span>
           </label>
         </div>
-
-        {/* Completeness */}
         <div className="p-4 rounded-lg border" style={{ borderColor: 'var(--border)', background: 'var(--bg-subtle)' }}>
           <div className="flex items-center justify-between mb-3">
             <span className="text-sm font-medium" style={{ color: 'var(--text)' }}>Profile completeness</span>
@@ -892,12 +836,16 @@ export default function StudentOnboarding() {
   const CurrentStepComponent = stepComponents[currentStep - 1];
 
   return (
-    <div className="h-screen flex flex-col overflow-hidden transition-colors duration-300"
-      style={{ background: 'var(--bg)', color: 'var(--text)', fontFamily: "'DM Sans', system-ui, sans-serif" }}>
+    // ── Normal page flow — single window scrollbar, no overflow tricks ──
+    <div style={{ background: 'var(--bg)', color: 'var(--text)', fontFamily: "'DM Sans', system-ui, sans-serif", minHeight: '100vh' }}>
 
-      {/* Nav */}
-      <nav className="flex-shrink-0 z-50 flex items-center justify-between px-6 md:px-12 py-4"
-        style={{ borderBottom: '1px solid var(--border)', background: 'var(--bg)' }}>
+      {/* Nav — sticky via position:sticky top-0 */}
+      <nav className="flex items-center justify-between px-6 md:px-12 py-4"
+        style={{
+          position: 'sticky', top: 0, zIndex: 50,
+          borderBottom: '1px solid var(--border)',
+          background: 'var(--bg)',
+        }}>
         <span className="text-base font-medium" style={{ letterSpacing: '0.12em' }}>HUNT</span>
         <span className="text-xs tracking-widest uppercase" style={{ color: 'var(--text-dim)' }}>Build your profile</span>
         <button onClick={toggleTheme} className="w-9 h-9 rounded-full flex items-center justify-center border transition-colors"
@@ -906,8 +854,12 @@ export default function StudentOnboarding() {
         </button>
       </nav>
 
-      {/* FIX 5: Progress bar — no bottom border */}
-      <div className="flex-shrink-0 px-6 md:px-12 py-5" style={{ background: 'var(--bg)' }}>
+      {/* Progress bar — sticky just below nav */}
+      <div className="px-6 md:px-12 py-5"
+        style={{
+          position: 'sticky', top: '57px', zIndex: 40,
+          background: 'var(--bg)',
+        }}>
         <div className="max-w-2xl mx-auto">
           <div className="flex items-center justify-between">
             {STEPS.map((s, i) => {
@@ -936,33 +888,32 @@ export default function StudentOnboarding() {
         </div>
       </div>
 
-      {/* Scrollable content */}
-      <div ref={contentRef} className="flex-1 overflow-y-auto">
-        <div className="max-w-2xl mx-auto px-6 py-10">
-          <div className="rounded-xl border p-6 md:p-10 mb-8" style={{ background: 'var(--bg-card)', borderColor: 'var(--border)' }}>
-            <CurrentStepComponent />
-          </div>
-          <div className="flex items-center justify-between pb-12">
-            <button onClick={handleBack} disabled={currentStep === 1}
-              className="px-6 py-3 text-sm font-medium rounded-lg border transition-colors disabled:opacity-30"
-              style={{ borderColor: 'var(--border)', color: 'var(--text-mid)', background: 'transparent' }}>
-              Back
+      {/* Page content — normal flow, no overflow container */}
+      <div className="max-w-2xl mx-auto px-6 py-10 pb-20">
+        <div className="rounded-xl border p-6 md:p-10 mb-8"
+          style={{ background: 'var(--bg-card)', borderColor: 'var(--border)' }}>
+          <CurrentStepComponent />
+        </div>
+        <div className="flex items-center justify-between">
+          <button onClick={handleBack} disabled={currentStep === 1}
+            className="px-6 py-3 text-sm font-medium rounded-lg border transition-colors disabled:opacity-30"
+            style={{ borderColor: 'var(--border)', color: 'var(--text-mid)', background: 'transparent' }}>
+            Back
+          </button>
+          <span className="text-xs" style={{ color: 'var(--text-dim)' }}>{currentStep} / {STEPS.length}</span>
+          {currentStep < STEPS.length ? (
+            <button onClick={handleNext}
+              className="px-6 py-3 text-sm font-medium rounded-lg flex items-center gap-2 transition-opacity hover:opacity-80"
+              style={{ background: 'var(--text)', color: 'var(--bg)' }}>
+              Continue <ArrowRight className="w-4 h-4" />
             </button>
-            <span className="text-xs" style={{ color: 'var(--text-dim)' }}>{currentStep} / {STEPS.length}</span>
-            {currentStep < STEPS.length ? (
-              <button onClick={handleNext}
-                className="px-6 py-3 text-sm font-medium rounded-lg flex items-center gap-2 transition-opacity hover:opacity-80"
-                style={{ background: 'var(--text)', color: 'var(--bg)' }}>
-                Continue <ArrowRight className="w-4 h-4" />
-              </button>
-            ) : (
-              <button onClick={handleSubmit} disabled={isSubmitting}
-                className="px-6 py-3 text-sm font-medium rounded-lg flex items-center gap-2 transition-opacity hover:opacity-80 disabled:opacity-40"
-                style={{ background: 'var(--green)', color: '#fff' }}>
-                {isSubmitting ? <><Loader className="w-4 h-4 animate-spin" /> Creating…</> : <><CheckCircle2 className="w-4 h-4" /> Complete profile</>}
-              </button>
-            )}
-          </div>
+          ) : (
+            <button onClick={handleSubmit} disabled={isSubmitting}
+              className="px-6 py-3 text-sm font-medium rounded-lg flex items-center gap-2 transition-opacity hover:opacity-80 disabled:opacity-40"
+              style={{ background: 'var(--green)', color: '#fff' }}>
+              {isSubmitting ? <><Loader className="w-4 h-4 animate-spin" /> Creating…</> : <><CheckCircle2 className="w-4 h-4" /> Complete profile</>}
+            </button>
+          )}
         </div>
       </div>
     </div>
