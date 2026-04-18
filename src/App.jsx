@@ -43,7 +43,7 @@ function App() {
     <BrowserRouter>
       <Routes>
         {/* Public routes */}
-        <Route path="/" element={user ? <Navigate to="/swipe" /> : <LandingPage />} />
+        <Route path="/" element={user ? <Navigate to="/studentdashboard" /> : <LandingPage />} />
         
         {/* Protected routes */}
         <Route 
@@ -51,7 +51,7 @@ function App() {
           element={user ? <StudentOnboarding /> : <Navigate to="/" />} 
         />
         <Route 
-          path="/swipe" 
+          path="/studentdashboard" 
           element={user ? <StudentDashboard /> : <Navigate to="/" />} 
         />
         <Route 
