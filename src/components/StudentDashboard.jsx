@@ -755,7 +755,7 @@ export default function StudentDashboard() {
           {navItems.map(({ id, label, icon: Icon }) => {
             const active = activeTab === id;
             return (
-              <button key={id} className="hn-item" onClick={() => { if (id === 'profile') { navigate('/profile'); return; } setActiveTab(id); }}
+              <button key={id} className="hn-item" onClick={() => setActiveTab(id)}
                 style={{ display: 'flex', alignItems: 'center', gap: '9px', width: '100%', padding: '9px 11px', borderRadius: '7px', border: 'none', cursor: 'pointer', marginBottom: '1px', background: active ? 'var(--bg-subtle)' : 'transparent', color: active ? 'var(--text)' : 'var(--text-dim)', fontSize: '13px', fontWeight: active ? 600 : 400, textAlign: 'left', transition: 'background 0.12s' }}>
                 <Icon size={15} style={{ flexShrink: 0 }} />
                 {label}
@@ -813,7 +813,7 @@ export default function StudentDashboard() {
                 <p style={{ fontSize: '11px', fontWeight: 600, color: 'var(--green)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{studentProfile?.email || studentProfile?.full_name}</p>
               </div>
               {[
-                { label: 'Profile', action: () => { navigate('/profile'); setShowAccountMenu(false); } },
+                { label: 'Profile', action: () => { setActiveTab('profile'); setShowAccountMenu(false); } },
                 { label: 'Settings', action: () => { setShowSettings(true); setShowAccountMenu(false); } },
                 { label: 'Support', action: () => { window.open('mailto:support@hunt.so'); setShowAccountMenu(false); } },
               ].map(item => (
@@ -1137,6 +1137,11 @@ export default function StudentDashboard() {
         {/* ── NETWORK ── */}
         {activeTab === 'network' && (
           <NetworkTab studentProfile={studentProfile} />
+        )}
+
+        {/* ── PROFILE ── */}
+        {activeTab === 'profile' && (
+          <ProfileTab studentProfile={studentProfile} setStudentProfile={setStudentProfile} theme={theme} setTheme={setTheme} />
         )}
 
       </main>
@@ -1612,6 +1617,536 @@ function NetworkTab({ studentProfile }) {
                 </div>
                 <div><p style={{ fontSize: '13px', fontWeight: 600, color: 'var(--text)' }}>Email</p><p style={{ fontSize: '11px', color: 'var(--text-dim)' }}>Send to specific people</p></div>
               </button>
+            </div>
+          </div>
+        )}
+
+      </div>
+    </div>
+  );
+}
+
+// ─── Profile Tab ───────────────────────────────────────────────────────────────
+const SKILL_OPTIONS_P = [
+  { name: 'JavaScript', cat: 'Language' }, { name: 'Python', cat: 'Language' },
+  { name: 'TypeScript', cat: 'Language' }, { name: 'Java', cat: 'Language' },
+  { name: 'C / C++', cat: 'Language' }, { name: 'Golang', cat: 'Language' },
+  { name: 'SQL', cat: 'Language' }, { name: 'React', cat: 'Frontend' },
+  { name: 'Next.js', cat: 'Frontend' }, { name: 'Tailwind CSS', cat: 'Frontend' },
+  { name: 'Node.js', cat: 'Backend' }, { name: 'Express.js', cat: 'Backend' },
+  { name: 'Django', cat: 'Backend' }, { name: 'FastAPI', cat: 'Backend' },
+  { name: 'REST API', cat: 'Backend' }, { name: 'GraphQL', cat: 'Backend' },
+  { name: 'PostgreSQL', cat: 'Database' }, { name: 'MongoDB', cat: 'Database' },
+  { name: 'MySQL', cat: 'Database' }, { name: 'Redis', cat: 'Database' },
+  { name: 'Machine Learning', cat: 'Data Science' }, { name: 'TensorFlow', cat: 'Data Science' },
+  { name: 'PyTorch', cat: 'Data Science' }, { name: 'Pandas', cat: 'Data Science' },
+  { name: 'Docker', cat: 'DevOps' }, { name: 'AWS', cat: 'DevOps' },
+  { name: 'CI/CD', cat: 'DevOps' }, { name: 'Linux', cat: 'DevOps' },
+  { name: 'Git', cat: 'Tools' }, { name: 'Figma', cat: 'Design' },
+  { name: 'Flutter', cat: 'Mobile' }, { name: 'React Native', cat: 'Mobile' },
+];
+const SKILL_CATS_P = [...new Set(SKILL_OPTIONS_P.map(s => s.cat))];
+const LEVEL_LABELS_P = ['', 'Beginner', 'Elementary', 'Intermediate', 'Advanced', 'Expert'];
+const ROLE_OPTIONS_P = [
+  'Full Stack Developer', 'Backend Developer', 'Frontend Developer',
+  'Mobile Developer', 'DevOps Engineer', 'Data Analyst',
+  'ML Engineer', 'UI/UX Designer', 'Security Engineer', 'QA Engineer',
+];
+
+const inp_p = { width: '100%', padding: '9px 12px', borderRadius: 7, border: '1px solid var(--border)', background: 'var(--bg-subtle)', color: 'var(--text)', fontSize: 12, fontFamily: 'inherit', outline: 'none', boxSizing: 'border-box' };
+
+function Toggle_P({ on, onChange }) {
+  return (
+    <div onClick={() => onChange(!on)} style={{ width: 34, height: 19, borderRadius: 10, background: on ? 'var(--green)' : 'var(--border-mid)', cursor: 'pointer', position: 'relative', transition: 'background 0.2s', flexShrink: 0 }}>
+      <div style={{ position: 'absolute', top: 2, left: on ? 17 : 2, width: 15, height: 15, borderRadius: '50%', background: '#fff', boxShadow: '0 1px 3px rgba(0,0,0,0.2)', transition: 'left 0.18s' }} />
+    </div>
+  );
+}
+
+const GH_SVG_P = <svg width="13" height="13" viewBox="0 0 24 24" fill="currentColor"><path d="M12 0C5.37 0 0 5.37 0 12c0 5.31 3.435 9.795 8.205 11.385.6.105.825-.255.825-.57 0-.285-.015-1.23-.015-2.235-3.015.555-3.795-.735-4.035-1.41-.135-.345-.72-1.41-1.23-1.695-.42-.225-1.02-.78-.015-.795.945-.015 1.62.87 1.845 1.23 1.08 1.815 2.805 1.305 3.495.99.105-.78.42-1.305.765-1.605-2.67-.3-5.46-1.335-5.46-5.925 0-1.305.465-2.385 1.23-3.225-.12-.3-.54-1.53.12-3.18 0 0 1.005-.315 3.3 1.23.96-.27 1.98-.405 3-.405s2.04.135 3 .405c2.295-1.56 3.3-1.23 3.3-1.23.66 1.65.24 2.88.12 3.18.765.84 1.23 1.905 1.23 3.225 0 4.605-2.805 5.625-5.475 5.925.435.375.81 1.095.81 2.22 0 1.605-.015 2.895-.015 3.3 0 .315.225.69.825.57A12.02 12.02 0 0 0 24 12c0-6.63-5.37-12-12-12z"/></svg>;
+const LI_SVG_P = <svg width="13" height="13" viewBox="0 0 24 24" fill="currentColor"><path d="M20.447 20.452h-3.554v-5.569c0-1.328-.027-3.037-1.852-3.037-1.853 0-2.136 1.445-2.136 2.939v5.667H9.351V9h3.414v1.561h.046c.477-.9 1.637-1.85 3.37-1.85 3.601 0 4.267 2.37 4.267 5.455v6.286zM5.337 7.433a2.062 2.062 0 0 1-2.063-2.065 2.064 2.064 0 1 1 2.063 2.065zm1.782 13.019H3.555V9h3.564v11.452zM22.225 0H1.771C.792 0 0 .774 0 1.729v20.542C0 23.227.792 24 1.771 24h20.451C23.2 24 24 23.227 24 22.271V1.729C24 .774 23.2 0 22.222 0h.003z"/></svg>;
+const LC_SVG_P = <svg width="13" height="13" viewBox="0 0 24 24" fill="currentColor"><path d="M13.483 0a1.374 1.374 0 0 0-.961.438L7.116 6.226l-3.854 4.126a5.266 5.266 0 0 0-1.209 2.104 5.35 5.35 0 0 0-.125.513 5.527 5.527 0 0 0 .062 2.362 5.83 5.83 0 0 0 .349 1.017 5.938 5.938 0 0 0 1.271 1.818l4.277 4.193.039.038c2.248 2.165 5.852 2.133 8.063-.074l2.396-2.392c.54-.54.54-1.414.003-1.955a1.378 1.378 0 0 0-1.951-.003l-2.396 2.392a3.021 3.021 0 0 1-4.205.038l-.02-.019-4.276-4.193c-.652-.64-.972-1.469-.948-2.263a2.68 2.68 0 0 1 .066-.523 2.545 2.545 0 0 1 .619-1.164L9.13 8.114c1.058-1.134 3.204-1.27 4.43-.278l3.501 2.831c.593.48 1.461.387 1.94-.207a1.384 1.384 0 0 0-.207-1.943l-3.5-2.831c-.8-.647-1.766-1.045-2.774-1.202l2.015-2.158A1.384 1.384 0 0 0 13.483 0zm-2.866 12.815a1.38 1.38 0 0 0-1.38 1.382 1.38 1.38 0 0 0 1.38 1.382H20.79a1.38 1.38 0 0 0 1.38-1.382 1.38 1.38 0 0 0-1.38-1.382z"/></svg>;
+const GLOBE_SVG_P = <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2"><circle cx="12" cy="12" r="10"/><line x1="2" y1="12" x2="22" y2="12"/><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/></svg>;
+
+function ProfileTab({ studentProfile, setStudentProfile, theme, setTheme }) {
+  const [activeSection, setActiveSection] = React.useState('overview');
+  const [draft, setDraft] = React.useState(() => JSON.parse(JSON.stringify(studentProfile || {})));
+  const [saving, setSaving] = React.useState(false);
+  const [toast, setToast] = React.useState(null);
+  const [skillCat, setSkillCat] = React.useState(SKILL_CATS_P[0]);
+  const [addingProject, setAddingProject] = React.useState(false);
+  const [newProject, setNewProject] = React.useState({ title: '', techStack: '', description: '', projectUrl: '', githubUrl: '' });
+  const [addingEdu, setAddingEdu] = React.useState(false);
+  const [newEdu, setNewEdu] = React.useState({ school: '', degree: '', major: '', startYear: '', endYear: '' });
+  const [newCert, setNewCert] = React.useState('');
+  const [newAward, setNewAward] = React.useState('');
+
+  const showToast = (msg, type = 'ok') => { setToast({ msg, type }); setTimeout(() => setToast(null), 2200); };
+
+  const save = async (updates) => {
+    setSaving(true);
+    try {
+      const { updateStudentProfile } = await import('../services/supabase');
+      const merged = { ...studentProfile, ...updates };
+      let sc = 0;
+      if (merged.full_name) sc += 10; if (merged.college) sc += 10;
+      if ((merged.skills || []).length >= 5) sc += 25; else if ((merged.skills || []).length >= 1) sc += 10;
+      if ((merged.projects || []).length >= 1) sc += 15; if (merged.github_url) sc += 5;
+      if (merged.linkedin_url) sc += 5; if (merged.resume_url) sc += 5; if (merged.email) sc += 5;
+      if ((merged.preferred_roles || []).length > 0) sc += 10;
+      const updated = await updateStudentProfile({ ...updates, profile_completeness: Math.min(sc, 100) });
+      setStudentProfile(updated);
+      setDraft(JSON.parse(JSON.stringify(updated)));
+      showToast('Saved');
+    } catch (e) { showToast('Save failed', 'err'); }
+    finally { setSaving(false); }
+  };
+
+  const d = draft;
+  const initials = (d.full_name || '').split(' ').map(n => n[0]).join('').slice(0, 2) || 'U';
+  const Row = ({ label, children }) => (
+    <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
+      <p style={{ fontSize: 10, fontWeight: 600, letterSpacing: '0.08em', textTransform: 'uppercase', color: 'var(--text-dim)', margin: 0 }}>{label}</p>
+      {children}
+    </div>
+  );
+  const Card = ({ children, style: s = {} }) => (
+    <div style={{ background: 'var(--bg-card)', border: '1px solid var(--border)', borderRadius: 12, padding: '18px 20px', marginBottom: 12, ...s }}>{children}</div>
+  );
+  const SectionTitle = ({ children }) => (
+    <p style={{ fontSize: 10, fontWeight: 700, letterSpacing: '0.12em', textTransform: 'uppercase', color: 'var(--text-dim)', marginBottom: 14 }}>{children}</p>
+  );
+  const SaveBtn = ({ onClick }) => (
+    <button onClick={onClick} disabled={saving} style={{ padding: '6px 13px', borderRadius: 6, border: 'none', background: 'var(--green)', color: '#fff', fontSize: 11, fontWeight: 600, cursor: saving ? 'default' : 'pointer', opacity: saving ? 0.6 : 1, fontFamily: 'inherit' }}>
+      {saving ? 'Saving…' : 'Save'}
+    </button>
+  );
+  const SECTIONS = [
+    { id: 'overview', label: 'Overview' },
+    { id: 'resume',   label: 'Resume & Links' },
+    { id: 'skills',   label: 'Skills' },
+    { id: 'prefs',    label: 'Preferences' },
+    { id: 'myhunt',   label: 'My Hunt' },
+    { id: 'account',  label: 'Account' },
+  ];
+
+  return (
+    <div style={{ flex: 1, display: 'flex', overflow: 'hidden', animation: 'hunt-fade-in 0.25s ease' }}>
+      {toast && (
+        <div style={{ position: 'fixed', top: 18, left: '50%', transform: 'translateX(-50%)', zIndex: 9999, padding: '7px 16px', borderRadius: 7, fontSize: 12, fontWeight: 500, background: toast.type === 'err' ? 'rgba(192,57,43,0.95)' : 'rgba(26,122,74,0.95)', color: '#fff', pointerEvents: 'none', boxShadow: '0 3px 12px rgba(0,0,0,0.15)' }}>{toast.msg}</div>
+      )}
+
+      {/* Left sub-nav */}
+      <div style={{ width: 176, flexShrink: 0, borderRight: '1px solid var(--border)', padding: '24px 8px 24px 10px', display: 'flex', flexDirection: 'column', gap: 2, overflowY: 'auto' }}>
+        <p style={{ fontSize: 10, fontWeight: 700, letterSpacing: '0.12em', textTransform: 'uppercase', color: 'var(--text-dim)', padding: '0 8px', marginBottom: 12 }}>Profile</p>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '7px 8px', borderRadius: 8, marginBottom: 10 }}>
+          <div style={{ width: 30, height: 30, borderRadius: '50%', background: 'var(--green-tint)', border: '1px solid var(--green)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 10, fontWeight: 700, color: 'var(--green)', flexShrink: 0 }}>{initials}</div>
+          <div style={{ overflow: 'hidden' }}>
+            <p style={{ fontSize: 11, fontWeight: 600, color: 'var(--text)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', maxWidth: 96 }}>{d.full_name || '—'}</p>
+            <p style={{ fontSize: 10, color: 'var(--text-dim)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', maxWidth: 96 }}>{d.college || 'Add college'}</p>
+          </div>
+        </div>
+        {SECTIONS.map(s => (
+          <button key={s.id} className="hn-item" onClick={() => setActiveSection(s.id)} style={{ display: 'flex', width: '100%', padding: '8px 10px', borderRadius: 7, border: 'none', cursor: 'pointer', background: activeSection === s.id ? 'var(--bg-subtle)' : 'transparent', color: activeSection === s.id ? 'var(--text)' : 'var(--text-dim)', fontSize: 12, fontWeight: activeSection === s.id ? 600 : 400, textAlign: 'left', fontFamily: 'inherit', transition: 'background 0.1s' }}>
+            {s.label}
+          </button>
+        ))}
+      </div>
+
+      {/* Content area */}
+      <div style={{ flex: 1, overflowY: 'auto', padding: '28px 36px 60px' }}>
+
+        {/* OVERVIEW */}
+        {activeSection === 'overview' && (
+          <div style={{ maxWidth: 660 }}>
+            <SectionTitle>Overview</SectionTitle>
+            <Card style={{ padding: 0, overflow: 'hidden' }}>
+              <div style={{ height: 88, background: 'linear-gradient(135deg, #1A7A4A 0%, #0D4A2E 100%)', position: 'relative', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                <p style={{ fontFamily: "'Editorial New', Georgia, serif", fontSize: 19, color: 'rgba(255,255,255,0.85)', fontStyle: 'italic' }}>On a hunt.</p>
+                <label style={{ position: 'absolute', top: 8, right: 8, width: 24, height: 24, borderRadius: '50%', background: 'rgba(0,0,0,0.3)', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer' }}>
+                  <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg>
+                  <input type="file" accept="image/*" style={{ display: 'none' }} onChange={() => showToast('Coming soon')} />
+                </label>
+              </div>
+              <div style={{ padding: '0 20px 18px' }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', marginBottom: 8 }}>
+                  <div style={{ width: 50, height: 50, borderRadius: '50%', background: 'var(--green-tint)', border: '3px solid var(--bg-card)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 15, fontWeight: 700, color: 'var(--green)', marginTop: -25, position: 'relative' }}>
+                    {initials}
+                    <label style={{ position: 'absolute', bottom: 0, right: 0, width: 16, height: 16, borderRadius: '50%', background: 'var(--green)', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', border: '2px solid var(--bg-card)' }}>
+                      <svg width="7" height="7" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2.5"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg>
+                      <input type="file" accept="image/*" style={{ display: 'none' }} onChange={() => showToast('Coming soon')} />
+                    </label>
+                  </div>
+                </div>
+                <p style={{ fontFamily: "'Editorial New', Georgia, serif", fontSize: 15, color: 'var(--text)', marginBottom: 2 }}>{d.full_name || '—'}</p>
+                <p style={{ fontSize: 11, color: 'var(--text-dim)' }}>{d.college}{d.year ? ` · Year ${d.year}` : ''}</p>
+                {d.headline && <p style={{ fontSize: 12, color: 'var(--text-mid)', marginTop: 3 }}>{d.headline}</p>}
+              </div>
+            </Card>
+            <Card>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
+                <p style={{ fontSize: 12, fontWeight: 600, color: 'var(--text)' }}>Headline & Bio</p>
+                <SaveBtn onClick={() => save({ headline: d.headline, bio: d.bio })} />
+              </div>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 9 }}>
+                <Row label="Headline"><input style={inp_p} value={d.headline || ''} placeholder="Full Stack Dev · Open to internships" onChange={e => setDraft(x => ({ ...x, headline: e.target.value }))} /></Row>
+                <Row label="Bio"><textarea style={{ ...inp_p, resize: 'none' }} rows={3} value={d.bio || ''} placeholder="Tell recruiters about yourself..." onChange={e => setDraft(x => ({ ...x, bio: e.target.value }))} /></Row>
+              </div>
+            </Card>
+            <Card>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
+                <p style={{ fontSize: 12, fontWeight: 600, color: 'var(--text)' }}>Basic Info</p>
+                <SaveBtn onClick={() => save({ full_name: d.full_name, college: d.college, year: d.year, phone: d.phone, email: d.email })} />
+              </div>
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 9 }}>
+                {[{ f: 'full_name', label: 'Full Name', ph: 'Priya Sharma' },{ f: 'college', label: 'College', ph: 'VJTI Mumbai' },{ f: 'phone', label: 'Phone', ph: '+91 98765 43210' },{ f: 'email', label: 'Email', ph: 'you@email.com' }].map(({ f, label, ph }) => (
+                  <Row key={f} label={label}><input style={inp_p} value={d[f] || ''} placeholder={ph} onChange={e => setDraft(x => ({ ...x, [f]: e.target.value }))} /></Row>
+                ))}
+                <Row label="Year"><select style={inp_p} value={d.year || 3} onChange={e => setDraft(x => ({ ...x, year: parseInt(e.target.value) }))}>{[1,2,3,4].map(y => <option key={y} value={y}>{y}{['st','nd','rd','th'][y-1]} Year</option>)}</select></Row>
+              </div>
+            </Card>
+          </div>
+        )}
+
+        {/* RESUME & LINKS */}
+        {activeSection === 'resume' && (
+          <div style={{ maxWidth: 660 }}>
+            <SectionTitle>Resume & Links</SectionTitle>
+            <Card>
+              <p style={{ fontSize: 12, fontWeight: 600, color: 'var(--text)', marginBottom: 10 }}>Resume PDF</p>
+              {d.resume_url ? (
+                <div style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '9px 13px', borderRadius: 7, border: '1px solid var(--green)', background: 'var(--green-tint)' }}>
+                  <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="var(--green)" strokeWidth="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+                  <span style={{ flex: 1, fontSize: 12, fontWeight: 500, color: 'var(--green-text)' }}>Resume uploaded</span>
+                  <a href={d.resume_url} target="_blank" rel="noopener noreferrer" style={{ fontSize: 11, color: 'var(--green-text)', textDecoration: 'none' }}>View ↗</a>
+                  <label style={{ fontSize: 11, padding: '3px 9px', borderRadius: 5, border: '1px solid var(--green)', color: 'var(--green)', cursor: 'pointer', fontFamily: 'inherit' }}>Replace<input type="file" accept=".pdf" style={{ display: 'none' }} onChange={() => showToast('Upload coming soon')} /></label>
+                </div>
+              ) : (
+                <label style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 5, padding: '24px', borderRadius: 8, border: '2px dashed var(--border-mid)', cursor: 'pointer' }}
+                  onMouseEnter={e => { e.currentTarget.style.borderColor = 'var(--green)'; e.currentTarget.style.background = 'var(--green-tint)'; }}
+                  onMouseLeave={e => { e.currentTarget.style.borderColor = 'var(--border-mid)'; e.currentTarget.style.background = 'transparent'; }}>
+                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="var(--text-dim)" strokeWidth="1.5"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+                  <span style={{ fontSize: 12, color: 'var(--text-mid)' }}>Drop PDF here or <span style={{ color: 'var(--green)' }}>browse</span></span>
+                  <input type="file" accept=".pdf" style={{ display: 'none' }} onChange={() => showToast('Upload coming soon')} />
+                </label>
+              )}
+            </Card>
+            <Card>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 9 }}>
+                <p style={{ fontSize: 12, fontWeight: 600, color: 'var(--text)' }}>Summary</p>
+                <SaveBtn onClick={() => save({ summary: d.summary })} />
+              </div>
+              <textarea style={{ ...inp_p, resize: 'none' }} rows={3} value={d.summary || ''} placeholder="Brief professional summary..." onChange={e => setDraft(x => ({ ...x, summary: e.target.value }))} />
+            </Card>
+            <Card>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
+                <p style={{ fontSize: 12, fontWeight: 600, color: 'var(--text)' }}>Education</p>
+                <button onClick={() => setAddingEdu(true)} style={{ padding: '4px 10px', borderRadius: 6, border: '1px solid var(--border)', background: 'transparent', color: 'var(--text-dim)', fontSize: 11, cursor: 'pointer', fontFamily: 'inherit' }}>+ Add</button>
+              </div>
+              {(d.education || []).map((edu, i) => (
+                <div key={i} style={{ display: 'flex', gap: 9, padding: '9px 11px', borderRadius: 7, border: '1px solid var(--border)', background: 'var(--bg-subtle)', marginBottom: 7, alignItems: 'flex-start' }}>
+                  <div style={{ flex: 1 }}>
+                    <p style={{ fontSize: 12, fontWeight: 600, color: 'var(--text)', marginBottom: 1 }}>{edu.school}</p>
+                    <p style={{ fontSize: 11, color: 'var(--text-mid)', marginBottom: 1 }}>{edu.degree}{edu.major ? ` · ${edu.major}` : ''}</p>
+                    <p style={{ fontSize: 10, color: 'var(--text-dim)' }}>{edu.startYear}–{edu.endYear || 'Present'}</p>
+                  </div>
+                  <button onClick={() => { const ed = (d.education || []).filter((_, j) => j !== i); setDraft(x => ({ ...x, education: ed })); save({ education: ed }); }} style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--text-dim)', padding: 0, fontSize: 14 }}
+                    onMouseEnter={e => e.currentTarget.style.color = 'var(--red)'}
+                    onMouseLeave={e => e.currentTarget.style.color = 'var(--text-dim)'}>×</button>
+                </div>
+              ))}
+              {addingEdu && (
+                <div style={{ border: '1px solid var(--border)', borderRadius: 8, padding: 13, background: 'var(--bg-subtle)' }}>
+                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 7, marginBottom: 7 }}>
+                    {[{ f:'school', ph:'University/College *' },{ f:'degree', ph:'Degree' },{ f:'major', ph:'Major' },{ f:'startYear', ph:'Start year' },{ f:'endYear', ph:'End year' }].map(({ f, ph }) => (
+                      <input key={f} style={inp_p} value={newEdu[f]} placeholder={ph} onChange={e => setNewEdu(x => ({ ...x, [f]: e.target.value }))} />
+                    ))}
+                  </div>
+                  <div style={{ display: 'flex', gap: 6 }}>
+                    <button onClick={() => { if (!newEdu.school) return; const ed = [...(d.education || []), newEdu]; setDraft(x => ({ ...x, education: ed })); save({ education: ed }); setNewEdu({ school:'',degree:'',major:'',startYear:'',endYear:'' }); setAddingEdu(false); }} style={{ padding: '5px 11px', borderRadius: 6, border: 'none', background: 'var(--green)', color: '#fff', fontSize: 11, cursor: 'pointer', fontFamily: 'inherit' }}>Add</button>
+                    <button onClick={() => setAddingEdu(false)} style={{ padding: '5px 11px', borderRadius: 6, border: '1px solid var(--border)', background: 'transparent', color: 'var(--text-mid)', fontSize: 11, cursor: 'pointer', fontFamily: 'inherit' }}>Cancel</button>
+                  </div>
+                </div>
+              )}
+            </Card>
+            <Card>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
+                <p style={{ fontSize: 12, fontWeight: 600, color: 'var(--text)' }}>Projects</p>
+                <button onClick={() => setAddingProject(true)} style={{ padding: '4px 10px', borderRadius: 6, border: '1px solid var(--border)', background: 'transparent', color: 'var(--text-dim)', fontSize: 11, cursor: 'pointer', fontFamily: 'inherit' }}>+ Add</button>
+              </div>
+              {(d.projects || []).map((p, i) => (
+                <div key={i} style={{ padding: '9px 11px', borderRadius: 7, border: '1px solid var(--border)', background: 'var(--bg-subtle)', marginBottom: 7 }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 4 }}>
+                    <p style={{ fontSize: 12, fontWeight: 600, color: 'var(--text)' }}>{p.title || p.name}</p>
+                    <button onClick={() => { const pr = (d.projects || []).filter((_, j) => j !== i); setDraft(x => ({ ...x, projects: pr })); save({ projects: pr }); }} style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--text-dim)', padding: 0, fontSize: 14 }}
+                      onMouseEnter={e => e.currentTarget.style.color = 'var(--red)'}
+                      onMouseLeave={e => e.currentTarget.style.color = 'var(--text-dim)'}>×</button>
+                  </div>
+                  <div style={{ display: 'flex', flexWrap: 'wrap', gap: 4 }}>
+                    {(Array.isArray(p.techStack) ? p.techStack : []).map((t, j) => (
+                      <span key={j} style={{ fontSize: 10, padding: '2px 6px', borderRadius: 4, border: '1px solid var(--border)', color: 'var(--text-dim)' }}>{t}</span>
+                    ))}
+                  </div>
+                </div>
+              ))}
+              {addingProject && (
+                <div style={{ border: '1px solid var(--border)', borderRadius: 8, padding: 13, background: 'var(--bg-subtle)' }}>
+                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 7, marginBottom: 7 }}>
+                    <input style={inp_p} value={newProject.title} placeholder="Title *" onChange={e => setNewProject(x => ({ ...x, title: e.target.value }))} />
+                    <input style={inp_p} value={newProject.techStack} placeholder="React, Node.js..." onChange={e => setNewProject(x => ({ ...x, techStack: e.target.value }))} />
+                  </div>
+                  <textarea style={{ ...inp_p, resize: 'none', marginBottom: 7 }} rows={2} value={newProject.description} placeholder="Description" onChange={e => setNewProject(x => ({ ...x, description: e.target.value }))} />
+                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 7, marginBottom: 7 }}>
+                    <input style={inp_p} value={newProject.projectUrl} placeholder="Live URL" onChange={e => setNewProject(x => ({ ...x, projectUrl: e.target.value }))} />
+                    <input style={inp_p} value={newProject.githubUrl} placeholder="GitHub URL" onChange={e => setNewProject(x => ({ ...x, githubUrl: e.target.value }))} />
+                  </div>
+                  <div style={{ display: 'flex', gap: 6 }}>
+                    <button onClick={() => { if (!newProject.title) return; const pr = [...(d.projects || []), { ...newProject, techStack: newProject.techStack.split(',').map(t => t.trim()), id: Date.now() }]; setDraft(x => ({ ...x, projects: pr })); save({ projects: pr }); setNewProject({ title:'',techStack:'',description:'',projectUrl:'',githubUrl:'' }); setAddingProject(false); }} style={{ padding: '5px 11px', borderRadius: 6, border: 'none', background: 'var(--green)', color: '#fff', fontSize: 11, cursor: 'pointer', fontFamily: 'inherit' }}>Add</button>
+                    <button onClick={() => setAddingProject(false)} style={{ padding: '5px 11px', borderRadius: 6, border: '1px solid var(--border)', background: 'transparent', color: 'var(--text-mid)', fontSize: 11, cursor: 'pointer', fontFamily: 'inherit' }}>Cancel</button>
+                  </div>
+                </div>
+              )}
+            </Card>
+            <Card>
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 20 }}>
+                <div>
+                  <p style={{ fontSize: 12, fontWeight: 600, color: 'var(--text)', marginBottom: 8 }}>Certifications</p>
+                  <div style={{ display: 'flex', flexWrap: 'wrap', gap: 5, marginBottom: 7 }}>
+                    {(d.certifications || []).map((c, i) => (
+                      <div key={i} style={{ display: 'flex', alignItems: 'center', gap: 4, padding: '3px 8px', borderRadius: 20, border: '1px solid var(--border)', background: 'var(--bg-subtle)', fontSize: 11 }}>
+                        {c}<button onClick={() => { const cer = (d.certifications||[]).filter((_,j)=>j!==i); setDraft(x=>({...x,certifications:cer})); save({certifications:cer}); }} style={{ background:'none',border:'none',cursor:'pointer',color:'var(--text-dim)',padding:0,lineHeight:1 }}>×</button>
+                      </div>
+                    ))}
+                  </div>
+                  <div style={{ display: 'flex', gap: 5 }}>
+                    <input style={{ ...inp_p, flex: 1 }} value={newCert} placeholder="AWS Developer..." onChange={e => setNewCert(e.target.value)} onKeyDown={e => { if (e.key==='Enter'&&newCert.trim()){const cer=[...(d.certifications||[]),newCert.trim()];setDraft(x=>({...x,certifications:cer}));save({certifications:cer});setNewCert('');}}} />
+                    <button onClick={() => { if(!newCert.trim())return;const cer=[...(d.certifications||[]),newCert.trim()];setDraft(x=>({...x,certifications:cer}));save({certifications:cer});setNewCert(''); }} style={{ padding:'0 9px',borderRadius:6,border:'none',background:'var(--green)',color:'#fff',fontSize:13,cursor:'pointer',fontFamily:'inherit' }}>+</button>
+                  </div>
+                </div>
+                <div>
+                  <p style={{ fontSize: 12, fontWeight: 600, color: 'var(--text)', marginBottom: 8 }}>Awards</p>
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: 5, marginBottom: 7 }}>
+                    {(d.awards || []).map((a, i) => (
+                      <div key={i} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '5px 9px', borderRadius: 7, border: '1px solid var(--border)', background: 'var(--bg-subtle)', fontSize: 11 }}>
+                        <span>⭐ {a}</span>
+                        <button onClick={() => { const aw=(d.awards||[]).filter((_,j)=>j!==i);setDraft(x=>({...x,awards:aw}));save({awards:aw}); }} style={{ background:'none',border:'none',cursor:'pointer',color:'var(--text-dim)',padding:0 }}>×</button>
+                      </div>
+                    ))}
+                  </div>
+                  <div style={{ display: 'flex', gap: 5 }}>
+                    <input style={{ ...inp_p, flex: 1 }} value={newAward} placeholder="1st place Flipkart GRiD..." onChange={e => setNewAward(e.target.value)} onKeyDown={e => { if (e.key==='Enter'&&newAward.trim()){const aw=[...(d.awards||[]),newAward.trim()];setDraft(x=>({...x,awards:aw}));save({awards:aw});setNewAward('');}}} />
+                    <button onClick={() => { if(!newAward.trim())return;const aw=[...(d.awards||[]),newAward.trim()];setDraft(x=>({...x,awards:aw}));save({awards:aw});setNewAward(''); }} style={{ padding:'0 9px',borderRadius:6,border:'none',background:'var(--green)',color:'#fff',fontSize:13,cursor:'pointer',fontFamily:'inherit' }}>+</button>
+                  </div>
+                </div>
+              </div>
+            </Card>
+            <Card>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 14 }}>
+                <p style={{ fontSize: 12, fontWeight: 600, color: 'var(--text)' }}>Coding Profiles & Links</p>
+                <SaveBtn onClick={() => save({ coding_profiles: d.coding_profiles, github_url: d.github_url, linkedin_url: d.linkedin_url, portfolio_url: d.portfolio_url })} />
+              </div>
+              {[
+                { key:'leetcode',       logo:LC_SVG_P,   label:'LeetCode',   ph:'username',                  bg:'#FFA116', type:'coding' },
+                { key:'github_username',logo:GH_SVG_P,   label:'GitHub user',ph:'username',                  bg:'#24292e', type:'coding' },
+                { key:'github_url',     logo:GH_SVG_P,   label:'GitHub URL', ph:'https://github.com/you',    bg:'#24292e', type:'link' },
+                { key:'linkedin_url',   logo:LI_SVG_P,   label:'LinkedIn',   ph:'https://linkedin.com/in/you',bg:'#0A66C2', type:'link' },
+                { key:'portfolio_url',  logo:GLOBE_SVG_P,label:'Portfolio',  ph:'https://yoursite.com',      bg:'#5A5A56', type:'link' },
+              ].map(({ key, logo, label, ph, bg, type }) => (
+                <div key={key} style={{ display: 'flex', alignItems: 'center', gap: 9, padding: '6px 9px', borderRadius: 7, border: '1px solid var(--border)', background: 'var(--bg-subtle)', marginBottom: 7 }}>
+                  <div style={{ width: 24, height: 24, borderRadius: 5, background: bg, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>{logo}</div>
+                  <span style={{ fontSize: 11, fontWeight: 500, color: 'var(--text-mid)', width: 80, flexShrink: 0 }}>{label}</span>
+                  <input style={{ ...inp_p, flex: 1, padding: '4px 8px' }}
+                    value={type === 'coding' ? (d.coding_profiles?.[key] || '') : (d[key] || '')}
+                    placeholder={ph}
+                    onChange={e => {
+                      if (type === 'coding') setDraft(x => ({ ...x, coding_profiles: { ...(x.coding_profiles||{}), [key]: e.target.value } }));
+                      else setDraft(x => ({ ...x, [key]: e.target.value }));
+                    }} />
+                </div>
+              ))}
+            </Card>
+          </div>
+        )}
+
+        {/* SKILLS */}
+        {activeSection === 'skills' && (
+          <div style={{ maxWidth: 660 }}>
+            <SectionTitle>Skills</SectionTitle>
+            <Card>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 13 }}>
+                <p style={{ fontSize: 12, fontWeight: 600, color: 'var(--text)' }}>Technical Skills</p>
+                <SaveBtn onClick={() => save({ skills: d.skills || [] })} />
+              </div>
+              <div style={{ display: 'flex', flexWrap: 'wrap', gap: 5, marginBottom: 11 }}>
+                {SKILL_CATS_P.map(cat => (
+                  <button key={cat} onClick={() => setSkillCat(cat)} style={{ padding: '3px 8px', borderRadius: 20, fontSize: 11, cursor: 'pointer', fontFamily: 'inherit', border: `1px solid ${skillCat===cat?'var(--text)':'var(--border)'}`, background: skillCat===cat?'var(--text)':'transparent', color: skillCat===cat?'var(--bg)':'var(--text-dim)' }}>{cat}</button>
+                ))}
+              </div>
+              <div style={{ display: 'flex', flexWrap: 'wrap', gap: 5, paddingBottom: 11, marginBottom: 11, borderBottom: '1px solid var(--border)' }}>
+                {SKILL_OPTIONS_P.filter(s => s.cat === skillCat).map(skill => {
+                  const added = (d.skills || []).some(s => s.name === skill.name);
+                  return (
+                    <button key={skill.name} onClick={() => { if (added) return; setDraft(x => ({ ...x, skills: [...(x.skills||[]),{id:Date.now(),name:skill.name,level:3,category:skill.cat}] })); }} style={{ padding: '4px 8px', borderRadius: 6, fontSize: 11, cursor: added?'default':'pointer', fontFamily: 'inherit', border: `1px solid ${added?'var(--green)':'var(--border)'}`, background: added?'var(--green-tint)':'transparent', color: added?'var(--green-text)':'var(--text-dim)' }}>
+                      {skill.name}{added?' ✓':''}
+                    </button>
+                  );
+                })}
+              </div>
+              {(d.skills || []).length > 0 && (
+                <div style={{ display: 'flex', flexDirection: 'column', gap: 5 }}>
+                  {(d.skills || []).map((skill, i) => (
+                    <div key={skill.id || i} style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '6px 9px', borderRadius: 7, border: '1px solid var(--border)', background: 'var(--bg-subtle)' }}>
+                      <span style={{ fontSize: 11, fontWeight: 500, color: 'var(--text)', flex: 1 }}>{skill.name}</span>
+                      <span style={{ fontSize: 10, color: 'var(--text-dim)', width: 58 }}>{LEVEL_LABELS_P[skill.level]}</span>
+                      <div style={{ display: 'flex', gap: 3 }}>
+                        {[1,2,3,4,5].map(lv => (
+                          <button key={lv} onClick={() => setDraft(x => ({ ...x, skills: (x.skills||[]).map((s,j) => j===i?{...s,level:lv}:s) }))} style={{ width: 19, height: 19, borderRadius: 3, fontSize: 9, cursor: 'pointer', fontFamily: 'inherit', border: 'none', background: skill.level>=lv?'var(--green)':'var(--bg-card)', color: skill.level>=lv?'#fff':'var(--text-dim)', outline: skill.level>=lv?'none':'1px solid var(--border)' }}>{lv}</button>
+                        ))}
+                      </div>
+                      <button onClick={() => setDraft(x => ({ ...x, skills: (x.skills||[]).filter((_,j)=>j!==i) }))} style={{ background:'none',border:'none',cursor:'pointer',color:'var(--text-dim)',padding:0,fontSize:14 }}
+                        onMouseEnter={e => e.currentTarget.style.color='var(--red)'}
+                        onMouseLeave={e => e.currentTarget.style.color='var(--text-dim)'}>×</button>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </Card>
+          </div>
+        )}
+
+        {/* PREFERENCES */}
+        {activeSection === 'prefs' && (
+          <div style={{ maxWidth: 660 }}>
+            <SectionTitle>Preferences</SectionTitle>
+            <Card>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 13 }}>
+                <p style={{ fontSize: 12, fontWeight: 600, color: 'var(--text)' }}>Work Preferences</p>
+                <SaveBtn onClick={() => save({ preferred_roles: d.preferred_roles, availability: d.availability, work_preference: d.work_preference, min_stipend: d.min_stipend })} />
+              </div>
+              <p style={{ fontSize: 10, fontWeight: 700, letterSpacing: '0.08em', textTransform: 'uppercase', color: 'var(--text-dim)', marginBottom: 8 }}>Preferred Roles</p>
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 5, marginBottom: 14 }}>
+                {ROLE_OPTIONS_P.map(role => {
+                  const sel = (d.preferred_roles || []).includes(role);
+                  return <button key={role} onClick={() => setDraft(x => ({ ...x, preferred_roles: sel?(x.preferred_roles||[]).filter(r=>r!==role):[...(x.preferred_roles||[]),role] }))} style={{ padding: '6px 9px', borderRadius: 7, fontSize: 11, fontFamily: 'inherit', cursor: 'pointer', textAlign: 'left', border: `1px solid ${sel?'var(--green)':'var(--border)'}`, background: sel?'var(--green-tint)':'transparent', color: sel?'var(--green-text)':'var(--text-mid)', fontWeight: sel?500:400 }}>{role}</button>;
+                })}
+              </div>
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 11 }}>
+                <Row label="Availability"><select style={inp_p} value={d.availability||'Immediate'} onChange={e => setDraft(x=>({...x,availability:e.target.value}))}><option>Immediate</option><option>After exams</option><option>Next semester</option><option>Not available</option></select></Row>
+                <Row label="Work Preference"><select style={inp_p} value={d.work_preference||'remote'} onChange={e => setDraft(x=>({...x,work_preference:e.target.value}))}><option value="remote">Remote</option><option value="onsite">On-site</option><option value="hybrid">Hybrid</option><option value="any">Any</option></select></Row>
+              </div>
+              <div style={{ marginTop: 11 }}>
+                <Row label="Min Stipend">
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 7 }}>
+                    <span style={{ fontSize: 11, color: 'var(--text-dim)' }}>₹</span>
+                    <input style={{ ...inp_p, maxWidth: 130 }} type="number" value={d.min_stipend||''} placeholder="0" onChange={e => setDraft(x=>({...x,min_stipend:e.target.value}))} />
+                    <span style={{ fontSize: 11, color: 'var(--text-dim)' }}>/ month</span>
+                  </div>
+                </Row>
+              </div>
+            </Card>
+            <Card>
+              <p style={{ fontSize: 12, fontWeight: 600, color: 'var(--text)', marginBottom: 13 }}>Notifications</p>
+              {[
+                { label: 'New job matches', sub: 'When a job matches your skills', key: 'notif_matches' },
+                { label: 'Application updates', sub: 'When recruiters view your profile', key: 'notif_apps' },
+                { label: 'Weekly digest', sub: 'Summary every Monday', key: 'notif_digest' },
+                { label: 'Interview invites', sub: 'Direct interview invitations', key: 'notif_interviews' },
+              ].map(({ label, sub, key }) => (
+                <div key={key} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
+                  <div><p style={{ fontSize: 12, fontWeight: 500, color: 'var(--text)', marginBottom: 1 }}>{label}</p><p style={{ fontSize: 10, color: 'var(--text-dim)' }}>{sub}</p></div>
+                  <Toggle_P on={d[key] !== false} onChange={val => { setDraft(x=>({...x,[key]:val})); save({[key]:val}); }} />
+                </div>
+              ))}
+            </Card>
+          </div>
+        )}
+
+        {/* MY HUNT */}
+        {activeSection === 'myhunt' && (
+          <div style={{ maxWidth: 640 }}>
+            <div style={{ marginBottom: 20 }}>
+              <h1 style={{ fontFamily: "'Editorial New', Georgia, serif", fontSize: 26, fontWeight: 400, color: 'var(--text)', marginBottom: 3 }}>My Hunt.</h1>
+              <p style={{ fontSize: 12, color: 'var(--text-dim)' }}>Private — not shown to recruiters. Your real reasons.</p>
+            </div>
+            {[
+              { key: 'my_hunt', title: "What's your hunt?", sub: "Not the job title — what are you actually after?", ph: "I'm hunting for the intersection of technology and education..." },
+              { key: 'philosophy', title: 'Philosophy & worldview', sub: "How do you see the world? What do you believe?", ph: "I believe the best products come from deep empathy..." },
+              { key: 'inspirations', title: 'People & things that inspire you', sub: "Books, people, projects that changed you.", ph: "Naval Ravikant, Paul Graham's essays, The Mom Test..." },
+              { key: 'life_outside', title: 'Life outside work', sub: "Who are you when you're not coding?", ph: "Cricket every Sunday, Carnatic music for 3 years..." },
+            ].map(({ key, title, sub, ph }) => (
+              <Card key={key}>
+                <p style={{ fontSize: 12, fontWeight: 600, color: 'var(--text)', marginBottom: 2 }}>{title}</p>
+                <p style={{ fontSize: 11, color: 'var(--text-dim)', marginBottom: 9 }}>{sub}</p>
+                <textarea style={{ ...inp_p, resize: 'none' }} rows={3} value={d[key] || ''} placeholder={ph} onChange={e => setDraft(x => ({ ...x, [key]: e.target.value }))} />
+                <button onClick={() => save({ [key]: d[key] })} style={{ marginTop: 7, padding: '5px 11px', borderRadius: 6, border: 'none', background: 'var(--green)', color: '#fff', fontSize: 11, cursor: 'pointer', fontFamily: 'inherit' }}>Save</button>
+              </Card>
+            ))}
+            <Card>
+              <p style={{ fontSize: 12, fontWeight: 600, color: 'var(--text)', marginBottom: 2 }}>A quote that defines you</p>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 7, marginBottom: 9 }}>
+                <input style={inp_p} value={d.quote || ''} placeholder="The people who are crazy enough..." onChange={e => setDraft(x => ({ ...x, quote: e.target.value }))} />
+                <input style={inp_p} value={d.quote_author || ''} placeholder="— Steve Jobs (or yourself)" onChange={e => setDraft(x => ({ ...x, quote_author: e.target.value }))} />
+              </div>
+              {d.quote && (
+                <div style={{ padding: '10px 14px', borderRadius: 7, background: 'var(--bg-subtle)', borderLeft: '3px solid var(--green)', marginBottom: 9 }}>
+                  <p style={{ fontFamily: "'Editorial New', Georgia, serif", fontSize: 13, color: 'var(--text)', lineHeight: 1.6, fontStyle: 'italic', marginBottom: 3 }}>"{d.quote}"</p>
+                  {d.quote_author && <p style={{ fontSize: 10, color: 'var(--text-dim)' }}>{d.quote_author}</p>}
+                </div>
+              )}
+              <button onClick={() => save({ quote: d.quote, quote_author: d.quote_author })} style={{ padding: '5px 11px', borderRadius: 6, border: 'none', background: 'var(--green)', color: '#fff', fontSize: 11, cursor: 'pointer', fontFamily: 'inherit' }}>Save</button>
+            </Card>
+          </div>
+        )}
+
+        {/* ACCOUNT */}
+        {activeSection === 'account' && (
+          <div style={{ maxWidth: 500 }}>
+            <SectionTitle>Account</SectionTitle>
+            <Card>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 13, padding: '11px 13px', borderRadius: 8, background: 'var(--bg-subtle)', border: '1px solid var(--border)', marginBottom: 16 }}>
+                <div style={{ width: 42, height: 42, borderRadius: '50%', background: 'var(--green-tint)', border: '2px solid var(--green)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 14, fontWeight: 700, color: 'var(--green)', flexShrink: 0 }}>{initials}</div>
+                <div style={{ flex: 1 }}>
+                  <p style={{ fontSize: 12, fontWeight: 600, color: 'var(--text)', marginBottom: 1 }}>{d.full_name}</p>
+                  <p style={{ fontSize: 10, color: 'var(--text-dim)' }}>{d.email}</p>
+                </div>
+                <label style={{ fontSize: 11, padding: '4px 9px', borderRadius: 6, border: '1px solid var(--border)', cursor: 'pointer', color: 'var(--text-mid)', background: 'var(--bg-card)', fontFamily: 'inherit' }}>
+                  Change avatar<input type="file" accept="image/*" style={{ display: 'none' }} onChange={() => showToast('Coming soon')} />
+                </label>
+              </div>
+              <Row label="Change email">
+                <div style={{ display: 'flex', gap: 6 }}>
+                  <input style={{ ...inp_p, flex: 1 }} type="email" defaultValue={d.email || ''} placeholder="new@email.com" />
+                  <button onClick={() => showToast('Coming soon')} style={{ padding: '0 11px', borderRadius: 6, border: 'none', background: 'var(--text)', color: 'var(--bg)', fontSize: 11, cursor: 'pointer', fontFamily: 'inherit', whiteSpace: 'nowrap' }}>Change</button>
+                </div>
+              </Row>
+            </Card>
+            <Card>
+              <p style={{ fontSize: 12, fontWeight: 600, color: 'var(--text)', marginBottom: 12 }}>Appearance</p>
+              <div style={{ display: 'flex', gap: 7 }}>
+                {['light', 'dark'].map(t => (
+                  <button key={t} onClick={() => setTheme(t)} style={{ flex: 1, padding: '8px', borderRadius: 7, border: `1.5px solid ${theme===t?'var(--text)':'var(--border)'}`, background: theme===t?'var(--bg-subtle)':'transparent', cursor: 'pointer', fontSize: 12, fontWeight: theme===t?600:400, color: 'var(--text)', fontFamily: 'inherit' }}>
+                    {t === 'light' ? '☀️ Light' : '🌙 Dark'}
+                  </button>
+                ))}
+              </div>
+            </Card>
+            <Card>
+              <p style={{ fontSize: 12, fontWeight: 600, color: 'var(--text)', marginBottom: 12 }}>Privacy</p>
+              {[
+                { label: 'Visible to recruiters', sub: 'Recruiters can find your profile', key: 'privacy_visible', def: true },
+                { label: 'Show college name', sub: 'Display your college on profile', key: 'privacy_college', def: true },
+                { label: 'Activity status', sub: 'Show when last active', key: 'privacy_activity', def: false },
+              ].map(({ label, sub, key, def }) => (
+                <div key={key} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 11 }}>
+                  <div><p style={{ fontSize: 12, fontWeight: 500, color: 'var(--text)', marginBottom: 1 }}>{label}</p><p style={{ fontSize: 10, color: 'var(--text-dim)' }}>{sub}</p></div>
+                  <Toggle_P on={d[key]!==undefined?d[key]:def} onChange={val => { setDraft(x=>({...x,[key]:val})); save({[key]:val}); }} />
+                </div>
+              ))}
+            </Card>
+            <div style={{ padding: '13px 15px', borderRadius: 9, border: '1px solid var(--red)', background: 'var(--red-tint)' }}>
+              <p style={{ fontSize: 12, fontWeight: 600, color: 'var(--red)', marginBottom: 2 }}>Danger Zone</p>
+              <p style={{ fontSize: 11, color: 'var(--red)', opacity: 0.8, marginBottom: 9 }}>Permanently delete your account. Cannot be undone.</p>
+              <button onClick={() => { if(window.confirm('Delete your account? This cannot be undone.')) showToast('Delete coming soon','err'); }} style={{ padding: '5px 13px', borderRadius: 5, border: '1px solid var(--red)', background: 'transparent', color: 'var(--red)', fontSize: 11, fontWeight: 600, cursor: 'pointer', fontFamily: 'inherit' }}>Delete account</button>
             </div>
           </div>
         )}
