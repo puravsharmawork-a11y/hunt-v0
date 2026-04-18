@@ -1097,8 +1097,8 @@ export default function StudentDashboard() {
 
         {/* ── NETWORK ── */}
         {activeTab === 'network' && (
-          <div style={{ flex: 1, overflowY: 'auto', padding: '32px 40px', animation: 'hunt-fade-in 0.3s ease' }}>
-            <div style={{ maxWidth: '720px' }}>
+          <NetworkTab studentProfile={studentProfile} />
+        )}
               <p style={{ fontSize: '10px', fontWeight: 600, letterSpacing: '0.1em', textTransform: 'uppercase', color: 'var(--text-dim)', marginBottom: '6px' }}>Network</p>
               <h1 style={{ fontFamily: "'Editorial New', Georgia, serif", fontSize: '28px', fontWeight: 400, color: 'var(--text)', marginBottom: '6px' }}>
                 Connections & Referrals
@@ -1226,6 +1226,343 @@ export default function StudentDashboard() {
         )}
 
       </main>
+    </div>
+  );
+}
+
+// ─── Network Tab ───────────────────────────────────────────────────────────────
+const MOCK_CONNECTIONS = [
+  { id: 'c1', name: 'Arjun Mehta', college: 'VJTI Mumbai', role: 'Backend Dev', skills: ['Node.js', 'Python'], status: 'on_hunt', mutual: 3 },
+  { id: 'c2', name: 'Sneha Patil', college: 'COEP Pune', role: 'Frontend Dev', skills: ['React', 'Figma'], status: 'on_hunt', mutual: 1 },
+  { id: 'c3', name: 'Rahul Desai', college: 'VJTI Mumbai', role: 'ML Engineer', skills: ['Python', 'TensorFlow'], status: 'invited', mutual: 2 },
+  { id: 'c4', name: 'Priyanka Singh', college: 'NIT Surat', role: 'Full Stack', skills: ['React', 'Node.js'], status: 'not_invited', mutual: 0 },
+  { id: 'c5', name: 'Karan Shah', college: 'DJ Sanghvi', role: 'DevOps', skills: ['Docker', 'AWS'], status: 'on_hunt', mutual: 4 },
+  { id: 'c6', name: 'Aisha Khan', college: 'SPIT Mumbai', role: 'Data Science', skills: ['Python', 'SQL'], status: 'not_invited', mutual: 1 },
+];
+
+const MOCK_DISCOVER = [
+  { id: 'd1', name: 'Vikram Nair', college: 'NIT Calicut', role: 'Backend Dev', skills: ['Go', 'PostgreSQL'], connections: 12 },
+  { id: 'd2', name: 'Meera Joshi', college: 'BITS Goa', role: 'Frontend Dev', skills: ['React', 'TypeScript'], connections: 8 },
+  { id: 'd3', name: 'Siddharth Rao', college: 'NIT Trichy', role: 'ML Intern', skills: ['Python', 'PyTorch'], connections: 5 },
+  { id: 'd4', name: 'Ananya Gupta', college: 'DTU Delhi', role: 'Full Stack', skills: ['React', 'Node.js'], connections: 19 },
+  { id: 'd5', name: 'Rohan Verma', college: 'VJTI Mumbai', role: 'DevOps', skills: ['Kubernetes', 'AWS'], connections: 7 },
+  { id: 'd6', name: 'Tanya Iyer', college: 'IIIT Hyderabad', role: 'Data Engineer', skills: ['Spark', 'Python'], connections: 11 },
+];
+
+const LI_SVG = (
+  <svg width="13" height="13" viewBox="0 0 24 24" fill="white">
+    <path d="M20.447 20.452h-3.554v-5.569c0-1.328-.027-3.037-1.852-3.037-1.853 0-2.136 1.445-2.136 2.939v5.667H9.351V9h3.414v1.561h.046c.477-.9 1.637-1.85 3.37-1.85 3.601 0 4.267 2.37 4.267 5.455v6.286zM5.337 7.433a2.062 2.062 0 0 1-2.063-2.065 2.064 2.064 0 1 1 2.063 2.065zm1.782 13.019H3.555V9h3.564v11.452zM22.225 0H1.771C.792 0 0 .774 0 1.729v20.542C0 23.227.792 24 1.771 24h20.451C23.2 24 24 23.227 24 22.271V1.729C24 .774 23.2 0 22.222 0h.003z"/>
+  </svg>
+);
+
+const WA_SVG = (
+  <svg width="13" height="13" viewBox="0 0 24 24" fill="white">
+    <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 0 1-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 0 1-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 0 1 2.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0 0 12.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 0 0 5.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 0 0-3.48-8.413z"/>
+  </svg>
+);
+
+function PersonCard({ person, type, onAction, inviteLink }) {
+  const initials = person.name.split(' ').map(n => n[0]).join('');
+  const colors = ['#1A7A4A','#0A66C2','#9333EA','#D97706','#DC2626','#0891B2'];
+  const color = colors[person.name.charCodeAt(0) % colors.length];
+
+  const statusBadge = {
+    on_hunt:     { label: 'On HUNT', bg: 'var(--green-tint)', color: 'var(--green)' },
+    invited:     { label: 'Invited', bg: 'var(--amber-tint)', color: 'var(--amber)' },
+    not_invited: { label: 'Not yet', bg: 'var(--bg-subtle)', color: 'var(--text-dim)' },
+  };
+
+  return (
+    <div style={{ background: 'var(--bg-card)', border: '1px solid var(--border)', borderRadius: '12px', padding: '18px', display: 'flex', flexDirection: 'column', gap: '12px' }}>
+      {/* Avatar + name */}
+      <div style={{ display: 'flex', alignItems: 'flex-start', gap: '10px' }}>
+        <div style={{ width: '38px', height: '38px', borderRadius: '50%', background: color, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '13px', fontWeight: 700, color: '#fff', flexShrink: 0 }}>
+          {initials}
+        </div>
+        <div style={{ flex: 1, minWidth: 0 }}>
+          <p style={{ fontSize: '13px', fontWeight: 600, color: 'var(--text)', marginBottom: '1px', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{person.name}</p>
+          <p style={{ fontSize: '11px', color: 'var(--text-dim)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{person.college}</p>
+        </div>
+        {person.status && statusBadge[person.status] && (
+          <span style={{ fontSize: '10px', padding: '2px 7px', borderRadius: '4px', background: statusBadge[person.status].bg, color: statusBadge[person.status].color, fontWeight: 600, flexShrink: 0 }}>
+            {statusBadge[person.status].label}
+          </span>
+        )}
+      </div>
+
+      {/* Role */}
+      <p style={{ fontSize: '11px', color: 'var(--text-mid)' }}>{person.role}</p>
+
+      {/* Skills */}
+      <div style={{ display: 'flex', flexWrap: 'wrap', gap: '4px' }}>
+        {person.skills.map(s => (
+          <span key={s} style={{ fontSize: '10px', padding: '2px 6px', borderRadius: '4px', border: '1px solid var(--border)', color: 'var(--text-dim)', background: 'var(--bg-subtle)' }}>{s}</span>
+        ))}
+      </div>
+
+      {/* Mutual */}
+      {person.mutual > 0 && (
+        <p style={{ fontSize: '10px', color: 'var(--text-dim)' }}>{person.mutual} mutual connection{person.mutual > 1 ? 's' : ''}</p>
+      )}
+      {person.connections != null && (
+        <p style={{ fontSize: '10px', color: 'var(--text-dim)' }}>{person.connections} connections on HUNT</p>
+      )}
+
+      {/* Action button */}
+      {type === 'connection' && person.status === 'on_hunt' && (
+        <button style={{ padding: '7px', borderRadius: '7px', border: '1px solid var(--border)', background: 'transparent', color: 'var(--text-mid)', fontSize: '11px', fontWeight: 500, cursor: 'pointer' }}>
+          Message (coming soon)
+        </button>
+      )}
+      {type === 'connection' && person.status === 'not_invited' && (
+        <button onClick={() => { const msg = encodeURIComponent(`Hey ${person.name.split(' ')[0]}! I'm using HUNT to find internships — join with my link: ${inviteLink}`); window.open(`https://wa.me/?text=${msg}`, '_blank'); }}
+          style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px', padding: '7px', borderRadius: '7px', border: 'none', background: '#25D366', color: '#fff', fontSize: '11px', fontWeight: 600, cursor: 'pointer' }}>
+          {WA_SVG} Invite to HUNT
+        </button>
+      )}
+      {type === 'connection' && person.status === 'invited' && (
+        <button disabled style={{ padding: '7px', borderRadius: '7px', border: '1px solid var(--border)', background: 'transparent', color: 'var(--text-dim)', fontSize: '11px', cursor: 'default' }}>
+          Invite sent ✓
+        </button>
+      )}
+      {type === 'discover' && (
+        <button style={{ padding: '7px', borderRadius: '7px', border: '1px solid var(--border)', background: 'transparent', color: 'var(--text-mid)', fontSize: '11px', fontWeight: 500, cursor: 'pointer' }}>
+          Connect (coming soon)
+        </button>
+      )}
+    </div>
+  );
+}
+
+function NetworkTab({ studentProfile }) {
+  const [networkSubTab, setNetworkSubTab] = useState('connections');
+  const [discoverSearch, setDiscoverSearch] = useState('');
+  const [csvImported, setCsvImported] = useState(false);
+  const [linkCopied, setLinkCopied] = useState(false);
+  const inviteSlug = studentProfile?.full_name?.split(' ')[0]?.toLowerCase() || 'you';
+  const inviteLink = `https://hunt.so/invite/${inviteSlug}`;
+
+  const filteredDiscover = MOCK_DISCOVER.filter(p =>
+    p.name.toLowerCase().includes(discoverSearch.toLowerCase()) ||
+    p.college.toLowerCase().includes(discoverSearch.toLowerCase()) ||
+    p.role.toLowerCase().includes(discoverSearch.toLowerCase())
+  );
+
+  const networkSubTabs = [
+    { id: 'connections', label: 'My Connections' },
+    { id: 'alumni',      label: 'Alumni' },
+    { id: 'discover',    label: 'Discover' },
+    { id: 'referrals',   label: 'Referrals' },
+  ];
+
+  return (
+    <div style={{ flex: 1, display: 'flex', flexDirection: 'column', overflow: 'hidden', animation: 'hunt-fade-in 0.3s ease' }}>
+      {/* Header */}
+      <div style={{ padding: '28px 40px 0', flexShrink: 0 }}>
+        <p style={{ fontSize: '10px', fontWeight: 600, letterSpacing: '0.1em', textTransform: 'uppercase', color: 'var(--text-dim)', marginBottom: '4px' }}>Network</p>
+        <h1 style={{ fontFamily: "'Editorial New', Georgia, serif", fontSize: '26px', fontWeight: 400, color: 'var(--text)', marginBottom: '16px' }}>
+          Connections & Referrals
+        </h1>
+        {/* Sub-tabs */}
+        <div style={{ display: 'flex', borderBottom: '1px solid var(--border)', gap: '0' }}>
+          {networkSubTabs.map(t => (
+            <button key={t.id} onClick={() => setNetworkSubTab(t.id)} style={{
+              padding: '9px 18px', background: 'none', border: 'none', cursor: 'pointer',
+              fontSize: '13px', fontWeight: networkSubTab === t.id ? 600 : 400,
+              color: networkSubTab === t.id ? 'var(--text)' : 'var(--text-dim)',
+              borderBottom: networkSubTab === t.id ? '2px solid var(--text)' : '2px solid transparent',
+              marginBottom: '-1px', whiteSpace: 'nowrap',
+            }}>{t.label}</button>
+          ))}
+        </div>
+      </div>
+
+      {/* Content */}
+      <div style={{ flex: 1, overflowY: 'auto', padding: '24px 40px 40px' }}>
+
+        {/* ── MY CONNECTIONS ── */}
+        {networkSubTab === 'connections' && (
+          <div>
+            {/* Import bar */}
+            <div style={{ display: 'flex', gap: '12px', marginBottom: '24px', flexWrap: 'wrap', alignItems: 'stretch' }}>
+              {/* LinkedIn card */}
+              <div style={{ flex: 1, minWidth: '280px', background: 'var(--bg-card)', border: '1px solid var(--border)', borderRadius: '12px', padding: '18px 20px', display: 'flex', alignItems: 'center', gap: '14px' }}>
+                <div style={{ width: '36px', height: '36px', borderRadius: '8px', background: '#0A66C2', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                  {LI_SVG}
+                </div>
+                <div style={{ flex: 1 }}>
+                  <p style={{ fontSize: '13px', fontWeight: 600, color: 'var(--text)', marginBottom: '2px' }}>Import from LinkedIn</p>
+                  <p style={{ fontSize: '11px', color: 'var(--text-dim)' }}>Opens LinkedIn → export your connections CSV</p>
+                </div>
+                <button onClick={() => window.open('https://www.linkedin.com/psettings/member-data', '_blank')}
+                  style={{ padding: '7px 14px', borderRadius: '7px', border: 'none', background: '#0A66C2', color: '#fff', fontSize: '11px', fontWeight: 600, cursor: 'pointer', whiteSpace: 'nowrap' }}>
+                  Go to LinkedIn
+                </button>
+              </div>
+              {/* CSV upload card */}
+              <div style={{ flex: 1, minWidth: '280px', background: 'var(--bg-card)', border: '1px solid var(--border)', borderRadius: '12px', padding: '18px 20px', display: 'flex', alignItems: 'center', gap: '14px' }}>
+                <div style={{ width: '36px', height: '36px', borderRadius: '8px', background: 'var(--bg-subtle)', border: '1px solid var(--border)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--text-mid)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+                </div>
+                <div style={{ flex: 1 }}>
+                  <p style={{ fontSize: '13px', fontWeight: 600, color: 'var(--text)', marginBottom: '2px' }}>Upload Connections.csv</p>
+                  <p style={{ fontSize: '11px', color: 'var(--text-dim)' }}>{csvImported ? '✓ 47 connections imported' : 'Upload the CSV you downloaded from LinkedIn'}</p>
+                </div>
+                <label style={{ padding: '7px 14px', borderRadius: '7px', border: '1px solid var(--border)', background: 'transparent', color: csvImported ? 'var(--green)' : 'var(--text-mid)', fontSize: '11px', fontWeight: 500, cursor: 'pointer', whiteSpace: 'nowrap' }}>
+                  {csvImported ? 'Re-upload' : 'Upload CSV'}
+                  <input type="file" accept=".csv" style={{ display: 'none' }} onChange={() => setCsvImported(true)} />
+                </label>
+              </div>
+            </div>
+
+            {/* Connection cards grid */}
+            {csvImported ? (
+              <div>
+                <p style={{ fontSize: '11px', color: 'var(--text-dim)', marginBottom: '16px' }}>
+                  47 connections found · <span style={{ color: 'var(--green)' }}>3 already on HUNT</span>
+                </p>
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(220px, 1fr))', gap: '12px' }}>
+                  {MOCK_CONNECTIONS.map(c => (
+                    <PersonCard key={c.id} person={c} type="connection" inviteLink={inviteLink} />
+                  ))}
+                </div>
+              </div>
+            ) : (
+              <div style={{ textAlign: 'center', padding: '48px 20px', background: 'var(--bg-card)', border: '1px solid var(--border)', borderRadius: '14px' }}>
+                <div style={{ width: '48px', height: '48px', borderRadius: '12px', background: '#0A66C2', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 14px' }}>
+                  {LI_SVG}
+                </div>
+                <p style={{ fontFamily: "'Editorial New', Georgia, serif", fontSize: '16px', color: 'var(--text)', marginBottom: '6px' }}>Import your LinkedIn connections</p>
+                <p style={{ fontSize: '12px', color: 'var(--text-dim)', maxWidth: '340px', margin: '0 auto 4px', lineHeight: 1.6 }}>
+                  Step 1: Click "Go to LinkedIn" → download your connections CSV.<br />
+                  Step 2: Upload it here — we'll show who's on HUNT and let you invite the rest.
+                </p>
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* ── ALUMNI ── */}
+        {networkSubTab === 'alumni' && (
+          <div>
+            <p style={{ fontSize: '12px', color: 'var(--text-dim)', marginBottom: '20px', lineHeight: 1.5 }}>
+              People from <strong style={{ color: 'var(--text)' }}>{studentProfile?.college || 'your college'}</strong> or companies you've interacted with on HUNT.
+            </p>
+            {/* Same college section */}
+            <p style={{ fontSize: '10px', fontWeight: 700, letterSpacing: '0.1em', textTransform: 'uppercase', color: 'var(--text-dim)', marginBottom: '12px' }}>
+              From {studentProfile?.college || 'your college'}
+            </p>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(220px, 1fr))', gap: '12px', marginBottom: '28px' }}>
+              {MOCK_CONNECTIONS.filter((_, i) => i < 3).map(c => (
+                <PersonCard key={c.id} person={{ ...c, status: 'on_hunt' }} type="connection" inviteLink={inviteLink} />
+              ))}
+            </div>
+            {/* Companies section */}
+            <p style={{ fontSize: '10px', fontWeight: 700, letterSpacing: '0.1em', textTransform: 'uppercase', color: 'var(--text-dim)', marginBottom: '12px' }}>
+              At companies hiring on HUNT
+            </p>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(220px, 1fr))', gap: '12px' }}>
+              {MOCK_DISCOVER.filter((_, i) => i < 3).map(c => (
+                <PersonCard key={c.id} person={c} type="discover" inviteLink={inviteLink} />
+              ))}
+            </div>
+          </div>
+        )}
+
+        {/* ── DISCOVER ── */}
+        {networkSubTab === 'discover' && (
+          <div>
+            <div style={{ position: 'relative', marginBottom: '20px', maxWidth: '400px' }}>
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="var(--text-dim)" strokeWidth="2" style={{ position: 'absolute', left: '12px', top: '50%', transform: 'translateY(-50%)' }}>
+                <circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/>
+              </svg>
+              <input value={discoverSearch} onChange={e => setDiscoverSearch(e.target.value)}
+                placeholder="Search by name, college, or role…"
+                style={{ width: '100%', paddingLeft: '34px', paddingRight: '12px', paddingTop: '9px', paddingBottom: '9px', borderRadius: '8px', border: '1px solid var(--border)', background: 'var(--bg-subtle)', color: 'var(--text)', fontSize: '13px', outline: 'none', boxSizing: 'border-box' }} />
+            </div>
+            <p style={{ fontSize: '11px', color: 'var(--text-dim)', marginBottom: '16px' }}>{filteredDiscover.length} students on HUNT</p>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(220px, 1fr))', gap: '12px' }}>
+              {filteredDiscover.map(p => (
+                <PersonCard key={p.id} person={p} type="discover" inviteLink={inviteLink} />
+              ))}
+            </div>
+            {filteredDiscover.length === 0 && (
+              <div style={{ textAlign: 'center', padding: '40px', color: 'var(--text-dim)', fontSize: '13px' }}>
+                No results for "{discoverSearch}"
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* ── REFERRALS ── */}
+        {networkSubTab === 'referrals' && (
+          <div style={{ maxWidth: '680px' }}>
+            {/* Stats row */}
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '12px', marginBottom: '24px' }}>
+              {[
+                { label: 'Friends invited', val: '0' },
+                { label: 'Joined HUNT', val: '0' },
+                { label: 'Priority boosts', val: '0' },
+              ].map(s => (
+                <div key={s.label} style={{ background: 'var(--bg-card)', border: '1px solid var(--border)', borderRadius: '12px', padding: '18px 20px', textAlign: 'center' }}>
+                  <p style={{ fontFamily: "'Editorial New', Georgia, serif", fontSize: '28px', color: 'var(--green)', marginBottom: '4px' }}>{s.val}</p>
+                  <p style={{ fontSize: '11px', color: 'var(--text-dim)' }}>{s.label}</p>
+                </div>
+              ))}
+            </div>
+
+            {/* Invite link */}
+            <div style={{ background: 'var(--bg-card)', border: '1px solid var(--border)', borderRadius: '14px', padding: '22px 24px', marginBottom: '16px' }}>
+              <p style={{ fontSize: '13px', fontWeight: 600, color: 'var(--text)', marginBottom: '4px' }}>Your invite link</p>
+              <p style={{ fontSize: '12px', color: 'var(--text-dim)', marginBottom: '14px' }}>Share this link — every friend who joins boosts your priority ranking.</p>
+              <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
+                <div style={{ flex: 1, padding: '9px 12px', borderRadius: '8px', border: '1px solid var(--border)', background: 'var(--bg-subtle)', fontSize: '12px', color: 'var(--text-dim)', fontFamily: 'monospace', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                  {inviteLink}
+                </div>
+                <button onClick={() => { navigator.clipboard?.writeText(inviteLink); setLinkCopied(true); setTimeout(() => setLinkCopied(false), 2000); }}
+                  style={{ padding: '9px 14px', borderRadius: '8px', border: '1px solid var(--border)', background: linkCopied ? 'var(--green-tint)' : 'transparent', color: linkCopied ? 'var(--green)' : 'var(--text-mid)', fontSize: '12px', cursor: 'pointer', whiteSpace: 'nowrap', transition: 'all 0.2s' }}>
+                  {linkCopied ? '✓ Copied' : 'Copy'}
+                </button>
+              </div>
+            </div>
+
+            {/* Share buttons 2x2 */}
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px' }}>
+              {/* WhatsApp */}
+              <button onClick={() => { const msg = encodeURIComponent(`Hey! I'm on HUNT — it matches internships on skills, not college name. Join with my link: ${inviteLink}`); window.open(`https://wa.me/?text=${msg}`, '_blank'); }}
+                style={{ display: 'flex', alignItems: 'center', gap: '12px', padding: '14px 18px', borderRadius: '12px', border: '1px solid var(--border)', background: 'var(--bg-card)', cursor: 'pointer', textAlign: 'left' }}>
+                <div style={{ width: '32px', height: '32px', borderRadius: '8px', background: '#25D366', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>{WA_SVG}</div>
+                <div><p style={{ fontSize: '13px', fontWeight: 600, color: 'var(--text)' }}>WhatsApp</p><p style={{ fontSize: '11px', color: 'var(--text-dim)' }}>Send to your contacts</p></div>
+              </button>
+              {/* X */}
+              <button onClick={() => { const msg = encodeURIComponent(`Internships matched on skills, not college name 🎯 Check out HUNT → ${inviteLink}`); window.open(`https://twitter.com/intent/tweet?text=${msg}`, '_blank'); }}
+                style={{ display: 'flex', alignItems: 'center', gap: '12px', padding: '14px 18px', borderRadius: '12px', border: '1px solid var(--border)', background: 'var(--bg-card)', cursor: 'pointer', textAlign: 'left' }}>
+                <div style={{ width: '32px', height: '32px', borderRadius: '8px', background: '#000', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="white"><path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-4.714-6.231-5.401 6.231H2.746l7.73-8.835L1.254 2.25H8.08l4.253 5.622zm-1.161 17.52h1.833L7.084 4.126H5.117z"/></svg>
+                </div>
+                <div><p style={{ fontSize: '13px', fontWeight: 600, color: 'var(--text)' }}>Post on X</p><p style={{ fontSize: '11px', color: 'var(--text-dim)' }}>Tweet to your followers</p></div>
+              </button>
+              {/* Instagram */}
+              <button onClick={() => { navigator.clipboard?.writeText(inviteLink); alert('Link copied! Paste it in your Instagram bio or story.'); }}
+                style={{ display: 'flex', alignItems: 'center', gap: '12px', padding: '14px 18px', borderRadius: '12px', border: '1px solid var(--border)', background: 'var(--bg-card)', cursor: 'pointer', textAlign: 'left' }}>
+                <div style={{ width: '32px', height: '32px', borderRadius: '8px', background: 'linear-gradient(45deg,#f09433,#e6683c,#dc2743,#cc2366,#bc1888)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                  <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2"><rect x="2" y="2" width="20" height="20" rx="5" ry="5"/><path d="M16 11.37A4 4 0 1 1 12.63 8 4 4 0 0 1 16 11.37z"/><line x1="17.5" y1="6.5" x2="17.51" y2="6.5"/></svg>
+                </div>
+                <div><p style={{ fontSize: '13px', fontWeight: 600, color: 'var(--text)' }}>Instagram</p><p style={{ fontSize: '11px', color: 'var(--text-dim)' }}>Copy link for bio/stories</p></div>
+              </button>
+              {/* Email */}
+              <button onClick={() => window.open(`mailto:?subject=Join me on HUNT&body=Hey! I'm finding internships on HUNT — it matches based on your skills, not just your college name. Way better than Internshala. Join here: ${inviteLink}`, '_blank')}
+                style={{ display: 'flex', alignItems: 'center', gap: '12px', padding: '14px 18px', borderRadius: '12px', border: '1px solid var(--border)', background: 'var(--bg-card)', cursor: 'pointer', textAlign: 'left' }}>
+                <div style={{ width: '32px', height: '32px', borderRadius: '8px', background: 'var(--bg-subtle)', border: '1px solid var(--border)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="var(--text-mid)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,13 2,6"/></svg>
+                </div>
+                <div><p style={{ fontSize: '13px', fontWeight: 600, color: 'var(--text)' }}>Email</p><p style={{ fontSize: '11px', color: 'var(--text-dim)' }}>Send to specific people</p></div>
+              </button>
+            </div>
+          </div>
+        )}
+
+      </div>
     </div>
   );
 }
