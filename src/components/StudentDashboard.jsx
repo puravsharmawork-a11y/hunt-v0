@@ -1675,13 +1675,15 @@ function ProfileTab({ studentProfile, setStudentProfile, theme, setTheme }) {
   const [toast, setToast] = React.useState(null);
   const [skillCat, setSkillCat] = React.useState(SKILL_CATS_P[0]);
   const [addingProject, setAddingProject] = React.useState(false);
-  const [newProject, setNewProject] = React.useState({ title: '', techStack: '', description: '', projectUrl: '', githubUrl: '' });
+  const [newProject, setNewProject] = React.useState({ title:'', techStack:'', description:'', projectUrl:'', githubUrl:'' });
   const [addingEdu, setAddingEdu] = React.useState(false);
-  const [newEdu, setNewEdu] = React.useState({ school: '', degree: '', major: '', startYear: '', endYear: '' });
+  const [newEdu, setNewEdu] = React.useState({ school:'', degree:'', major:'', startYear:'', endYear:'' });
   const [newCert, setNewCert] = React.useState('');
   const [newAward, setNewAward] = React.useState('');
+  const [otherLinks, setOtherLinks] = React.useState(studentProfile?.other_links || []);
+  const [newOtherLink, setNewOtherLink] = React.useState({ label:'', url:'' });
 
-  const showToast = (msg, type = 'ok') => { setToast({ msg, type }); setTimeout(() => setToast(null), 2200); };
+  const showToast = (msg, type='ok') => { setToast({ msg, type }); setTimeout(() => setToast(null), 2200); };
 
   const save = async (updates) => {
     setSaving(true);
@@ -1690,280 +1692,350 @@ function ProfileTab({ studentProfile, setStudentProfile, theme, setTheme }) {
       const merged = { ...studentProfile, ...updates };
       let sc = 0;
       if (merged.full_name) sc += 10; if (merged.college) sc += 10;
-      if ((merged.skills || []).length >= 5) sc += 25; else if ((merged.skills || []).length >= 1) sc += 10;
-      if ((merged.projects || []).length >= 1) sc += 15; if (merged.github_url) sc += 5;
-      if (merged.linkedin_url) sc += 5; if (merged.resume_url) sc += 5; if (merged.email) sc += 5;
-      if ((merged.preferred_roles || []).length > 0) sc += 10;
+      if ((merged.skills||[]).length >= 5) sc += 25; else if ((merged.skills||[]).length >= 1) sc += 10;
+      if ((merged.projects||[]).length >= 1) sc += 15;
+      if (merged.github_url) sc += 5; if (merged.linkedin_url) sc += 5; if (merged.resume_url) sc += 5; if (merged.email) sc += 5;
+      if ((merged.preferred_roles||[]).length > 0) sc += 10;
       const updated = await updateStudentProfile({ ...updates, profile_completeness: Math.min(sc, 100) });
       setStudentProfile(updated);
       setDraft(JSON.parse(JSON.stringify(updated)));
       showToast('Saved');
-    } catch (e) { showToast('Save failed', 'err'); }
+    } catch(e) { showToast('Save failed','err'); }
     finally { setSaving(false); }
   };
 
   const d = draft;
-  const initials = (d.full_name || '').split(' ').map(n => n[0]).join('').slice(0, 2) || 'U';
-  const Row = ({ label, children }) => (
-    <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
-      <p style={{ fontSize: 10, fontWeight: 600, letterSpacing: '0.08em', textTransform: 'uppercase', color: 'var(--text-dim)', margin: 0 }}>{label}</p>
-      {children}
-    </div>
-  );
-  const Card = ({ children, style: s = {} }) => (
-    <div style={{ background: 'var(--bg-card)', border: '1px solid var(--border)', borderRadius: 12, padding: '18px 20px', marginBottom: 12, ...s }}>{children}</div>
-  );
-  const SectionTitle = ({ children }) => (
-    <p style={{ fontSize: 10, fontWeight: 700, letterSpacing: '0.12em', textTransform: 'uppercase', color: 'var(--text-dim)', marginBottom: 14 }}>{children}</p>
+  const initials = (d.full_name||'').split(' ').map(n=>n[0]).join('').slice(0,2)||'U';
+
+  const Card = ({ children, style: s={} }) => (
+    <div style={{ background:'var(--bg-card)', border:'1px solid var(--border)', borderRadius:12, padding:'20px 22px', marginBottom:14, ...s }}>{children}</div>
   );
   const SaveBtn = ({ onClick }) => (
-    <button onClick={onClick} disabled={saving} style={{ padding: '6px 13px', borderRadius: 6, border: 'none', background: 'var(--green)', color: '#fff', fontSize: 11, fontWeight: 600, cursor: saving ? 'default' : 'pointer', opacity: saving ? 0.6 : 1, fontFamily: 'inherit' }}>
+    <button onClick={onClick} disabled={saving} style={{ padding:'7px 16px', borderRadius:7, border:'none', background:'var(--green)', color:'#fff', fontSize:12, fontWeight:600, cursor:saving?'default':'pointer', opacity:saving?0.6:1, fontFamily:'inherit' }}>
       {saving ? 'Saving…' : 'Save'}
     </button>
   );
+  const FieldLabel = ({ children }) => (
+    <p style={{ fontSize:10, fontWeight:600, letterSpacing:'0.08em', textTransform:'uppercase', color:'var(--text-dim)', marginBottom:5 }}>{children}</p>
+  );
+
   const SECTIONS = [
-    { id: 'overview', label: 'Overview' },
-    { id: 'resume',   label: 'Resume & Links' },
-    { id: 'skills',   label: 'Skills' },
-    { id: 'prefs',    label: 'Preferences' },
-    { id: 'myhunt',   label: 'My Hunt' },
-    { id: 'account',  label: 'Account' },
+    { id:'overview', label:'Overview' },
+    { id:'resume',   label:'Resume' },
+    { id:'skills',   label:'Skills' },
+    { id:'links',    label:'Links & Profiles' },
+    { id:'prefs',    label:'Preferences' },
+    { id:'myhunt',   label:'My Hunt' },
+    { id:'account',  label:'Account' },
   ];
 
+  // ── Tech logos (emoji/SVG) ─────────────────────────────────────────────────
+  const SKILL_LOGOS = {
+    'JavaScript': '🟨', 'Python': '🐍', 'TypeScript': '🔷', 'Java': '☕',
+    'C / C++': '⚙️', 'Golang': '🐹', 'SQL': '🗄️',
+    'React': <svg width="14" height="14" viewBox="0 0 24 24" fill="#61DAFB"><path d="M12 13.5a1.5 1.5 0 1 1 0-3 1.5 1.5 0 0 1 0 3z"/><path d="M12 21.59C9.33 19.8 2.5 15.33 2.5 12S9.33 4.2 12 2.41C14.67 4.2 21.5 8.67 21.5 12S14.67 19.8 12 21.59zM12 3.59C9.9 5.15 4 9.19 4 12s5.9 6.85 8 8.41C14.1 18.85 20 14.81 20 12S14.1 5.15 12 3.59z" opacity=".3"/><ellipse cx="12" cy="12" rx="10" ry="4" fill="none" stroke="#61DAFB" strokeWidth="1.5" transform="rotate(0 12 12)"/><ellipse cx="12" cy="12" rx="10" ry="4" fill="none" stroke="#61DAFB" strokeWidth="1.5" transform="rotate(60 12 12)"/><ellipse cx="12" cy="12" rx="10" ry="4" fill="none" stroke="#61DAFB" strokeWidth="1.5" transform="rotate(120 12 12)"/></svg>,
+    'Next.js': <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><path d="M11.572 0c-.176 0-.31.001-.358.007a19.76 19.76 0 0 1-.364.033C7.443.346 4.25 2.185 2.228 5.012a11.875 11.875 0 0 0-2.119 5.243c-.096.659-.108.854-.108 1.747s.012 1.089.108 1.748c.652 4.506 3.86 8.292 8.209 9.695.779.25 1.6.422 2.534.525.363.04 1.935.04 2.299 0 1.611-.178 2.977-.577 4.323-1.264.207-.106.247-.134.219-.158-.02-.013-.9-1.193-1.955-2.62l-1.919-2.592-2.404-3.558a338.739 338.739 0 0 0-2.422-3.556c-.009-.002-.018 1.579-.023 3.51-.007 3.38-.01 3.515-.052 3.595a.426.426 0 0 1-.206.214c-.075.037-.14.044-.495.044H7.81l-.108-.068a.438.438 0 0 1-.157-.171l-.05-.106.006-4.703.007-4.705.072-.092a.645.645 0 0 1 .174-.143c.096-.047.134-.051.54-.051.478 0 .558.018.682.154.035.038 1.337 1.999 2.895 4.361a10760.433 10760.433 0 0 0 4.735 7.17l1.9 2.879.096-.063a12.317 12.317 0 0 0 2.466-2.163 11.944 11.944 0 0 0 2.824-6.134c.096-.66.108-.854.108-1.748 0-.893-.012-1.088-.108-1.747-.652-4.506-3.859-8.292-8.208-9.695a12.597 12.597 0 0 0-2.499-.523A33.119 33.119 0 0 0 11.573 0z"/></svg>,
+    'Node.js': <svg width="14" height="14" viewBox="0 0 24 24" fill="#339933"><path d="M11.998 24a.844.844 0 0 1-.421-.113l-1.336-.791c-.2-.111-.102-.15-.036-.173.266-.093.32-.114.603-.274a.095.095 0 0 1 .091.007l1.027.609a.131.131 0 0 0 .122 0l4.006-2.313a.124.124 0 0 0 .061-.108V7.234a.126.126 0 0 0-.062-.109L11.998 4.8a.123.123 0 0 0-.122 0L7.872 7.126a.127.127 0 0 0-.063.109v4.619a.126.126 0 0 0 .063.108l1.097.634a1.826 1.826 0 0 0 .928.255c.52 0 .828-.316.828-.866V7.7c0-.137.11-.246.247-.246h1.052c.136 0 .246.109.246.246v4.29c0 1.697-.93 2.67-2.55 2.67-.499 0-.892-.065-1.21-.224l-1.048-.6a1.259 1.259 0 0 1-.627-1.088V7.234a1.26 1.26 0 0 1 .627-1.089L11.576.831a1.303 1.303 0 0 1 1.244 0l4.01 2.315a1.261 1.261 0 0 1 .628 1.089v4.619a1.261 1.261 0 0 1-.628 1.088l-4.01 2.315a1.303 1.303 0 0 1-1.244 0l-1.097-.634V7.7c0-.137.11-.246.246-.246h1.052c.137 0 .247.109.247.246v4.29c0 .55.307.866.828.866a1.829 1.829 0 0 0 .928-.255l1.097-.634a.127.127 0 0 0 .063-.108V3.235a.126.126 0 0 0-.062-.109L11.998.813a.122.122 0 0 0-.122 0L7.872 3.126a.128.128 0 0 0-.063.109v4.619c0 .045.024.087.063.109l4.006 2.313a.124.124 0 0 0 .122 0l1.336-.771a.125.125 0 0 0 .063-.109V5.068a.125.125 0 0 0-.062-.109l-1.026-.594a.124.124 0 0 0-.122 0L11.02 4.73a.094.094 0 0 1-.091.007c-.283-.16-.337-.181-.603-.274-.066-.023-.164-.062.036-.173l1.336-.791a.843.843 0 0 1 .842 0l1.27.733a.844.844 0 0 1 .422.731v1.465a.844.844 0 0 1-.422.732l-1.27.733a.843.843 0 0 1-.842 0L10.43 6.36a.844.844 0 0 1-.422-.732V4.163a.844.844 0 0 1 .422-.731l1.27-.733a.843.843 0 0 1 .298-.065z"/></svg>,
+    'Docker': <svg width="14" height="14" viewBox="0 0 24 24" fill="#2496ED"><path d="M13.983 11.078h2.119a.186.186 0 0 0 .186-.185V9.006a.186.186 0 0 0-.186-.186h-2.119a.185.185 0 0 0-.185.185v1.888c0 .102.083.185.185.185m-2.954-5.43h2.118a.186.186 0 0 0 .186-.186V3.574a.186.186 0 0 0-.186-.185h-2.118a.185.185 0 0 0-.185.185v1.888c0 .102.082.185.185.185m0 2.716h2.118a.187.187 0 0 0 .186-.186V6.29a.186.186 0 0 0-.186-.185h-2.118a.185.185 0 0 0-.185.185v1.887c0 .102.082.185.185.186m-2.93 0h2.12a.186.186 0 0 0 .184-.186V6.29a.185.185 0 0 0-.185-.185H8.1a.185.185 0 0 0-.185.185v1.887c0 .102.083.185.185.186m-2.964 0h2.119a.186.186 0 0 0 .185-.186V6.29a.185.185 0 0 0-.185-.185H5.136a.186.186 0 0 0-.186.185v1.887c0 .102.084.185.186.186m5.893 2.715h2.118a.186.186 0 0 0 .186-.185V9.006a.186.186 0 0 0-.186-.186h-2.118a.185.185 0 0 0-.185.185v1.888c0 .102.082.185.185.185m-2.93 0h2.12a.185.185 0 0 0 .184-.185V9.006a.185.185 0 0 0-.184-.186h-2.12a.185.185 0 0 0-.184.185v1.888c0 .102.083.185.185.185m-2.964 0h2.119a.185.185 0 0 0 .185-.185V9.006a.185.185 0 0 0-.184-.186h-2.12a.186.186 0 0 0-.186.186v1.887c0 .102.084.185.186.185m-2.92 0h2.12a.185.185 0 0 0 .184-.185V9.006a.185.185 0 0 0-.184-.186h-2.12a.185.185 0 0 0-.185.185v1.888c0 .102.083.185.185.185M23.763 9.89c-.065-.051-.672-.51-1.954-.51-.338.001-.676.03-1.01.087-.248-1.7-1.653-2.53-1.716-2.566l-.344-.199-.226.327c-.284.438-.49.922-.612 1.43-.23.97-.09 1.882.403 2.661-.595.332-1.55.413-1.744.42H.751a.751.751 0 0 0-.75.748 11.376 11.376 0 0 0 .692 4.062c.545 1.428 1.355 2.48 2.41 3.124 1.18.723 3.1 1.137 5.275 1.137.983.003 1.963-.086 2.93-.266a12.248 12.248 0 0 0 3.823-1.389c.98-.567 1.86-1.288 2.61-2.136 1.252-1.418 1.998-2.997 2.553-4.4h.221c1.372 0 2.215-.549 2.68-1.009.309-.293.55-.65.707-1.046l.098-.288Z"/></svg>,
+    'Git': <svg width="14" height="14" viewBox="0 0 24 24" fill="#F05032"><path d="M23.546 10.93L13.067.452a1.55 1.55 0 0 0-2.188 0L8.708 2.627l2.76 2.76a1.838 1.838 0 0 1 2.327 2.341l2.658 2.66a1.838 1.838 0 0 1 1.9 3.039 1.837 1.837 0 0 1-2.6 0 1.846 1.846 0 0 1-.404-1.996L12.86 8.955v6.525c.176.086.342.203.483.346a1.846 1.846 0 0 1 0 2.6 1.846 1.846 0 0 1-2.6 0 1.846 1.846 0 0 1 0-2.6c.157-.157.34-.279.536-.362V8.909a1.847 1.847 0 0 1-1.003-2.416l-2.71-2.7-.975.976a1.55 1.55 0 0 0 0 2.187L16.155 17.07a1.55 1.55 0 0 0 2.187 0l5.204-5.207a1.55 1.55 0 0 0 0-2.932z" opacity=".1"/><path d="M23.546 10.93L13.067.452a1.55 1.55 0 0 0-2.188 0L8.708 2.627l2.76 2.76a1.838 1.838 0 0 1 2.327 2.341l2.658 2.66a1.838 1.838 0 0 1 1.9 3.039 1.837 1.837 0 0 1-2.6 0 1.846 1.846 0 0 1-.404-1.996L12.86 8.955v6.525c.176.086.342.203.483.346a1.846 1.846 0 0 1 0 2.6 1.846 1.846 0 0 1-2.6 0 1.846 1.846 0 0 1 0-2.6c.157-.157.34-.279.536-.362V8.909a1.847 1.847 0 0 1-1.003-2.416l-2.71-2.7-5.26 5.255a1.55 1.55 0 0 0 0 2.188L13.63 23.548a1.55 1.55 0 0 0 2.187 0l7.73-7.727a1.55 1.55 0 0 0 0-2.188"/></svg>,
+    'Figma': <svg width="14" height="14" viewBox="0 0 24 24"><path fill="#F24E1E" d="M8 24c2.208 0 4-1.792 4-4v-4H8c-2.208 0-4 1.792-4 4s1.792 4 4 4z"/><path fill="#FF7262" d="M4 12c0-2.208 1.792-4 4-4h4v8H8c-2.208 0-4-1.792-4-4z"/><path fill="#A259FF" d="M4 4c0-2.208 1.792-4 4-4h4v8H8C5.792 8 4 6.208 4 4z"/><path fill="#1ABCFE" d="M12 0h4c2.208 0 4 1.792 4 4s-1.792 4-4 4h-4V0z"/><path fill="#0ACF83" d="M20 12c0 2.208-1.792 4-4 4s-4-1.792-4-4 1.792-4 4-4 4 1.792 4 4z"/></svg>,
+    'PostgreSQL': '🐘', 'MongoDB': '🍃', 'MySQL': '🐬', 'Redis': '🔴',
+    'Machine Learning': '🤖', 'TensorFlow': '⚡', 'PyTorch': '🔥', 'Pandas': '🐼',
+    'AWS': <svg width="14" height="14" viewBox="0 0 24 24" fill="#FF9900"><path d="M6.763 10.036c0 .296.032.535.088.71.064.176.144.368.256.576.04.063.056.127.056.183 0 .08-.048.16-.152.24l-.503.335a.383.383 0 0 1-.208.072c-.08 0-.16-.04-.239-.112a2.47 2.47 0 0 1-.287-.375 6.18 6.18 0 0 1-.248-.471c-.622.734-1.405 1.101-2.347 1.101-.67 0-1.205-.191-1.596-.574-.391-.384-.59-.894-.59-1.533 0-.678.239-1.23.726-1.644.487-.415 1.133-.623 1.955-.623.272 0 .551.024.846.064.296.04.6.104.918.176v-.583c0-.607-.127-1.03-.375-1.277-.255-.248-.686-.367-1.3-.367-.28 0-.568.031-.863.103-.295.072-.583.16-.862.272a2.287 2.287 0 0 1-.28.104.488.488 0 0 1-.127.023c-.112 0-.168-.08-.168-.247v-.391c0-.128.016-.224.056-.28a.597.597 0 0 1 .224-.167c.279-.144.614-.264 1.005-.36a4.84 4.84 0 0 1 1.246-.151c.95 0 1.644.216 2.091.647.439.43.662 1.085.662 1.963v2.586zm-3.24 1.214c.263 0 .534-.048.822-.144.287-.096.543-.271.758-.51.128-.152.224-.32.272-.512.047-.191.08-.423.08-.694v-.335a6.66 6.66 0 0 0-.735-.136 6.02 6.02 0 0 0-.75-.048c-.535 0-.926.104-1.19.32-.263.215-.39.518-.39.917 0 .375.095.655.295.846.191.2.47.296.838.296zm6.41.862c-.144 0-.24-.024-.304-.08-.064-.048-.12-.16-.168-.311L7.586 5.55a1.398 1.398 0 0 1-.072-.32c0-.128.064-.2.191-.2h.783c.151 0 .255.025.31.08.065.048.113.16.16.312l1.342 5.284 1.245-5.284c.04-.16.088-.264.151-.312a.549.549 0 0 1 .32-.08h.638c.152 0 .256.025.32.08.063.048.12.16.151.312l1.261 5.348 1.381-5.348c.048-.16.104-.264.16-.312a.52.52 0 0 1 .311-.08h.743c.127 0 .2.065.2.2 0 .04-.009.08-.017.128a1.137 1.137 0 0 1-.056.2l-1.923 6.17c-.048.16-.104.263-.168.311a.51.51 0 0 1-.303.08h-.687c-.151 0-.255-.024-.32-.08-.063-.056-.119-.16-.15-.32l-1.238-5.148-1.23 5.14c-.04.16-.087.264-.15.32-.065.056-.177.08-.32.08zm10.256.215c-.415 0-.83-.048-1.229-.143-.399-.096-.71-.2-.918-.32-.128-.071-.215-.151-.247-.223a.563.563 0 0 1-.048-.224v-.407c0-.167.064-.247.183-.247.048 0 .096.008.144.024.048.016.12.048.2.08.271.12.566.215.878.279.319.064.63.096.95.096.502 0 .894-.088 1.165-.264a.86.86 0 0 0 .415-.758.777.777 0 0 0-.215-.559c-.144-.151-.416-.287-.807-.415l-1.157-.36c-.583-.183-1.014-.454-1.277-.813a1.902 1.902 0 0 1-.4-1.158c0-.335.073-.63.216-.886.144-.255.335-.479.575-.654.24-.184.51-.32.83-.415.32-.096.655-.136 1.006-.136.175 0 .359.008.535.032.183.024.35.056.518.088.16.04.312.08.455.127.144.048.256.096.336.144a.69.69 0 0 1 .24.2.43.43 0 0 1 .071.263v.375c0 .168-.064.256-.184.256a.83.83 0 0 1-.303-.096 3.652 3.652 0 0 0-1.532-.311c-.455 0-.815.071-1.062.223-.248.152-.375.383-.375.71 0 .224.08.416.24.567.159.152.454.304.877.44l1.134.358c.574.184.99.44 1.237.767.247.327.367.702.367 1.117 0 .343-.072.655-.207.926-.144.272-.336.511-.583.703-.248.2-.543.343-.886.447-.36.111-.734.167-1.142.167zM21.698 16.207c-2.626 1.94-6.442 2.969-9.722 2.969-4.598 0-8.74-1.7-11.87-4.526-.247-.223-.024-.527.272-.352 3.384 1.963 7.559 3.147 11.877 3.147 2.914 0 6.114-.607 9.06-1.852.439-.2.814.287.383.614z"/><path fill="#FF9900" d="M22.792 14.961c-.336-.43-2.22-.207-3.074-.103-.255.032-.295-.192-.063-.36 1.5-1.053 3.967-.75 4.254-.399.287.36-.08 2.826-1.485 4.007-.215.184-.423.088-.327-.151.32-.79 1.03-2.57.695-2.994z"/></svg>,
+    'CI/CD': '🔄', 'Linux': '🐧',
+    'Express.js': '🚂', 'Django': '🎸', 'FastAPI': '⚡', 'REST API': '🔌', 'GraphQL': '🔮',
+    'Tailwind CSS': <svg width="14" height="14" viewBox="0 0 24 24" fill="#06B6D4"><path d="M12.001 4.8c-3.2 0-5.2 1.6-6 4.8 1.2-1.6 2.6-2.2 4.2-1.8.913.228 1.565.89 2.288 1.624C13.666 10.618 15.027 12 18.001 12c3.2 0 5.2-1.6 6-4.8-1.2 1.6-2.6 2.2-4.2 1.8-.913-.228-1.565-.89-2.288-1.624C16.337 6.182 14.976 4.8 12.001 4.8zm-6 7.2c-3.2 0-5.2 1.6-6 4.8 1.2-1.6 2.6-2.2 4.2-1.8.913.228 1.565.89 2.288 1.624 1.177 1.194 2.538 2.576 5.512 2.576 3.2 0 5.2-1.6 6-4.8-1.2 1.6-2.6 2.2-4.2 1.8-.913-.228-1.565-.89-2.288-1.624C10.337 13.382 8.976 12 6.001 12z"/></svg>,
+    'React Native': '📱', 'Flutter': '🦋', 'Firebase': '🔥',
+  };
+
+  const getSkillLogo = (name) => {
+    const logo = SKILL_LOGOS[name];
+    if (!logo) return <span style={{ fontSize: 12 }}>⚬</span>;
+    if (typeof logo === 'string') return <span style={{ fontSize: 12 }}>{logo}</span>;
+    return logo;
+  };
+
+  // ── Coding platform logos ──────────────────────────────────────────────────
+  const PLATFORM_LOGOS = {
+    leetcode:     { label:'LeetCode',     color:'#FFA116', svg: <svg width="14" height="14" viewBox="0 0 24 24" fill="white"><path d="M13.483 0a1.374 1.374 0 0 0-.961.438L7.116 6.226l-3.854 4.126a5.266 5.266 0 0 0-1.209 2.104 5.35 5.35 0 0 0-.125.513 5.527 5.527 0 0 0 .062 2.362 5.83 5.83 0 0 0 .349 1.017 5.938 5.938 0 0 0 1.271 1.818l4.277 4.193.039.038c2.248 2.165 5.852 2.133 8.063-.074l2.396-2.392c.54-.54.54-1.414.003-1.955a1.378 1.378 0 0 0-1.951-.003l-2.396 2.392a3.021 3.021 0 0 1-4.205.038l-.02-.019-4.276-4.193c-.652-.64-.972-1.469-.948-2.263a2.68 2.68 0 0 1 .066-.523 2.545 2.545 0 0 1 .619-1.164L9.13 8.114c1.058-1.134 3.204-1.27 4.43-.278l3.501 2.831c.593.48 1.461.387 1.94-.207a1.384 1.384 0 0 0-.207-1.943l-3.5-2.831c-.8-.647-1.766-1.045-2.774-1.202l2.015-2.158A1.384 1.384 0 0 0 13.483 0zm-2.866 12.815a1.38 1.38 0 0 0-1.38 1.382 1.38 1.38 0 0 0 1.38 1.382H20.79a1.38 1.38 0 0 0 1.38-1.382 1.38 1.38 0 0 0-1.38-1.382z"/></svg> },
+    github_username:{ label:'GitHub',    color:'#24292e', svg: <svg width="14" height="14" viewBox="0 0 24 24" fill="white"><path d="M12 0C5.37 0 0 5.37 0 12c0 5.31 3.435 9.795 8.205 11.385.6.105.825-.255.825-.57 0-.285-.015-1.23-.015-2.235-3.015.555-3.795-.735-4.035-1.41-.135-.345-.72-1.41-1.23-1.695-.42-.225-1.02-.78-.015-.795.945-.015 1.62.87 1.845 1.23 1.08 1.815 2.805 1.305 3.495.99.105-.78.42-1.305.765-1.605-2.67-.3-5.46-1.335-5.46-5.925 0-1.305.465-2.385 1.23-3.225-.12-.3-.54-1.53.12-3.18 0 0 1.005-.315 3.3 1.23.96-.27 1.98-.405 3-.405s2.04.135 3 .405c2.295-1.56 3.3-1.23 3.3-1.23.66 1.65.24 2.88.12 3.18.765.84 1.23 1.905 1.23 3.225 0 4.605-2.805 5.625-5.475 5.925.435.375.81 1.095.81 2.22 0 1.605-.015 2.895-.015 3.3 0 .315.225.69.825.57A12.02 12.02 0 0 0 24 12c0-6.63-5.37-12-12-12z"/></svg> },
+    codechef:     { label:'CodeChef',     color:'#5B4638', svg: <svg width="14" height="14" viewBox="0 0 24 24" fill="white"><path d="M11.257.004C5.23-.105.13 4.837.004 10.862c-.127 6.024 4.815 11.124 10.839 11.25 6.025.127 11.125-4.815 11.25-10.839.128-6.025-4.814-11.124-10.836-11.27zm-.103 2.872c1.613-.032 3.236.473 4.552 1.489.283.215.554.45.8.705l-1.6 1.6a5.267 5.267 0 0 0-.622-.541 5.097 5.097 0 0 0-6.124.255l-1.556-1.556a8.06 8.06 0 0 1 4.55-1.952zm-5.69 2.92 1.559 1.559a5.108 5.108 0 0 0-.867 4.797l-1.863.497a7.218 7.218 0 0 1 1.172-6.854zm12.09.476a7.209 7.209 0 0 1 .875 6.54l-1.854-.495a5.107 5.107 0 0 0-.594-4.527zm-10.78 4.34h1.697v2.094H10.6v1.697H8.773zm4.47 0H14.2v1.697h1.698v.397H14.2v1.697h-1.696v-1.697H10.81v-.397h1.697zm-4.47 4.493h6.172v1.697H7.074z"/></svg> },
+    codeforces:   { label:'Codeforces',   color:'#1F8ACB', svg: <svg width="14" height="14" viewBox="0 0 24 24" fill="white"><path d="M4.5 7.5C5.328 7.5 6 8.172 6 9v10.5c0 .828-.672 1.5-1.5 1.5h-3C.672 21 0 20.328 0 19.5V9c0-.828.672-1.5 1.5-1.5h3zm9-4.5c.828 0 1.5.672 1.5 1.5V19.5c0 .828-.672 1.5-1.5 1.5h-3c-.828 0-1.5-.672-1.5-1.5V4.5C9 3.672 9.672 3 10.5 3h3zm9 7.5c.828 0 1.5.672 1.5 1.5v9c0 .828-.672 1.5-1.5 1.5h-3c-.828 0-1.5-.672-1.5-1.5V15c0-.828.672-1.5 1.5-1.5h3z"/></svg> },
+    kaggle:       { label:'Kaggle',       color:'#20BEFF', svg: <svg width="14" height="14" viewBox="0 0 24 24" fill="white"><path d="M18.825 23.859c-.022.092-.117.141-.281.141h-3.139c-.187 0-.351-.082-.492-.248l-5.178-6.589-1.448 1.374v5.111c0 .235-.117.352-.351.352H5.505c-.236 0-.354-.117-.354-.352V.353c0-.233.118-.353.354-.353h2.431c.234 0 .351.12.351.353v14.343l6.203-6.272c.165-.165.33-.246.495-.246h3.239c.144 0 .236.06.285.18.046.149.034.255-.036.315l-6.555 6.344 6.836 8.507c.095.104.117.208.07.336z"/></svg> },
+    hackerrank:   { label:'HackerRank',   color:'#2EC866', svg: <svg width="14" height="14" viewBox="0 0 24 24" fill="white"><path d="M12 0c1.285 0 9.75 4.886 10.392 6 .645 1.115.645 10.885 0 12S13.287 24 12 24C10.712 24 2.25 19.115 1.608 18 .963 16.886.963 7.115 1.608 6 2.253 4.886 10.715 0 12 0zm2.205 6.015a.648.648 0 0 0-.654.645.637.637 0 0 0 .654.647h.663v3.275h-5.332V7.307h.662a.643.643 0 0 0 .654-.645A.644.644 0 0 0 9.798 6h-3.3a.644.644 0 0 0-.654.645.645.645 0 0 0 .654.647h.662v10.11h-.662a.646.646 0 0 0 0 1.292h3.3a.646.646 0 0 0 0-1.293h-.662v-3.967h5.332v3.967h-.663a.646.646 0 0 0 0 1.292h3.3a.645.645 0 0 0 .654-.645.645.645 0 0 0-.654-.647h-.663V7.307h.663a.638.638 0 0 0 .654-.647.648.648 0 0 0-.654-.645h-3.3z"/></svg> },
+    codingninjas: { label:'Coding Ninjas', color:'#FF5E3A', svg: <span style={{ fontSize: 10, fontWeight: 800, color: 'white' }}>CN</span> },
+    geeksforgeeks:{ label:'GeeksforGeeks', color:'#2F8D46', svg: <svg width="14" height="14" viewBox="0 0 24 24" fill="white"><path d="M21.45 14.315c-.143.28-.334.532-.565.745a3.692 3.692 0 0 1-1.104.695 4.51 4.51 0 0 1-3.116 0 4.573 4.573 0 0 1-1.104-.695 3.553 3.553 0 0 1-.565-.745h-6.19a3.553 3.553 0 0 1-.565.745 4.573 4.573 0 0 1-1.104.695 4.51 4.51 0 0 1-3.116 0 4.573 4.573 0 0 1-1.104-.695 3.692 3.692 0 0 1-.565-.745H0v-1.89h1.354a5.836 5.836 0 0 1-.16-1.025A5.847 5.847 0 0 1 3.68 7.007a5.783 5.783 0 0 1 2.085-.39c.76 0 1.49.145 2.17.435a5.63 5.63 0 0 1 1.83 1.28l1.235 1.38 1.235-1.38a5.63 5.63 0 0 1 1.83-1.28 5.783 5.783 0 0 1 2.17-.435c.76 0 1.49.145 2.17.435a5.783 5.783 0 0 1 2.487 2.393 5.847 5.847 0 0 1 .645 2.965c-.015.35-.06.693-.16 1.025H24v1.89h-2.55zm-9.45-1.78l-1.91-2.135a4.06 4.06 0 0 0-1.355-.94 3.717 3.717 0 0 0-1.5-.31c-.55 0-1.055.1-1.52.31a4.04 4.04 0 0 0-1.215.835 3.907 3.907 0 0 0-.81 1.215 3.84 3.84 0 0 0 0 2.94c.19.455.46.865.81 1.215a4.04 4.04 0 0 0 1.215.835 3.717 3.717 0 0 0 1.52.31c.53 0 1.035-.105 1.5-.31.465-.21.88-.5 1.255-.88l1.81-2.085zm9.85 0l-1.81-2.085a4.06 4.06 0 0 0-1.255-.88 3.717 3.717 0 0 0-1.5-.31c-.55 0-1.055.1-1.52.31a4.04 4.04 0 0 0-1.215.835 3.907 3.907 0 0 0-.81 1.215 3.84 3.84 0 0 0 0 2.94c.19.455.46.865.81 1.215a4.04 4.04 0 0 0 1.215.835 3.717 3.717 0 0 0 1.52.31c.53 0 1.035-.105 1.5-.31a4.06 4.06 0 0 0 1.355-.94l1.71-2.135z"/></svg> },
+  };
+
   return (
-    <div style={{ flex: 1, display: 'flex', overflow: 'hidden', animation: 'hunt-fade-in 0.25s ease' }}>
+    <div style={{ flex: 1, display: 'flex', flexDirection: 'column', overflow: 'hidden', animation: 'hunt-fade-in 0.25s ease' }}>
       {toast && (
         <div style={{ position: 'fixed', top: 18, left: '50%', transform: 'translateX(-50%)', zIndex: 9999, padding: '7px 16px', borderRadius: 7, fontSize: 12, fontWeight: 500, background: toast.type === 'err' ? 'rgba(192,57,43,0.95)' : 'rgba(26,122,74,0.95)', color: '#fff', pointerEvents: 'none', boxShadow: '0 3px 12px rgba(0,0,0,0.15)' }}>{toast.msg}</div>
       )}
 
-      {/* Left sub-nav */}
-      <div style={{ width: 176, flexShrink: 0, borderRight: '1px solid var(--border)', padding: '24px 8px 24px 10px', display: 'flex', flexDirection: 'column', gap: 2, overflowY: 'auto' }}>
-        <p style={{ fontSize: 10, fontWeight: 700, letterSpacing: '0.12em', textTransform: 'uppercase', color: 'var(--text-dim)', padding: '0 8px', marginBottom: 12 }}>Profile</p>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '7px 8px', borderRadius: 8, marginBottom: 10 }}>
-          <div style={{ width: 30, height: 30, borderRadius: '50%', background: 'var(--green-tint)', border: '1px solid var(--green)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 10, fontWeight: 700, color: 'var(--green)', flexShrink: 0 }}>{initials}</div>
-          <div style={{ overflow: 'hidden' }}>
-            <p style={{ fontSize: 11, fontWeight: 600, color: 'var(--text)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', maxWidth: 96 }}>{d.full_name || '—'}</p>
-            <p style={{ fontSize: 10, color: 'var(--text-dim)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', maxWidth: 96 }}>{d.college || 'Add college'}</p>
-          </div>
-        </div>
+      {/* ── TOP TAB BAR ── */}
+      <div style={{ flexShrink: 0, borderBottom: '1px solid var(--border)', background: 'var(--bg-card)', padding: '0 32px', display: 'flex', alignItems: 'center', gap: 0 }}>
         {SECTIONS.map(s => (
-          <button key={s.id} className="hn-item" onClick={() => setActiveSection(s.id)} style={{ display: 'flex', width: '100%', padding: '8px 10px', borderRadius: 7, border: 'none', cursor: 'pointer', background: activeSection === s.id ? 'var(--bg-subtle)' : 'transparent', color: activeSection === s.id ? 'var(--text)' : 'var(--text-dim)', fontSize: 12, fontWeight: activeSection === s.id ? 600 : 400, textAlign: 'left', fontFamily: 'inherit', transition: 'background 0.1s' }}>
+          <button key={s.id} onClick={() => setActiveSection(s.id)} style={{
+            padding: '13px 18px', background: 'none', border: 'none', cursor: 'pointer',
+            fontSize: 13, fontWeight: activeSection === s.id ? 600 : 400,
+            color: activeSection === s.id ? 'var(--text)' : 'var(--text-dim)',
+            borderBottom: activeSection === s.id ? '2px solid var(--text)' : '2px solid transparent',
+            marginBottom: '-1px', whiteSpace: 'nowrap', fontFamily: 'inherit',
+            transition: 'color 0.1s',
+          }}>
             {s.label}
           </button>
         ))}
       </div>
 
-      {/* Content area */}
-      <div style={{ flex: 1, overflowY: 'auto', padding: '28px 36px 60px' }}>
+      {/* ── CONTENT ── */}
+      <div style={{ flex: 1, overflowY: 'auto', padding: '32px 40px 60px' }}>
 
         {/* OVERVIEW */}
         {activeSection === 'overview' && (
-          <div style={{ maxWidth: 660 }}>
-            <SectionTitle>Overview</SectionTitle>
-            <Card style={{ padding: 0, overflow: 'hidden' }}>
-              <div style={{ height: 88, background: 'linear-gradient(135deg, #1A7A4A 0%, #0D4A2E 100%)', position: 'relative', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                <p style={{ fontFamily: "'Editorial New', Georgia, serif", fontSize: 19, color: 'rgba(255,255,255,0.85)', fontStyle: 'italic' }}>On a hunt.</p>
-                <label style={{ position: 'absolute', top: 8, right: 8, width: 24, height: 24, borderRadius: '50%', background: 'rgba(0,0,0,0.3)', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer' }}>
-                  <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg>
-                  <input type="file" accept="image/*" style={{ display: 'none' }} onChange={() => showToast('Coming soon')} />
+          <div style={{ maxWidth: 760 }}>
+            {/* Banner + Avatar hero */}
+            <div style={{ background: 'var(--bg-card)', border: '1px solid var(--border)', borderRadius: 14, overflow: 'hidden', marginBottom: 20 }}>
+              {/* Banner */}
+              <div style={{ height: 140, background: 'linear-gradient(135deg, #1A7A4A 0%, #0D4A2E 100%)', position: 'relative', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                <p style={{ fontFamily: "'Editorial New', Georgia, serif", fontSize: 28, color: 'rgba(255,255,255,0.9)', fontStyle: 'italic', letterSpacing: '0.02em' }}>On a hunt.</p>
+                <label style={{ position: 'absolute', top: 12, right: 12, width: 32, height: 32, borderRadius: '50%', background: 'rgba(0,0,0,0.35)', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', backdropFilter: 'blur(4px)' }}>
+                  <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg>
+                  <input type="file" accept="image/*" style={{ display: 'none' }} onChange={() => showToast('Banner upload coming soon')} />
                 </label>
               </div>
-              <div style={{ padding: '0 20px 18px' }}>
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', marginBottom: 8 }}>
-                  <div style={{ width: 50, height: 50, borderRadius: '50%', background: 'var(--green-tint)', border: '3px solid var(--bg-card)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 15, fontWeight: 700, color: 'var(--green)', marginTop: -25, position: 'relative' }}>
-                    {initials}
-                    <label style={{ position: 'absolute', bottom: 0, right: 0, width: 16, height: 16, borderRadius: '50%', background: 'var(--green)', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', border: '2px solid var(--bg-card)' }}>
-                      <svg width="7" height="7" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2.5"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg>
-                      <input type="file" accept="image/*" style={{ display: 'none' }} onChange={() => showToast('Coming soon')} />
+              {/* Avatar + name row */}
+              <div style={{ padding: '0 28px 24px' }}>
+                <div style={{ display: 'flex', alignItems: 'flex-end', justifyContent: 'space-between', marginBottom: 12 }}>
+                  <div style={{ position: 'relative', marginTop: -36 }}>
+                    <div style={{ width: 72, height: 72, borderRadius: '50%', background: 'var(--green-tint)', border: '4px solid var(--bg-card)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 22, fontWeight: 700, color: 'var(--green)' }}>
+                      {initials}
+                    </div>
+                    <label style={{ position: 'absolute', bottom: 2, right: 2, width: 22, height: 22, borderRadius: '50%', background: 'var(--green)', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', border: '2px solid var(--bg-card)' }}>
+                      <svg width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2.5"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg>
+                      <input type="file" accept="image/*" style={{ display: 'none' }} onChange={() => showToast('Avatar upload coming soon')} />
                     </label>
                   </div>
                 </div>
-                <p style={{ fontFamily: "'Editorial New', Georgia, serif", fontSize: 15, color: 'var(--text)', marginBottom: 2 }}>{d.full_name || '—'}</p>
-                <p style={{ fontSize: 11, color: 'var(--text-dim)' }}>{d.college}{d.year ? ` · Year ${d.year}` : ''}</p>
-                {d.headline && <p style={{ fontSize: 12, color: 'var(--text-mid)', marginTop: 3 }}>{d.headline}</p>}
+                <p style={{ fontFamily: "'Editorial New', Georgia, serif", fontSize: 20, color: 'var(--text)', marginBottom: 3 }}>{d.full_name || '—'}</p>
+                <p style={{ fontSize: 13, color: 'var(--text-dim)', marginBottom: d.headline ? 6 : 0 }}>{d.college}{d.year ? ` · Year ${d.year}` : ''}</p>
+                {d.headline && <p style={{ fontSize: 13, color: 'var(--text-mid)', lineHeight: 1.5 }}>{d.headline}</p>}
               </div>
-            </Card>
+            </div>
+
+            {/* Headline + Bio */}
             <Card>
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
-                <p style={{ fontSize: 12, fontWeight: 600, color: 'var(--text)' }}>Headline & Bio</p>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
+                <p style={{ fontSize: 14, fontWeight: 600, color: 'var(--text)' }}>Headline & Bio</p>
                 <SaveBtn onClick={() => save({ headline: d.headline, bio: d.bio })} />
               </div>
-              <div style={{ display: 'flex', flexDirection: 'column', gap: 9 }}>
-                <Row label="Headline"><input style={inp_p} value={d.headline || ''} placeholder="Full Stack Dev · Open to internships" onChange={e => setDraft(x => ({ ...x, headline: e.target.value }))} /></Row>
-                <Row label="Bio"><textarea style={{ ...inp_p, resize: 'none' }} rows={3} value={d.bio || ''} placeholder="Tell recruiters about yourself..." onChange={e => setDraft(x => ({ ...x, bio: e.target.value }))} /></Row>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+                <div>
+                  <FieldLabel>Headline</FieldLabel>
+                  <input style={inp_p} value={d.headline||''} placeholder="Full Stack Dev · Open to internships" onChange={e => setDraft(x=>({...x,headline:e.target.value}))} />
+                </div>
+                <div>
+                  <FieldLabel>Bio</FieldLabel>
+                  <textarea style={{ ...inp_p, resize: 'none' }} rows={4} value={d.bio||''} placeholder="Tell recruiters about yourself..." onChange={e => setDraft(x=>({...x,bio:e.target.value}))} />
+                </div>
               </div>
             </Card>
+
+            {/* Basic info */}
             <Card>
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
-                <p style={{ fontSize: 12, fontWeight: 600, color: 'var(--text)' }}>Basic Info</p>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
+                <p style={{ fontSize: 14, fontWeight: 600, color: 'var(--text)' }}>Basic Info</p>
                 <SaveBtn onClick={() => save({ full_name: d.full_name, college: d.college, year: d.year, phone: d.phone, email: d.email })} />
               </div>
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 9 }}>
-                {[{ f: 'full_name', label: 'Full Name', ph: 'Priya Sharma' },{ f: 'college', label: 'College', ph: 'VJTI Mumbai' },{ f: 'phone', label: 'Phone', ph: '+91 98765 43210' },{ f: 'email', label: 'Email', ph: 'you@email.com' }].map(({ f, label, ph }) => (
-                  <Row key={f} label={label}><input style={inp_p} value={d[f] || ''} placeholder={ph} onChange={e => setDraft(x => ({ ...x, [f]: e.target.value }))} /></Row>
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 14 }}>
+                {[
+                  { f:'full_name', label:'Full Name', ph:'Priya Sharma' },
+                  { f:'college',   label:'College',   ph:'VJTI Mumbai' },
+                  { f:'phone',     label:'Phone',     ph:'+91 98765 43210' },
+                  { f:'email',     label:'Email',     ph:'you@email.com' },
+                ].map(({ f, label, ph }) => (
+                  <div key={f}>
+                    <FieldLabel>{label}</FieldLabel>
+                    <input style={inp_p} value={d[f]||''} placeholder={ph} onChange={e => setDraft(x=>({...x,[f]:e.target.value}))} />
+                  </div>
                 ))}
-                <Row label="Year"><select style={inp_p} value={d.year || 3} onChange={e => setDraft(x => ({ ...x, year: parseInt(e.target.value) }))}>{[1,2,3,4].map(y => <option key={y} value={y}>{y}{['st','nd','rd','th'][y-1]} Year</option>)}</select></Row>
+                <div>
+                  <FieldLabel>Year</FieldLabel>
+                  <select style={inp_p} value={d.year||3} onChange={e => setDraft(x=>({...x,year:parseInt(e.target.value)}))}>
+                    {[1,2,3,4].map(y => <option key={y} value={y}>{y}{['st','nd','rd','th'][y-1]} Year</option>)}
+                  </select>
+                </div>
               </div>
             </Card>
           </div>
         )}
 
-        {/* RESUME & LINKS */}
+        {/* RESUME */}
         {activeSection === 'resume' && (
-          <div style={{ maxWidth: 660 }}>
-            <SectionTitle>Resume & Links</SectionTitle>
+          <div style={{ maxWidth: 700 }}>
+
+            {/* Quick links at top */}
             <Card>
-              <p style={{ fontSize: 12, fontWeight: 600, color: 'var(--text)', marginBottom: 10 }}>Resume PDF</p>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 14 }}>
+                <p style={{ fontSize: 14, fontWeight: 600, color: 'var(--text)' }}>Key Links</p>
+                <SaveBtn onClick={() => save({ github_url: d.github_url, linkedin_url: d.linkedin_url, portfolio_url: d.portfolio_url })} />
+              </div>
+              {[
+                { key:'github_url',   logo:<svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><path d="M12 0C5.37 0 0 5.37 0 12c0 5.31 3.435 9.795 8.205 11.385.6.105.825-.255.825-.57 0-.285-.015-1.23-.015-2.235-3.015.555-3.795-.735-4.035-1.41-.135-.345-.72-1.41-1.23-1.695-.42-.225-1.02-.78-.015-.795.945-.015 1.62.87 1.845 1.23 1.08 1.815 2.805 1.305 3.495.99.105-.78.42-1.305.765-1.605-2.67-.3-5.46-1.335-5.46-5.925 0-1.305.465-2.385 1.23-3.225-.12-.3-.54-1.53.12-3.18 0 0 1.005-.315 3.3 1.23.96-.27 1.98-.405 3-.405s2.04.135 3 .405c2.295-1.56 3.3-1.23 3.3-1.23.66 1.65.24 2.88.12 3.18.765.84 1.23 1.905 1.23 3.225 0 4.605-2.805 5.625-5.475 5.925.435.375.81 1.095.81 2.22 0 1.605-.015 2.895-.015 3.3 0 .315.225.69.825.57A12.02 12.02 0 0 0 24 12c0-6.63-5.37-12-12-12z"/></svg>, bg:'#24292e', label:'GitHub URL', ph:'https://github.com/username' },
+                { key:'linkedin_url', logo:<svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><path d="M20.447 20.452h-3.554v-5.569c0-1.328-.027-3.037-1.852-3.037-1.853 0-2.136 1.445-2.136 2.939v5.667H9.351V9h3.414v1.561h.046c.477-.9 1.637-1.85 3.37-1.85 3.601 0 4.267 2.37 4.267 5.455v6.286zM5.337 7.433a2.062 2.062 0 0 1-2.063-2.065 2.064 2.064 0 1 1 2.063 2.065zm1.782 13.019H3.555V9h3.564v11.452zM22.225 0H1.771C.792 0 0 .774 0 1.729v20.542C0 23.227.792 24 1.771 24h20.451C23.2 24 24 23.227 24 22.271V1.729C24 .774 23.2 0 22.222 0h.003z"/></svg>, bg:'#0A66C2', label:'LinkedIn URL', ph:'https://linkedin.com/in/username' },
+                { key:'portfolio_url', logo:<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2"><circle cx="12" cy="12" r="10"/><line x1="2" y1="12" x2="22" y2="12"/><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/></svg>, bg:'#5A5A56', label:'Portfolio', ph:'https://yoursite.com' },
+              ].map(({ key, logo, bg, label, ph }) => (
+                <div key={key} style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '8px 10px', borderRadius: 8, border: '1px solid var(--border)', background: 'var(--bg-subtle)', marginBottom: 8 }}>
+                  <div style={{ width: 28, height: 28, borderRadius: 7, background: bg, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, color: 'white' }}>{logo}</div>
+                  <span style={{ fontSize: 12, fontWeight: 500, color: 'var(--text-mid)', width: 90, flexShrink: 0 }}>{label}</span>
+                  <input style={{ ...inp_p, padding: '5px 9px' }} value={d[key]||''} placeholder={ph} onChange={e => setDraft(x=>({...x,[key]:e.target.value}))} />
+                </div>
+              ))}
+            </Card>
+
+            {/* Resume PDF */}
+            <Card>
+              <p style={{ fontSize: 14, fontWeight: 600, color: 'var(--text)', marginBottom: 12 }}>Resume PDF</p>
               {d.resume_url ? (
-                <div style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '9px 13px', borderRadius: 7, border: '1px solid var(--green)', background: 'var(--green-tint)' }}>
-                  <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="var(--green)" strokeWidth="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
-                  <span style={{ flex: 1, fontSize: 12, fontWeight: 500, color: 'var(--green-text)' }}>Resume uploaded</span>
-                  <a href={d.resume_url} target="_blank" rel="noopener noreferrer" style={{ fontSize: 11, color: 'var(--green-text)', textDecoration: 'none' }}>View ↗</a>
-                  <label style={{ fontSize: 11, padding: '3px 9px', borderRadius: 5, border: '1px solid var(--green)', color: 'var(--green)', cursor: 'pointer', fontFamily: 'inherit' }}>Replace<input type="file" accept=".pdf" style={{ display: 'none' }} onChange={() => showToast('Upload coming soon')} /></label>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '12px 16px', borderRadius: 8, border: '1px solid var(--green)', background: 'var(--green-tint)' }}>
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--green)" strokeWidth="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+                  <span style={{ flex: 1, fontSize: 13, fontWeight: 500, color: 'var(--green-text)' }}>Resume uploaded</span>
+                  <a href={d.resume_url} target="_blank" rel="noopener noreferrer" style={{ fontSize: 12, color: 'var(--green-text)', textDecoration: 'none' }}>View ↗</a>
+                  <label style={{ fontSize: 12, padding: '5px 12px', borderRadius: 6, border: '1px solid var(--green)', color: 'var(--green)', cursor: 'pointer', fontFamily: 'inherit' }}>
+                    Replace<input type="file" accept=".pdf" style={{ display: 'none' }} onChange={() => showToast('Upload coming soon')} />
+                  </label>
                 </div>
               ) : (
-                <label style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 5, padding: '24px', borderRadius: 8, border: '2px dashed var(--border-mid)', cursor: 'pointer' }}
-                  onMouseEnter={e => { e.currentTarget.style.borderColor = 'var(--green)'; e.currentTarget.style.background = 'var(--green-tint)'; }}
-                  onMouseLeave={e => { e.currentTarget.style.borderColor = 'var(--border-mid)'; e.currentTarget.style.background = 'transparent'; }}>
-                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="var(--text-dim)" strokeWidth="1.5"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
-                  <span style={{ fontSize: 12, color: 'var(--text-mid)' }}>Drop PDF here or <span style={{ color: 'var(--green)' }}>browse</span></span>
+                <label style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 8, padding: '32px', borderRadius: 10, border: '2px dashed var(--border-mid)', cursor: 'pointer' }}
+                  onMouseEnter={e => { e.currentTarget.style.borderColor='var(--green)'; e.currentTarget.style.background='var(--green-tint)'; }}
+                  onMouseLeave={e => { e.currentTarget.style.borderColor='var(--border-mid)'; e.currentTarget.style.background='transparent'; }}>
+                  <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="var(--text-dim)" strokeWidth="1.5"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+                  <span style={{ fontSize: 13, color: 'var(--text-mid)' }}>Drop PDF here or <span style={{ color: 'var(--green)' }}>browse files</span></span>
+                  <span style={{ fontSize: 11, color: 'var(--text-dim)' }}>PDF up to 5MB</span>
                   <input type="file" accept=".pdf" style={{ display: 'none' }} onChange={() => showToast('Upload coming soon')} />
                 </label>
               )}
             </Card>
-            <Card>
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 9 }}>
-                <p style={{ fontSize: 12, fontWeight: 600, color: 'var(--text)' }}>Summary</p>
-                <SaveBtn onClick={() => save({ summary: d.summary })} />
-              </div>
-              <textarea style={{ ...inp_p, resize: 'none' }} rows={3} value={d.summary || ''} placeholder="Brief professional summary..." onChange={e => setDraft(x => ({ ...x, summary: e.target.value }))} />
-            </Card>
+
+            {/* Summary */}
             <Card>
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
-                <p style={{ fontSize: 12, fontWeight: 600, color: 'var(--text)' }}>Education</p>
-                <button onClick={() => setAddingEdu(true)} style={{ padding: '4px 10px', borderRadius: 6, border: '1px solid var(--border)', background: 'transparent', color: 'var(--text-dim)', fontSize: 11, cursor: 'pointer', fontFamily: 'inherit' }}>+ Add</button>
+                <p style={{ fontSize: 14, fontWeight: 600, color: 'var(--text)' }}>Summary</p>
+                <SaveBtn onClick={() => save({ summary: d.summary })} />
               </div>
-              {(d.education || []).map((edu, i) => (
-                <div key={i} style={{ display: 'flex', gap: 9, padding: '9px 11px', borderRadius: 7, border: '1px solid var(--border)', background: 'var(--bg-subtle)', marginBottom: 7, alignItems: 'flex-start' }}>
+              <textarea style={{ ...inp_p, resize: 'none' }} rows={4} value={d.summary||''} placeholder="Brief professional summary..." onChange={e => setDraft(x=>({...x,summary:e.target.value}))} />
+            </Card>
+
+            {/* Education */}
+            <Card>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 14 }}>
+                <p style={{ fontSize: 14, fontWeight: 600, color: 'var(--text)' }}>Education</p>
+                <button onClick={() => setAddingEdu(true)} style={{ padding: '6px 14px', borderRadius: 7, border: '1px solid var(--border)', background: 'transparent', color: 'var(--text-dim)', fontSize: 12, cursor: 'pointer', fontFamily: 'inherit' }}>+ Add</button>
+              </div>
+              {(d.education||[]).map((edu, i) => (
+                <div key={i} style={{ display: 'flex', gap: 12, padding: '12px 14px', borderRadius: 9, border: '1px solid var(--border)', background: 'var(--bg-subtle)', marginBottom: 8, alignItems: 'flex-start' }}>
+                  <div style={{ width: 36, height: 36, borderRadius: 8, background: 'var(--bg-card)', border: '1px solid var(--border)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, fontSize: 16 }}>🎓</div>
                   <div style={{ flex: 1 }}>
-                    <p style={{ fontSize: 12, fontWeight: 600, color: 'var(--text)', marginBottom: 1 }}>{edu.school}</p>
-                    <p style={{ fontSize: 11, color: 'var(--text-mid)', marginBottom: 1 }}>{edu.degree}{edu.major ? ` · ${edu.major}` : ''}</p>
-                    <p style={{ fontSize: 10, color: 'var(--text-dim)' }}>{edu.startYear}–{edu.endYear || 'Present'}</p>
+                    <p style={{ fontSize: 13, fontWeight: 600, color: 'var(--text)', marginBottom: 2 }}>{edu.school}</p>
+                    <p style={{ fontSize: 12, color: 'var(--text-mid)', marginBottom: 1 }}>{edu.degree}{edu.major ? ` · ${edu.major}` : ''}</p>
+                    <p style={{ fontSize: 11, color: 'var(--text-dim)' }}>{edu.startYear}–{edu.endYear||'Present'}</p>
                   </div>
-                  <button onClick={() => { const ed = (d.education || []).filter((_, j) => j !== i); setDraft(x => ({ ...x, education: ed })); save({ education: ed }); }} style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--text-dim)', padding: 0, fontSize: 14 }}
-                    onMouseEnter={e => e.currentTarget.style.color = 'var(--red)'}
-                    onMouseLeave={e => e.currentTarget.style.color = 'var(--text-dim)'}>×</button>
+                  <button onClick={() => { const ed=(d.education||[]).filter((_,j)=>j!==i); setDraft(x=>({...x,education:ed})); save({education:ed}); }} style={{ background:'none',border:'none',cursor:'pointer',color:'var(--text-dim)',padding:0,fontSize:16 }}
+                    onMouseEnter={e=>e.currentTarget.style.color='var(--red)'}
+                    onMouseLeave={e=>e.currentTarget.style.color='var(--text-dim)'}>×</button>
                 </div>
               ))}
               {addingEdu && (
-                <div style={{ border: '1px solid var(--border)', borderRadius: 8, padding: 13, background: 'var(--bg-subtle)' }}>
-                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 7, marginBottom: 7 }}>
-                    {[{ f:'school', ph:'University/College *' },{ f:'degree', ph:'Degree' },{ f:'major', ph:'Major' },{ f:'startYear', ph:'Start year' },{ f:'endYear', ph:'End year' }].map(({ f, ph }) => (
-                      <input key={f} style={inp_p} value={newEdu[f]} placeholder={ph} onChange={e => setNewEdu(x => ({ ...x, [f]: e.target.value }))} />
+                <div style={{ border:'1px solid var(--border)', borderRadius:9, padding:16, background:'var(--bg-subtle)' }}>
+                  <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:10, marginBottom:10 }}>
+                    {[{f:'school',ph:'University/College *'},{f:'degree',ph:'Bachelor of Science'},{f:'major',ph:'Computer Science'},{f:'startYear',ph:'2021'},{f:'endYear',ph:'2025'}].map(({f,ph})=>(
+                      <input key={f} style={inp_p} value={newEdu[f]} placeholder={ph} onChange={e=>setNewEdu(x=>({...x,[f]:e.target.value}))} />
                     ))}
                   </div>
-                  <div style={{ display: 'flex', gap: 6 }}>
-                    <button onClick={() => { if (!newEdu.school) return; const ed = [...(d.education || []), newEdu]; setDraft(x => ({ ...x, education: ed })); save({ education: ed }); setNewEdu({ school:'',degree:'',major:'',startYear:'',endYear:'' }); setAddingEdu(false); }} style={{ padding: '5px 11px', borderRadius: 6, border: 'none', background: 'var(--green)', color: '#fff', fontSize: 11, cursor: 'pointer', fontFamily: 'inherit' }}>Add</button>
-                    <button onClick={() => setAddingEdu(false)} style={{ padding: '5px 11px', borderRadius: 6, border: '1px solid var(--border)', background: 'transparent', color: 'var(--text-mid)', fontSize: 11, cursor: 'pointer', fontFamily: 'inherit' }}>Cancel</button>
+                  <div style={{ display:'flex', gap:8 }}>
+                    <button onClick={() => { if(!newEdu.school)return; const ed=[...(d.education||[]),newEdu]; setDraft(x=>({...x,education:ed})); save({education:ed}); setNewEdu({school:'',degree:'',major:'',startYear:'',endYear:''}); setAddingEdu(false); }} style={{ padding:'7px 14px', borderRadius:7, border:'none', background:'var(--green)', color:'#fff', fontSize:12, cursor:'pointer', fontFamily:'inherit' }}>Add</button>
+                    <button onClick={() => setAddingEdu(false)} style={{ padding:'7px 14px', borderRadius:7, border:'1px solid var(--border)', background:'transparent', color:'var(--text-mid)', fontSize:12, cursor:'pointer', fontFamily:'inherit' }}>Cancel</button>
                   </div>
                 </div>
               )}
             </Card>
+
+            {/* Projects */}
             <Card>
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
-                <p style={{ fontSize: 12, fontWeight: 600, color: 'var(--text)' }}>Projects</p>
-                <button onClick={() => setAddingProject(true)} style={{ padding: '4px 10px', borderRadius: 6, border: '1px solid var(--border)', background: 'transparent', color: 'var(--text-dim)', fontSize: 11, cursor: 'pointer', fontFamily: 'inherit' }}>+ Add</button>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 14 }}>
+                <p style={{ fontSize: 14, fontWeight: 600, color: 'var(--text)' }}>Projects</p>
+                <button onClick={() => setAddingProject(true)} style={{ padding: '6px 14px', borderRadius: 7, border: '1px solid var(--border)', background: 'transparent', color: 'var(--text-dim)', fontSize: 12, cursor: 'pointer', fontFamily: 'inherit' }}>+ Add</button>
               </div>
-              {(d.projects || []).map((p, i) => (
-                <div key={i} style={{ padding: '9px 11px', borderRadius: 7, border: '1px solid var(--border)', background: 'var(--bg-subtle)', marginBottom: 7 }}>
-                  <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 4 }}>
-                    <p style={{ fontSize: 12, fontWeight: 600, color: 'var(--text)' }}>{p.title || p.name}</p>
-                    <button onClick={() => { const pr = (d.projects || []).filter((_, j) => j !== i); setDraft(x => ({ ...x, projects: pr })); save({ projects: pr }); }} style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--text-dim)', padding: 0, fontSize: 14 }}
-                      onMouseEnter={e => e.currentTarget.style.color = 'var(--red)'}
-                      onMouseLeave={e => e.currentTarget.style.color = 'var(--text-dim)'}>×</button>
+              {(d.projects||[]).map((p, i) => (
+                <div key={i} style={{ padding:'12px 14px', borderRadius:9, border:'1px solid var(--border)', background:'var(--bg-subtle)', marginBottom:8 }}>
+                  <div style={{ display:'flex', justifyContent:'space-between', marginBottom:6 }}>
+                    <p style={{ fontSize:13, fontWeight:600, color:'var(--text)' }}>{p.title||p.name}</p>
+                    <button onClick={() => { const pr=(d.projects||[]).filter((_,j)=>j!==i); setDraft(x=>({...x,projects:pr})); save({projects:pr}); }} style={{ background:'none',border:'none',cursor:'pointer',color:'var(--text-dim)',padding:0,fontSize:16 }}
+                      onMouseEnter={e=>e.currentTarget.style.color='var(--red)'}
+                      onMouseLeave={e=>e.currentTarget.style.color='var(--text-dim)'}>×</button>
                   </div>
-                  <div style={{ display: 'flex', flexWrap: 'wrap', gap: 4 }}>
-                    {(Array.isArray(p.techStack) ? p.techStack : []).map((t, j) => (
-                      <span key={j} style={{ fontSize: 10, padding: '2px 6px', borderRadius: 4, border: '1px solid var(--border)', color: 'var(--text-dim)' }}>{t}</span>
+                  {p.description && <p style={{ fontSize:11, color:'var(--text-dim)', marginBottom:6, lineHeight:1.5 }}>{p.description}</p>}
+                  <div style={{ display:'flex', flexWrap:'wrap', gap:5 }}>
+                    {(Array.isArray(p.techStack)?p.techStack:[]).map((t,j)=>(
+                      <span key={j} style={{ fontSize:10, padding:'3px 8px', borderRadius:4, border:'1px solid var(--border)', color:'var(--text-mid)' }}>{t}</span>
                     ))}
                   </div>
                 </div>
               ))}
               {addingProject && (
-                <div style={{ border: '1px solid var(--border)', borderRadius: 8, padding: 13, background: 'var(--bg-subtle)' }}>
-                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 7, marginBottom: 7 }}>
-                    <input style={inp_p} value={newProject.title} placeholder="Title *" onChange={e => setNewProject(x => ({ ...x, title: e.target.value }))} />
-                    <input style={inp_p} value={newProject.techStack} placeholder="React, Node.js..." onChange={e => setNewProject(x => ({ ...x, techStack: e.target.value }))} />
+                <div style={{ border:'1px solid var(--border)', borderRadius:9, padding:16, background:'var(--bg-subtle)' }}>
+                  <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:10, marginBottom:10 }}>
+                    <input style={inp_p} value={newProject.title} placeholder="Project title *" onChange={e=>setNewProject(x=>({...x,title:e.target.value}))} />
+                    <input style={inp_p} value={newProject.techStack} placeholder="React, Node.js..." onChange={e=>setNewProject(x=>({...x,techStack:e.target.value}))} />
                   </div>
-                  <textarea style={{ ...inp_p, resize: 'none', marginBottom: 7 }} rows={2} value={newProject.description} placeholder="Description" onChange={e => setNewProject(x => ({ ...x, description: e.target.value }))} />
-                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 7, marginBottom: 7 }}>
-                    <input style={inp_p} value={newProject.projectUrl} placeholder="Live URL" onChange={e => setNewProject(x => ({ ...x, projectUrl: e.target.value }))} />
-                    <input style={inp_p} value={newProject.githubUrl} placeholder="GitHub URL" onChange={e => setNewProject(x => ({ ...x, githubUrl: e.target.value }))} />
+                  <textarea style={{ ...inp_p, resize:'none', marginBottom:10 }} rows={2} value={newProject.description} placeholder="Description" onChange={e=>setNewProject(x=>({...x,description:e.target.value}))} />
+                  <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:10, marginBottom:10 }}>
+                    <input style={inp_p} value={newProject.projectUrl} placeholder="Live URL" onChange={e=>setNewProject(x=>({...x,projectUrl:e.target.value}))} />
+                    <input style={inp_p} value={newProject.githubUrl} placeholder="GitHub URL" onChange={e=>setNewProject(x=>({...x,githubUrl:e.target.value}))} />
                   </div>
-                  <div style={{ display: 'flex', gap: 6 }}>
-                    <button onClick={() => { if (!newProject.title) return; const pr = [...(d.projects || []), { ...newProject, techStack: newProject.techStack.split(',').map(t => t.trim()), id: Date.now() }]; setDraft(x => ({ ...x, projects: pr })); save({ projects: pr }); setNewProject({ title:'',techStack:'',description:'',projectUrl:'',githubUrl:'' }); setAddingProject(false); }} style={{ padding: '5px 11px', borderRadius: 6, border: 'none', background: 'var(--green)', color: '#fff', fontSize: 11, cursor: 'pointer', fontFamily: 'inherit' }}>Add</button>
-                    <button onClick={() => setAddingProject(false)} style={{ padding: '5px 11px', borderRadius: 6, border: '1px solid var(--border)', background: 'transparent', color: 'var(--text-mid)', fontSize: 11, cursor: 'pointer', fontFamily: 'inherit' }}>Cancel</button>
+                  <div style={{ display:'flex', gap:8 }}>
+                    <button onClick={() => { if(!newProject.title)return; const pr=[...(d.projects||[]),{...newProject,techStack:newProject.techStack.split(',').map(t=>t.trim()),id:Date.now()}]; setDraft(x=>({...x,projects:pr})); save({projects:pr}); setNewProject({title:'',techStack:'',description:'',projectUrl:'',githubUrl:''}); setAddingProject(false); }} style={{ padding:'7px 14px', borderRadius:7, border:'none', background:'var(--green)', color:'#fff', fontSize:12, cursor:'pointer', fontFamily:'inherit' }}>Add Project</button>
+                    <button onClick={() => setAddingProject(false)} style={{ padding:'7px 14px', borderRadius:7, border:'1px solid var(--border)', background:'transparent', color:'var(--text-mid)', fontSize:12, cursor:'pointer', fontFamily:'inherit' }}>Cancel</button>
                   </div>
                 </div>
               )}
             </Card>
+
+            {/* Certifications — separate card */}
             <Card>
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 20 }}>
-                <div>
-                  <p style={{ fontSize: 12, fontWeight: 600, color: 'var(--text)', marginBottom: 8 }}>Certifications</p>
-                  <div style={{ display: 'flex', flexWrap: 'wrap', gap: 5, marginBottom: 7 }}>
-                    {(d.certifications || []).map((c, i) => (
-                      <div key={i} style={{ display: 'flex', alignItems: 'center', gap: 4, padding: '3px 8px', borderRadius: 20, border: '1px solid var(--border)', background: 'var(--bg-subtle)', fontSize: 11 }}>
-                        {c}<button onClick={() => { const cer = (d.certifications||[]).filter((_,j)=>j!==i); setDraft(x=>({...x,certifications:cer})); save({certifications:cer}); }} style={{ background:'none',border:'none',cursor:'pointer',color:'var(--text-dim)',padding:0,lineHeight:1 }}>×</button>
-                      </div>
-                    ))}
+              <p style={{ fontSize: 14, fontWeight: 600, color: 'var(--text)', marginBottom: 12 }}>Certifications</p>
+              <div style={{ display: 'flex', flexWrap: 'wrap', gap: 7, marginBottom: 12 }}>
+                {(d.certifications||[]).map((c, i) => (
+                  <div key={i} style={{ display:'flex', alignItems:'center', gap:5, padding:'5px 12px', borderRadius:20, border:'1px solid var(--border)', background:'var(--bg-subtle)', fontSize:12 }}>
+                    🏅 {c}
+                    <button onClick={() => { const cer=(d.certifications||[]).filter((_,j)=>j!==i); setDraft(x=>({...x,certifications:cer})); save({certifications:cer}); }} style={{ background:'none',border:'none',cursor:'pointer',color:'var(--text-dim)',padding:'0 0 0 4px',lineHeight:1,fontSize:14 }}>×</button>
                   </div>
-                  <div style={{ display: 'flex', gap: 5 }}>
-                    <input style={{ ...inp_p, flex: 1 }} value={newCert} placeholder="AWS Developer..." onChange={e => setNewCert(e.target.value)} onKeyDown={e => { if (e.key==='Enter'&&newCert.trim()){const cer=[...(d.certifications||[]),newCert.trim()];setDraft(x=>({...x,certifications:cer}));save({certifications:cer});setNewCert('');}}} />
-                    <button onClick={() => { if(!newCert.trim())return;const cer=[...(d.certifications||[]),newCert.trim()];setDraft(x=>({...x,certifications:cer}));save({certifications:cer});setNewCert(''); }} style={{ padding:'0 9px',borderRadius:6,border:'none',background:'var(--green)',color:'#fff',fontSize:13,cursor:'pointer',fontFamily:'inherit' }}>+</button>
-                  </div>
-                </div>
-                <div>
-                  <p style={{ fontSize: 12, fontWeight: 600, color: 'var(--text)', marginBottom: 8 }}>Awards</p>
-                  <div style={{ display: 'flex', flexDirection: 'column', gap: 5, marginBottom: 7 }}>
-                    {(d.awards || []).map((a, i) => (
-                      <div key={i} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '5px 9px', borderRadius: 7, border: '1px solid var(--border)', background: 'var(--bg-subtle)', fontSize: 11 }}>
-                        <span>⭐ {a}</span>
-                        <button onClick={() => { const aw=(d.awards||[]).filter((_,j)=>j!==i);setDraft(x=>({...x,awards:aw}));save({awards:aw}); }} style={{ background:'none',border:'none',cursor:'pointer',color:'var(--text-dim)',padding:0 }}>×</button>
-                      </div>
-                    ))}
-                  </div>
-                  <div style={{ display: 'flex', gap: 5 }}>
-                    <input style={{ ...inp_p, flex: 1 }} value={newAward} placeholder="1st place Flipkart GRiD..." onChange={e => setNewAward(e.target.value)} onKeyDown={e => { if (e.key==='Enter'&&newAward.trim()){const aw=[...(d.awards||[]),newAward.trim()];setDraft(x=>({...x,awards:aw}));save({awards:aw});setNewAward('');}}} />
-                    <button onClick={() => { if(!newAward.trim())return;const aw=[...(d.awards||[]),newAward.trim()];setDraft(x=>({...x,awards:aw}));save({awards:aw});setNewAward(''); }} style={{ padding:'0 9px',borderRadius:6,border:'none',background:'var(--green)',color:'#fff',fontSize:13,cursor:'pointer',fontFamily:'inherit' }}>+</button>
-                  </div>
-                </div>
+                ))}
+              </div>
+              <div style={{ display:'flex', gap:8 }}>
+                <input style={{ ...inp_p, flex:1 }} value={newCert} placeholder="AWS Certified Developer, Google Cloud..." onChange={e=>setNewCert(e.target.value)} onKeyDown={e=>{ if(e.key==='Enter'&&newCert.trim()){const cer=[...(d.certifications||[]),newCert.trim()];setDraft(x=>({...x,certifications:cer}));save({certifications:cer});setNewCert('');}}} />
+                <button onClick={() => { if(!newCert.trim())return;const cer=[...(d.certifications||[]),newCert.trim()];setDraft(x=>({...x,certifications:cer}));save({certifications:cer});setNewCert(''); }} style={{ padding:'0 16px', borderRadius:7, border:'none', background:'var(--green)', color:'#fff', fontSize:14, cursor:'pointer', fontFamily:'inherit' }}>+</button>
               </div>
             </Card>
+
+            {/* Awards — separate card */}
             <Card>
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 14 }}>
-                <p style={{ fontSize: 12, fontWeight: 600, color: 'var(--text)' }}>Coding Profiles & Links</p>
-                <SaveBtn onClick={() => save({ coding_profiles: d.coding_profiles, github_url: d.github_url, linkedin_url: d.linkedin_url, portfolio_url: d.portfolio_url })} />
+              <p style={{ fontSize: 14, fontWeight: 600, color: 'var(--text)', marginBottom: 12 }}>Awards & Achievements</p>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 7, marginBottom: 12 }}>
+                {(d.awards||[]).map((a, i) => (
+                  <div key={i} style={{ display:'flex', alignItems:'center', justifyContent:'space-between', padding:'10px 14px', borderRadius:8, border:'1px solid var(--border)', background:'var(--bg-subtle)', fontSize:12 }}>
+                    <span style={{ display:'flex', alignItems:'center', gap:8 }}><span style={{ fontSize:16 }}>⭐</span> {a}</span>
+                    <button onClick={() => { const aw=(d.awards||[]).filter((_,j)=>j!==i);setDraft(x=>({...x,awards:aw}));save({awards:aw}); }} style={{ background:'none',border:'none',cursor:'pointer',color:'var(--text-dim)',padding:0,fontSize:16 }}
+                      onMouseEnter={e=>e.currentTarget.style.color='var(--red)'}
+                      onMouseLeave={e=>e.currentTarget.style.color='var(--text-dim)'}>×</button>
+                  </div>
+                ))}
               </div>
-              {[
-                { key:'leetcode',       logo:LC_SVG_P,   label:'LeetCode',   ph:'username',                  bg:'#FFA116', type:'coding' },
-                { key:'github_username',logo:GH_SVG_P,   label:'GitHub user',ph:'username',                  bg:'#24292e', type:'coding' },
-                { key:'github_url',     logo:GH_SVG_P,   label:'GitHub URL', ph:'https://github.com/you',    bg:'#24292e', type:'link' },
-                { key:'linkedin_url',   logo:LI_SVG_P,   label:'LinkedIn',   ph:'https://linkedin.com/in/you',bg:'#0A66C2', type:'link' },
-                { key:'portfolio_url',  logo:GLOBE_SVG_P,label:'Portfolio',  ph:'https://yoursite.com',      bg:'#5A5A56', type:'link' },
-              ].map(({ key, logo, label, ph, bg, type }) => (
-                <div key={key} style={{ display: 'flex', alignItems: 'center', gap: 9, padding: '6px 9px', borderRadius: 7, border: '1px solid var(--border)', background: 'var(--bg-subtle)', marginBottom: 7 }}>
-                  <div style={{ width: 24, height: 24, borderRadius: 5, background: bg, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>{logo}</div>
-                  <span style={{ fontSize: 11, fontWeight: 500, color: 'var(--text-mid)', width: 80, flexShrink: 0 }}>{label}</span>
-                  <input style={{ ...inp_p, flex: 1, padding: '4px 8px' }}
-                    value={type === 'coding' ? (d.coding_profiles?.[key] || '') : (d[key] || '')}
-                    placeholder={ph}
-                    onChange={e => {
-                      if (type === 'coding') setDraft(x => ({ ...x, coding_profiles: { ...(x.coding_profiles||{}), [key]: e.target.value } }));
-                      else setDraft(x => ({ ...x, [key]: e.target.value }));
-                    }} />
-                </div>
-              ))}
+              <div style={{ display:'flex', gap:8 }}>
+                <input style={{ ...inp_p, flex:1 }} value={newAward} placeholder="1st place at Flipkart GRiD Hackathon..." onChange={e=>setNewAward(e.target.value)} onKeyDown={e=>{ if(e.key==='Enter'&&newAward.trim()){const aw=[...(d.awards||[]),newAward.trim()];setDraft(x=>({...x,awards:aw}));save({awards:aw});setNewAward('');}}} />
+                <button onClick={() => { if(!newAward.trim())return;const aw=[...(d.awards||[]),newAward.trim()];setDraft(x=>({...x,awards:aw}));save({awards:aw});setNewAward(''); }} style={{ padding:'0 16px', borderRadius:7, border:'none', background:'var(--green)', color:'#fff', fontSize:14, cursor:'pointer', fontFamily:'inherit' }}>+</button>
+              </div>
             </Card>
           </div>
         )}
@@ -1977,150 +2049,203 @@ function ProfileTab({ studentProfile, setStudentProfile, theme, setTheme }) {
             return acc;
           }, {});
           return (
-          <div style={{ maxWidth: 720 }}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', marginBottom: 16 }}>
-              <div>
-                <p style={{ fontSize: 10, fontWeight: 700, letterSpacing: '0.12em', textTransform: 'uppercase', color: 'var(--text-dim)', marginBottom: 3 }}>Skills</p>
-                <p style={{ fontSize: 12, color: 'var(--text-dim)' }}>{addedSkills.length} skill{addedSkills.length !== 1 ? 's' : ''} added</p>
-              </div>
-              <SaveBtn onClick={() => save({ skills: d.skills || [] })} />
-            </div>
-
-            <div style={{ display: 'grid', gridTemplateColumns: '200px 1fr', gap: 14, alignItems: 'start' }}>
-
-              {/* LEFT — category list + add pills */}
-              <div style={{ display: 'flex', flexDirection: 'column', gap: 2, position: 'sticky', top: 0 }}>
-                {SKILL_CATS_P.map(cat => {
-                  const countInCat = addedSkills.filter(s => s.category === cat).length;
-                  return (
-                    <button key={cat} onClick={() => setSkillCat(cat)} className="hn-item" style={{
-                      display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-                      padding: '8px 11px', borderRadius: 7, border: 'none', cursor: 'pointer', fontFamily: 'inherit',
-                      background: skillCat === cat ? 'var(--bg-subtle)' : 'transparent',
-                      color: skillCat === cat ? 'var(--text)' : 'var(--text-dim)',
-                      fontSize: 12, fontWeight: skillCat === cat ? 600 : 400, textAlign: 'left',
-                    }}>
-                      <span>{cat}</span>
-                      {countInCat > 0 && <span style={{ fontSize: 10, fontWeight: 700, color: 'var(--green)', background: 'var(--green-tint)', borderRadius: 20, padding: '1px 6px', minWidth: 18, textAlign: 'center' }}>{countInCat}</span>}
-                    </button>
-                  );
-                })}
-              </div>
-
-              {/* RIGHT — skill picker + your skills */}
-              <div>
-                {/* Picker for active category */}
-                <div style={{ background: 'var(--bg-card)', border: '1px solid var(--border)', borderRadius: 10, padding: '14px 16px', marginBottom: 12 }}>
-                  <p style={{ fontSize: 10, fontWeight: 700, letterSpacing: '0.1em', textTransform: 'uppercase', color: 'var(--text-dim)', marginBottom: 10 }}>{skillCat}</p>
-                  <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>
-                    {SKILL_OPTIONS_P.filter(s => s.cat === skillCat).map(skill => {
-                      const added = addedSkills.some(s => s.name === skill.name);
-                      return (
-                        <button key={skill.name} onClick={() => {
-                          if (added) return;
-                          setDraft(x => ({ ...x, skills: [...(x.skills||[]), { id: Date.now(), name: skill.name, level: 3, category: skill.cat }] }));
-                        }} style={{
-                          padding: '5px 11px', borderRadius: 20, fontSize: 11, fontFamily: 'inherit',
-                          cursor: added ? 'default' : 'pointer', transition: 'all 0.12s',
-                          border: `1px solid ${added ? 'var(--green)' : 'var(--border)'}`,
-                          background: added ? 'var(--green-tint)' : 'var(--bg-subtle)',
-                          color: added ? 'var(--green-text)' : 'var(--text-mid)',
-                          fontWeight: added ? 500 : 400,
-                        }}>
-                          {added ? '✓ ' : '+ '}{skill.name}
-                        </button>
-                      );
-                    })}
-                  </div>
+            <div style={{ maxWidth: 760 }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20 }}>
+                <div>
+                  <p style={{ fontSize: 18, fontFamily: "'Editorial New', Georgia, serif", color: 'var(--text)', marginBottom: 3 }}>Technical Skills</p>
+                  <p style={{ fontSize: 13, color: 'var(--text-dim)' }}>{addedSkills.length} skill{addedSkills.length !== 1 ? 's' : ''} added</p>
                 </div>
-
-                {/* Added skills grouped by category */}
-                {Object.keys(grouped).length > 0 ? (
-                  <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
-                    {Object.entries(grouped).map(([cat, skills]) => (
-                      <div key={cat} style={{ background: 'var(--bg-card)', border: '1px solid var(--border)', borderRadius: 10, padding: '12px 14px' }}>
-                        <p style={{ fontSize: 9, fontWeight: 700, letterSpacing: '0.1em', textTransform: 'uppercase', color: 'var(--text-dim)', marginBottom: 8 }}>{cat}</p>
-                        <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
-                          {skills.map((skill, _) => {
-                            const i = addedSkills.findIndex(s => s.name === skill.name);
-                            return (
-                              <div key={skill.id || skill.name} style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-                                {/* Skill name */}
-                                <span style={{ fontSize: 12, color: 'var(--text)', flex: 1 }}>{skill.name}</span>
-                                {/* Level dots */}
-                                <div style={{ display: 'flex', gap: 3, alignItems: 'center' }}>
-                                  {[1,2,3,4,5].map(lv => (
-                                    <button key={lv} onClick={() => setDraft(x => ({ ...x, skills: (x.skills||[]).map((s,j) => j===i ? {...s,level:lv} : s) }))}
-                                      title={LEVEL_LABELS_P[lv]}
-                                      style={{ width: 8, height: 8, borderRadius: '50%', border: 'none', cursor: 'pointer', padding: 0, flexShrink: 0, background: skill.level >= lv ? 'var(--green)' : 'var(--border)', transition: 'background 0.12s' }} />
-                                  ))}
+                <SaveBtn onClick={() => save({ skills: d.skills || [] })} />
+              </div>
+              <div style={{ display: 'grid', gridTemplateColumns: '180px 1fr', gap: 16, alignItems: 'start' }}>
+                {/* Category nav */}
+                <div style={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+                  {SKILL_CATS_P.map(cat => {
+                    const cnt = addedSkills.filter(s => s.category === cat).length;
+                    return (
+                      <button key={cat} onClick={() => setSkillCat(cat)} className="hn-item" style={{
+                        display:'flex', alignItems:'center', justifyContent:'space-between',
+                        padding:'9px 12px', borderRadius:8, border:'none', cursor:'pointer', fontFamily:'inherit',
+                        background: skillCat===cat ? 'var(--bg-subtle)' : 'transparent',
+                        color: skillCat===cat ? 'var(--text)' : 'var(--text-dim)',
+                        fontSize:13, fontWeight: skillCat===cat ? 600 : 400, textAlign:'left',
+                      }}>
+                        <span>{cat}</span>
+                        {cnt > 0 && <span style={{ fontSize:11, fontWeight:700, color:'var(--green)', background:'var(--green-tint)', borderRadius:20, padding:'1px 7px' }}>{cnt}</span>}
+                      </button>
+                    );
+                  })}
+                </div>
+                {/* Right panel */}
+                <div>
+                  {/* Picker */}
+                  <div style={{ background:'var(--bg-card)', border:'1px solid var(--border)', borderRadius:12, padding:'16px 18px', marginBottom:14 }}>
+                    <p style={{ fontSize:11, fontWeight:700, letterSpacing:'0.1em', textTransform:'uppercase', color:'var(--text-dim)', marginBottom:12 }}>{skillCat}</p>
+                    <div style={{ display:'flex', flexWrap:'wrap', gap:8 }}>
+                      {SKILL_OPTIONS_P.filter(s => s.cat === skillCat).map(skill => {
+                        const added = addedSkills.some(s => s.name === skill.name);
+                        return (
+                          <button key={skill.name} onClick={() => {
+                            if (added) return;
+                            setDraft(x => ({ ...x, skills: [...(x.skills||[]), { id: Date.now(), name: skill.name, level: 3, category: skill.cat }] }));
+                          }} style={{
+                            display:'flex', alignItems:'center', gap:6,
+                            padding:'6px 12px', borderRadius:20, fontSize:12, fontFamily:'inherit',
+                            cursor: added ? 'default' : 'pointer', transition:'all 0.12s',
+                            border: `1px solid ${added ? 'var(--green)' : 'var(--border)'}`,
+                            background: added ? 'var(--green-tint)' : 'var(--bg-subtle)',
+                            color: added ? 'var(--green-text)' : 'var(--text-mid)',
+                          }}>
+                            <span style={{ display:'flex', alignItems:'center' }}>{getSkillLogo(skill.name)}</span>
+                            {added ? '✓ ' : ''}{skill.name}
+                          </button>
+                        );
+                      })}
+                    </div>
+                  </div>
+                  {/* Added skills */}
+                  {Object.keys(grouped).length > 0 ? (
+                    <div style={{ display:'flex', flexDirection:'column', gap:10 }}>
+                      {Object.entries(grouped).map(([cat, skills]) => (
+                        <div key={cat} style={{ background:'var(--bg-card)', border:'1px solid var(--border)', borderRadius:12, padding:'14px 16px' }}>
+                          <p style={{ fontSize:10, fontWeight:700, letterSpacing:'0.1em', textTransform:'uppercase', color:'var(--text-dim)', marginBottom:10 }}>{cat}</p>
+                          <div style={{ display:'flex', flexDirection:'column', gap:6 }}>
+                            {skills.map((skill) => {
+                              const i = addedSkills.findIndex(s => s.name === skill.name);
+                              return (
+                                <div key={skill.id||skill.name} style={{ display:'flex', alignItems:'center', gap:10 }}>
+                                  <span style={{ display:'flex', alignItems:'center', width:20 }}>{getSkillLogo(skill.name)}</span>
+                                  <span style={{ fontSize:13, color:'var(--text)', flex:1 }}>{skill.name}</span>
+                                  <div style={{ display:'flex', gap:3 }}>
+                                    {[1,2,3,4,5].map(lv => (
+                                      <button key={lv} onClick={() => setDraft(x=>({...x, skills:(x.skills||[]).map((s,j)=>j===i?{...s,level:lv}:s)}))}
+                                        title={LEVEL_LABELS_P[lv]}
+                                        style={{ width:9, height:9, borderRadius:'50%', border:'none', cursor:'pointer', padding:0, flexShrink:0, background: skill.level>=lv ? 'var(--green)' : 'var(--border)', transition:'background 0.12s' }} />
+                                    ))}
+                                  </div>
+                                  <span style={{ fontSize:11, color:'var(--text-dim)', width:68, textAlign:'right' }}>{LEVEL_LABELS_P[skill.level]}</span>
+                                  <button onClick={() => setDraft(x=>({...x, skills:(x.skills||[]).filter((_,j)=>j!==i)}))}
+                                    style={{ background:'none',border:'none',cursor:'pointer',color:'var(--border-mid)',padding:0,lineHeight:1,fontSize:16,flexShrink:0 }}
+                                    onMouseEnter={e=>e.currentTarget.style.color='var(--red)'}
+                                    onMouseLeave={e=>e.currentTarget.style.color='var(--border-mid)'}>×</button>
                                 </div>
-                                {/* Level label */}
-                                <span style={{ fontSize: 10, color: 'var(--text-dim)', width: 62, textAlign: 'right' }}>{LEVEL_LABELS_P[skill.level]}</span>
-                                {/* Remove */}
-                                <button onClick={() => setDraft(x => ({ ...x, skills: (x.skills||[]).filter((_,j) => j !== i) }))}
-                                  style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--border-mid)', padding: 0, lineHeight: 1, fontSize: 14, flexShrink: 0 }}
-                                  onMouseEnter={e => e.currentTarget.style.color = 'var(--red)'}
-                                  onMouseLeave={e => e.currentTarget.style.color = 'var(--border-mid)'}>×</button>
-                              </div>
-                            );
-                          })}
+                              );
+                            })}
+                          </div>
                         </div>
-                      </div>
-                    ))}
-                  </div>
-                ) : (
-                  <div style={{ padding: '24px 16px', textAlign: 'center', border: '1px dashed var(--border)', borderRadius: 10 }}>
-                    <p style={{ fontSize: 12, color: 'var(--text-dim)' }}>Click a skill above to add it</p>
-                  </div>
-                )}
+                      ))}
+                    </div>
+                  ) : (
+                    <div style={{ padding:'32px', textAlign:'center', border:'2px dashed var(--border)', borderRadius:12 }}>
+                      <p style={{ fontSize:13, color:'var(--text-dim)' }}>Click a skill above to add it</p>
+                    </div>
+                  )}
+                </div>
               </div>
             </div>
-          </div>
           );
         })()}
 
+        {/* LINKS & PROFILES */}
+        {activeSection === 'links' && (
+          <div style={{ maxWidth: 700 }}>
+            <p style={{ fontSize: 18, fontFamily: "'Editorial New', Georgia, serif", color: 'var(--text)', marginBottom: 4 }}>Links & Coding Profiles</p>
+            <p style={{ fontSize: 13, color: 'var(--text-dim)', marginBottom: 24 }}>All your profiles in one place — shown on your public profile.</p>
+
+            {/* Coding platforms */}
+            <Card>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
+                <p style={{ fontSize: 14, fontWeight: 600, color: 'var(--text)' }}>Competitive & Coding Profiles</p>
+                <SaveBtn onClick={() => save({ coding_profiles: d.coding_profiles })} />
+              </div>
+              {Object.entries(PLATFORM_LOGOS).map(([key, { label, color, svg }]) => (
+                <div key={key} style={{ display:'flex', alignItems:'center', gap:10, padding:'9px 12px', borderRadius:9, border:'1px solid var(--border)', background:'var(--bg-subtle)', marginBottom:8 }}>
+                  <div style={{ width:32, height:32, borderRadius:8, background:color, display:'flex', alignItems:'center', justifyContent:'center', flexShrink:0 }}>{svg}</div>
+                  <span style={{ fontSize:12, fontWeight:500, color:'var(--text-mid)', width:110, flexShrink:0 }}>{label}</span>
+                  <input style={{ ...inp_p, padding:'6px 10px' }}
+                    value={d.coding_profiles?.[key]||''}
+                    placeholder="username"
+                    onChange={e => setDraft(x => ({ ...x, coding_profiles: { ...(x.coding_profiles||{}), [key]: e.target.value } }))} />
+                </div>
+              ))}
+            </Card>
+
+            {/* Other links */}
+            <Card>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
+                <p style={{ fontSize: 14, fontWeight: 600, color: 'var(--text)' }}>Other Links</p>
+                <SaveBtn onClick={() => save({ other_links: otherLinks })} />
+              </div>
+              <p style={{ fontSize: 12, color: 'var(--text-dim)', marginBottom: 14 }}>Add any other links — papers, talks, open source contributions, etc.</p>
+              {otherLinks.map((link, i) => (
+                <div key={i} style={{ display:'flex', alignItems:'center', gap:8, padding:'8px 12px', borderRadius:8, border:'1px solid var(--border)', background:'var(--bg-subtle)', marginBottom:8 }}>
+                  <div style={{ width:28, height:28, borderRadius:6, background:'var(--bg-card)', border:'1px solid var(--border)', display:'flex', alignItems:'center', justifyContent:'center', flexShrink:0, fontSize:14 }}>🔗</div>
+                  <span style={{ fontSize:12, color:'var(--text)', flex:1 }}>{link.label}</span>
+                  <a href={link.url} target="_blank" rel="noopener noreferrer" style={{ fontSize:11, color:'var(--green)', textDecoration:'none', maxWidth:200, overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap' }}>{link.url}</a>
+                  <button onClick={() => { const nl=otherLinks.filter((_,j)=>j!==i); setOtherLinks(nl); save({other_links:nl}); }} style={{ background:'none',border:'none',cursor:'pointer',color:'var(--text-dim)',padding:0,fontSize:16 }}
+                    onMouseEnter={e=>e.currentTarget.style.color='var(--red)'}
+                    onMouseLeave={e=>e.currentTarget.style.color='var(--text-dim)'}>×</button>
+                </div>
+              ))}
+              <div style={{ display:'grid', gridTemplateColumns:'1fr 2fr', gap:8, marginBottom:8 }}>
+                <input style={inp_p} value={newOtherLink.label} placeholder="Label (e.g. Research Paper)" onChange={e=>setNewOtherLink(x=>({...x,label:e.target.value}))} />
+                <input style={inp_p} value={newOtherLink.url} placeholder="https://..." onChange={e=>setNewOtherLink(x=>({...x,url:e.target.value}))} />
+              </div>
+              <button onClick={() => { if(!newOtherLink.url.trim())return; const nl=[...otherLinks,{label:newOtherLink.label||newOtherLink.url,url:newOtherLink.url}]; setOtherLinks(nl); save({other_links:nl}); setNewOtherLink({label:'',url:''}); }} style={{ padding:'7px 16px', borderRadius:7, border:'none', background:'var(--green)', color:'#fff', fontSize:12, cursor:'pointer', fontFamily:'inherit' }}>Add Link</button>
+            </Card>
+          </div>
+        )}
+
         {/* PREFERENCES */}
         {activeSection === 'prefs' && (
-          <div style={{ maxWidth: 660 }}>
-            <SectionTitle>Preferences</SectionTitle>
+          <div style={{ maxWidth: 700 }}>
+            <p style={{ fontSize: 18, fontFamily: "'Editorial New', Georgia, serif", color: 'var(--text)', marginBottom: 24 }}>Preferences</p>
             <Card>
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 13 }}>
-                <p style={{ fontSize: 12, fontWeight: 600, color: 'var(--text)' }}>Work Preferences</p>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
+                <p style={{ fontSize: 14, fontWeight: 600, color: 'var(--text)' }}>Work Preferences</p>
                 <SaveBtn onClick={() => save({ preferred_roles: d.preferred_roles, availability: d.availability, work_preference: d.work_preference, min_stipend: d.min_stipend })} />
               </div>
-              <p style={{ fontSize: 10, fontWeight: 700, letterSpacing: '0.08em', textTransform: 'uppercase', color: 'var(--text-dim)', marginBottom: 8 }}>Preferred Roles</p>
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 5, marginBottom: 14 }}>
+              <FieldLabel>Preferred Roles</FieldLabel>
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 7, marginBottom: 18 }}>
                 {ROLE_OPTIONS_P.map(role => {
-                  const sel = (d.preferred_roles || []).includes(role);
-                  return <button key={role} onClick={() => setDraft(x => ({ ...x, preferred_roles: sel?(x.preferred_roles||[]).filter(r=>r!==role):[...(x.preferred_roles||[]),role] }))} style={{ padding: '6px 9px', borderRadius: 7, fontSize: 11, fontFamily: 'inherit', cursor: 'pointer', textAlign: 'left', border: `1px solid ${sel?'var(--green)':'var(--border)'}`, background: sel?'var(--green-tint)':'transparent', color: sel?'var(--green-text)':'var(--text-mid)', fontWeight: sel?500:400 }}>{role}</button>;
+                  const sel = (d.preferred_roles||[]).includes(role);
+                  return <button key={role} onClick={() => setDraft(x=>({...x,preferred_roles:sel?(x.preferred_roles||[]).filter(r=>r!==role):[...(x.preferred_roles||[]),role]}))} style={{ padding:'9px 12px', borderRadius:8, fontSize:12, fontFamily:'inherit', cursor:'pointer', textAlign:'left', border:`1px solid ${sel?'var(--green)':'var(--border)'}`, background:sel?'var(--green-tint)':'transparent', color:sel?'var(--green-text)':'var(--text-mid)', fontWeight:sel?500:400 }}>{role}</button>;
                 })}
               </div>
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 11 }}>
-                <Row label="Availability"><select style={inp_p} value={d.availability||'Immediate'} onChange={e => setDraft(x=>({...x,availability:e.target.value}))}><option>Immediate</option><option>After exams</option><option>Next semester</option><option>Not available</option></select></Row>
-                <Row label="Work Preference"><select style={inp_p} value={d.work_preference||'remote'} onChange={e => setDraft(x=>({...x,work_preference:e.target.value}))}><option value="remote">Remote</option><option value="onsite">On-site</option><option value="hybrid">Hybrid</option><option value="any">Any</option></select></Row>
+              <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:14 }}>
+                <div>
+                  <FieldLabel>Availability</FieldLabel>
+                  <select style={inp_p} value={d.availability||'Immediate'} onChange={e=>setDraft(x=>({...x,availability:e.target.value}))}>
+                    <option>Immediate</option><option>After exams</option><option>Next semester</option><option>Not available</option>
+                  </select>
+                </div>
+                <div>
+                  <FieldLabel>Work Preference</FieldLabel>
+                  <select style={inp_p} value={d.work_preference||'remote'} onChange={e=>setDraft(x=>({...x,work_preference:e.target.value}))}>
+                    <option value="remote">Remote</option><option value="onsite">On-site</option><option value="hybrid">Hybrid</option><option value="any">Any</option>
+                  </select>
+                </div>
               </div>
-              <div style={{ marginTop: 11 }}>
-                <Row label="Min Stipend">
-                  <div style={{ display: 'flex', alignItems: 'center', gap: 7 }}>
-                    <span style={{ fontSize: 11, color: 'var(--text-dim)' }}>₹</span>
-                    <input style={{ ...inp_p, maxWidth: 130 }} type="number" value={d.min_stipend||''} placeholder="0" onChange={e => setDraft(x=>({...x,min_stipend:e.target.value}))} />
-                    <span style={{ fontSize: 11, color: 'var(--text-dim)' }}>/ month</span>
-                  </div>
-                </Row>
+              <div style={{ marginTop:14 }}>
+                <FieldLabel>Min Stipend</FieldLabel>
+                <div style={{ display:'flex', alignItems:'center', gap:8 }}>
+                  <span style={{ fontSize:14, color:'var(--text-dim)' }}>₹</span>
+                  <input style={{ ...inp_p, maxWidth:150 }} type="number" value={d.min_stipend||''} placeholder="0" onChange={e=>setDraft(x=>({...x,min_stipend:e.target.value}))} />
+                  <span style={{ fontSize:12, color:'var(--text-dim)' }}>/ month</span>
+                </div>
               </div>
             </Card>
             <Card>
-              <p style={{ fontSize: 12, fontWeight: 600, color: 'var(--text)', marginBottom: 13 }}>Notifications</p>
+              <p style={{ fontSize: 14, fontWeight: 600, color: 'var(--text)', marginBottom: 16 }}>Notifications</p>
               {[
-                { label: 'New job matches', sub: 'When a job matches your skills', key: 'notif_matches' },
-                { label: 'Application updates', sub: 'When recruiters view your profile', key: 'notif_apps' },
-                { label: 'Weekly digest', sub: 'Summary every Monday', key: 'notif_digest' },
-                { label: 'Interview invites', sub: 'Direct interview invitations', key: 'notif_interviews' },
+                { label:'New job matches', sub:'When a job matches your skills', key:'notif_matches' },
+                { label:'Application updates', sub:'When recruiters view your profile', key:'notif_apps' },
+                { label:'Weekly digest', sub:'Summary every Monday', key:'notif_digest' },
+                { label:'Interview invites', sub:'Direct interview invitations', key:'notif_interviews' },
               ].map(({ label, sub, key }) => (
-                <div key={key} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
-                  <div><p style={{ fontSize: 12, fontWeight: 500, color: 'var(--text)', marginBottom: 1 }}>{label}</p><p style={{ fontSize: 10, color: 'var(--text-dim)' }}>{sub}</p></div>
-                  <Toggle_P on={d[key] !== false} onChange={val => { setDraft(x=>({...x,[key]:val})); save({[key]:val}); }} />
+                <div key={key} style={{ display:'flex', justifyContent:'space-between', alignItems:'center', marginBottom:14 }}>
+                  <div><p style={{ fontSize:13, fontWeight:500, color:'var(--text)', marginBottom:2 }}>{label}</p><p style={{ fontSize:11, color:'var(--text-dim)' }}>{sub}</p></div>
+                  <Toggle_P on={d[key]!==false} onChange={val=>{ setDraft(x=>({...x,[key]:val})); save({[key]:val}); }} />
                 </div>
               ))}
             </Card>
@@ -2129,90 +2254,91 @@ function ProfileTab({ studentProfile, setStudentProfile, theme, setTheme }) {
 
         {/* MY HUNT */}
         {activeSection === 'myhunt' && (
-          <div style={{ maxWidth: 640 }}>
-            <div style={{ marginBottom: 20 }}>
-              <h1 style={{ fontFamily: "'Editorial New', Georgia, serif", fontSize: 26, fontWeight: 400, color: 'var(--text)', marginBottom: 3 }}>My Hunt.</h1>
-              <p style={{ fontSize: 12, color: 'var(--text-dim)' }}>Private — not shown to recruiters. Your real reasons.</p>
+          <div style={{ maxWidth: 680 }}>
+            <div style={{ marginBottom: 24 }}>
+              <h1 style={{ fontFamily:"'Editorial New', Georgia, serif", fontSize:32, fontWeight:400, color:'var(--text)', marginBottom:4 }}>My Hunt.</h1>
+              <p style={{ fontSize:13, color:'var(--text-dim)' }}>Private — not shown to recruiters. Your real reasons.</p>
             </div>
             {[
-              { key: 'my_hunt', title: "What's your hunt?", sub: "Not the job title — what are you actually after?", ph: "I'm hunting for the intersection of technology and education..." },
-              { key: 'philosophy', title: 'Philosophy & worldview', sub: "How do you see the world? What do you believe?", ph: "I believe the best products come from deep empathy..." },
-              { key: 'inspirations', title: 'People & things that inspire you', sub: "Books, people, projects that changed you.", ph: "Naval Ravikant, Paul Graham's essays, The Mom Test..." },
-              { key: 'life_outside', title: 'Life outside work', sub: "Who are you when you're not coding?", ph: "Cricket every Sunday, Carnatic music for 3 years..." },
+              { key:'my_hunt', title:"What's your hunt?", sub:"Not the job title — what are you actually after?", ph:"I'm hunting for the intersection of technology and education..." },
+              { key:'philosophy', title:'Philosophy & worldview', sub:"How do you see the world? What do you believe?", ph:"I believe the best products come from deep empathy..." },
+              { key:'inspirations', title:'People & things that inspire you', sub:"Books, people, projects that changed you.", ph:"Naval Ravikant, Paul Graham's essays, The Mom Test..." },
+              { key:'life_outside', title:'Life outside work', sub:"Who are you when you're not coding?", ph:"Cricket every Sunday, Carnatic music for 3 years..." },
             ].map(({ key, title, sub, ph }) => (
               <Card key={key}>
-                <p style={{ fontSize: 12, fontWeight: 600, color: 'var(--text)', marginBottom: 2 }}>{title}</p>
-                <p style={{ fontSize: 11, color: 'var(--text-dim)', marginBottom: 9 }}>{sub}</p>
-                <textarea style={{ ...inp_p, resize: 'none' }} rows={3} value={d[key] || ''} placeholder={ph} onChange={e => setDraft(x => ({ ...x, [key]: e.target.value }))} />
-                <button onClick={() => save({ [key]: d[key] })} style={{ marginTop: 7, padding: '5px 11px', borderRadius: 6, border: 'none', background: 'var(--green)', color: '#fff', fontSize: 11, cursor: 'pointer', fontFamily: 'inherit' }}>Save</button>
+                <p style={{ fontSize:14, fontWeight:600, color:'var(--text)', marginBottom:3 }}>{title}</p>
+                <p style={{ fontSize:12, color:'var(--text-dim)', marginBottom:12 }}>{sub}</p>
+                <textarea style={{ ...inp_p, resize:'none' }} rows={4} value={d[key]||''} placeholder={ph} onChange={e=>setDraft(x=>({...x,[key]:e.target.value}))} />
+                <button onClick={() => save({ [key]: d[key] })} style={{ marginTop:10, padding:'7px 16px', borderRadius:7, border:'none', background:'var(--green)', color:'#fff', fontSize:12, cursor:'pointer', fontFamily:'inherit' }}>Save</button>
               </Card>
             ))}
             <Card>
-              <p style={{ fontSize: 12, fontWeight: 600, color: 'var(--text)', marginBottom: 2 }}>A quote that defines you</p>
-              <div style={{ display: 'flex', flexDirection: 'column', gap: 7, marginBottom: 9 }}>
-                <input style={inp_p} value={d.quote || ''} placeholder="The people who are crazy enough..." onChange={e => setDraft(x => ({ ...x, quote: e.target.value }))} />
-                <input style={inp_p} value={d.quote_author || ''} placeholder="— Steve Jobs (or yourself)" onChange={e => setDraft(x => ({ ...x, quote_author: e.target.value }))} />
+              <p style={{ fontSize:14, fontWeight:600, color:'var(--text)', marginBottom:3 }}>A quote that defines you</p>
+              <div style={{ display:'flex', flexDirection:'column', gap:9, marginBottom:12 }}>
+                <input style={inp_p} value={d.quote||''} placeholder="The people who are crazy enough..." onChange={e=>setDraft(x=>({...x,quote:e.target.value}))} />
+                <input style={inp_p} value={d.quote_author||''} placeholder="— Steve Jobs (or yourself)" onChange={e=>setDraft(x=>({...x,quote_author:e.target.value}))} />
               </div>
               {d.quote && (
-                <div style={{ padding: '10px 14px', borderRadius: 7, background: 'var(--bg-subtle)', borderLeft: '3px solid var(--green)', marginBottom: 9 }}>
-                  <p style={{ fontFamily: "'Editorial New', Georgia, serif", fontSize: 13, color: 'var(--text)', lineHeight: 1.6, fontStyle: 'italic', marginBottom: 3 }}>"{d.quote}"</p>
-                  {d.quote_author && <p style={{ fontSize: 10, color: 'var(--text-dim)' }}>{d.quote_author}</p>}
+                <div style={{ padding:'14px 18px', borderRadius:9, background:'var(--bg-subtle)', borderLeft:'3px solid var(--green)', marginBottom:12 }}>
+                  <p style={{ fontFamily:"'Editorial New', Georgia, serif", fontSize:15, color:'var(--text)', lineHeight:1.6, fontStyle:'italic', marginBottom:5 }}>"{d.quote}"</p>
+                  {d.quote_author && <p style={{ fontSize:11, color:'var(--text-dim)' }}>{d.quote_author}</p>}
                 </div>
               )}
-              <button onClick={() => save({ quote: d.quote, quote_author: d.quote_author })} style={{ padding: '5px 11px', borderRadius: 6, border: 'none', background: 'var(--green)', color: '#fff', fontSize: 11, cursor: 'pointer', fontFamily: 'inherit' }}>Save</button>
+              <button onClick={() => save({ quote: d.quote, quote_author: d.quote_author })} style={{ padding:'7px 16px', borderRadius:7, border:'none', background:'var(--green)', color:'#fff', fontSize:12, cursor:'pointer', fontFamily:'inherit' }}>Save</button>
             </Card>
           </div>
         )}
 
         {/* ACCOUNT */}
         {activeSection === 'account' && (
-          <div style={{ maxWidth: 500 }}>
-            <SectionTitle>Account</SectionTitle>
+          <div style={{ maxWidth: 560 }}>
+            <p style={{ fontSize: 18, fontFamily: "'Editorial New', Georgia, serif", color: 'var(--text)', marginBottom: 24 }}>Account</p>
             <Card>
-              <div style={{ display: 'flex', alignItems: 'center', gap: 13, padding: '11px 13px', borderRadius: 8, background: 'var(--bg-subtle)', border: '1px solid var(--border)', marginBottom: 16 }}>
-                <div style={{ width: 42, height: 42, borderRadius: '50%', background: 'var(--green-tint)', border: '2px solid var(--green)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 14, fontWeight: 700, color: 'var(--green)', flexShrink: 0 }}>{initials}</div>
-                <div style={{ flex: 1 }}>
-                  <p style={{ fontSize: 12, fontWeight: 600, color: 'var(--text)', marginBottom: 1 }}>{d.full_name}</p>
-                  <p style={{ fontSize: 10, color: 'var(--text-dim)' }}>{d.email}</p>
+              <div style={{ display:'flex', alignItems:'center', gap:16, padding:'14px 16px', borderRadius:10, background:'var(--bg-subtle)', border:'1px solid var(--border)', marginBottom:20 }}>
+                <div style={{ width:52, height:52, borderRadius:'50%', background:'var(--green-tint)', border:'2px solid var(--green)', display:'flex', alignItems:'center', justifyContent:'center', fontSize:18, fontWeight:700, color:'var(--green)', flexShrink:0 }}>{initials}</div>
+                <div style={{ flex:1 }}>
+                  <p style={{ fontSize:14, fontWeight:600, color:'var(--text)', marginBottom:2 }}>{d.full_name}</p>
+                  <p style={{ fontSize:12, color:'var(--text-dim)' }}>{d.email}</p>
                 </div>
-                <label style={{ fontSize: 11, padding: '4px 9px', borderRadius: 6, border: '1px solid var(--border)', cursor: 'pointer', color: 'var(--text-mid)', background: 'var(--bg-card)', fontFamily: 'inherit' }}>
-                  Change avatar<input type="file" accept="image/*" style={{ display: 'none' }} onChange={() => showToast('Coming soon')} />
+                <label style={{ fontSize:12, padding:'6px 14px', borderRadius:7, border:'1px solid var(--border)', cursor:'pointer', color:'var(--text-mid)', background:'var(--bg-card)', fontFamily:'inherit' }}>
+                  Change avatar<input type="file" accept="image/*" style={{ display:'none' }} onChange={() => showToast('Coming soon')} />
                 </label>
               </div>
-              <Row label="Change email">
-                <div style={{ display: 'flex', gap: 6 }}>
-                  <input style={{ ...inp_p, flex: 1 }} type="email" defaultValue={d.email || ''} placeholder="new@email.com" />
-                  <button onClick={() => showToast('Coming soon')} style={{ padding: '0 11px', borderRadius: 6, border: 'none', background: 'var(--text)', color: 'var(--bg)', fontSize: 11, cursor: 'pointer', fontFamily: 'inherit', whiteSpace: 'nowrap' }}>Change</button>
+              <div>
+                <FieldLabel>Change email</FieldLabel>
+                <div style={{ display:'flex', gap:8 }}>
+                  <input style={{ ...inp_p, flex:1 }} type="email" defaultValue={d.email||''} placeholder="new@email.com" />
+                  <button onClick={() => showToast('Coming soon')} style={{ padding:'0 16px', borderRadius:7, border:'none', background:'var(--text)', color:'var(--bg)', fontSize:12, cursor:'pointer', fontFamily:'inherit', whiteSpace:'nowrap' }}>Change</button>
                 </div>
-              </Row>
+              </div>
             </Card>
             <Card>
-              <p style={{ fontSize: 12, fontWeight: 600, color: 'var(--text)', marginBottom: 12 }}>Appearance</p>
-              <div style={{ display: 'flex', gap: 7 }}>
-                {['light', 'dark'].map(t => (
-                  <button key={t} onClick={() => setTheme(t)} style={{ flex: 1, padding: '8px', borderRadius: 7, border: `1.5px solid ${theme===t?'var(--text)':'var(--border)'}`, background: theme===t?'var(--bg-subtle)':'transparent', cursor: 'pointer', fontSize: 12, fontWeight: theme===t?600:400, color: 'var(--text)', fontFamily: 'inherit' }}>
-                    {t === 'light' ? '☀️ Light' : '🌙 Dark'}
+              <p style={{ fontSize:14, fontWeight:600, color:'var(--text)', marginBottom:14 }}>Appearance</p>
+              <div style={{ display:'flex', gap:8 }}>
+                {['light','dark'].map(t => (
+                  <button key={t} onClick={() => setTheme(t)} style={{ flex:1, padding:'10px', borderRadius:8, border:`1.5px solid ${theme===t?'var(--text)':'var(--border)'}`, background:theme===t?'var(--bg-subtle)':'transparent', cursor:'pointer', fontSize:13, fontWeight:theme===t?600:400, color:'var(--text)', fontFamily:'inherit' }}>
+                    {t==='light'?'☀️ Light':'🌙 Dark'}
                   </button>
                 ))}
               </div>
             </Card>
             <Card>
-              <p style={{ fontSize: 12, fontWeight: 600, color: 'var(--text)', marginBottom: 12 }}>Privacy</p>
+              <p style={{ fontSize:14, fontWeight:600, color:'var(--text)', marginBottom:14 }}>Privacy</p>
               {[
-                { label: 'Visible to recruiters', sub: 'Recruiters can find your profile', key: 'privacy_visible', def: true },
-                { label: 'Show college name', sub: 'Display your college on profile', key: 'privacy_college', def: true },
-                { label: 'Activity status', sub: 'Show when last active', key: 'privacy_activity', def: false },
+                { label:'Visible to recruiters', sub:'Recruiters can find your profile', key:'privacy_visible', def:true },
+                { label:'Show college name', sub:'Display your college on profile', key:'privacy_college', def:true },
+                { label:'Activity status', sub:'Show when last active', key:'privacy_activity', def:false },
               ].map(({ label, sub, key, def }) => (
-                <div key={key} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 11 }}>
-                  <div><p style={{ fontSize: 12, fontWeight: 500, color: 'var(--text)', marginBottom: 1 }}>{label}</p><p style={{ fontSize: 10, color: 'var(--text-dim)' }}>{sub}</p></div>
-                  <Toggle_P on={d[key]!==undefined?d[key]:def} onChange={val => { setDraft(x=>({...x,[key]:val})); save({[key]:val}); }} />
+                <div key={key} style={{ display:'flex', justifyContent:'space-between', alignItems:'center', marginBottom:14 }}>
+                  <div><p style={{ fontSize:13, fontWeight:500, color:'var(--text)', marginBottom:2 }}>{label}</p><p style={{ fontSize:11, color:'var(--text-dim)' }}>{sub}</p></div>
+                  <Toggle_P on={d[key]!==undefined?d[key]:def} onChange={val=>{ setDraft(x=>({...x,[key]:val})); save({[key]:val}); }} />
                 </div>
               ))}
             </Card>
-            <div style={{ padding: '13px 15px', borderRadius: 9, border: '1px solid var(--red)', background: 'var(--red-tint)' }}>
-              <p style={{ fontSize: 12, fontWeight: 600, color: 'var(--red)', marginBottom: 2 }}>Danger Zone</p>
-              <p style={{ fontSize: 11, color: 'var(--red)', opacity: 0.8, marginBottom: 9 }}>Permanently delete your account. Cannot be undone.</p>
-              <button onClick={() => { if(window.confirm('Delete your account? This cannot be undone.')) showToast('Delete coming soon','err'); }} style={{ padding: '5px 13px', borderRadius: 5, border: '1px solid var(--red)', background: 'transparent', color: 'var(--red)', fontSize: 11, fontWeight: 600, cursor: 'pointer', fontFamily: 'inherit' }}>Delete account</button>
+            <div style={{ padding:'16px 18px', borderRadius:10, border:'1px solid var(--red)', background:'var(--red-tint)' }}>
+              <p style={{ fontSize:13, fontWeight:600, color:'var(--red)', marginBottom:3 }}>Danger Zone</p>
+              <p style={{ fontSize:12, color:'var(--red)', opacity:0.8, marginBottom:12 }}>Permanently delete your account. Cannot be undone.</p>
+              <button onClick={() => { if(window.confirm('Delete your account?')) showToast('Delete coming soon','err'); }} style={{ padding:'7px 16px', borderRadius:7, border:'1px solid var(--red)', background:'transparent', color:'var(--red)', fontSize:12, fontWeight:600, cursor:'pointer', fontFamily:'inherit' }}>Delete account</button>
             </div>
           </div>
         )}
