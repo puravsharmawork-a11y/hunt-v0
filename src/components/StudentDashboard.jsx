@@ -1969,50 +1969,116 @@ function ProfileTab({ studentProfile, setStudentProfile, theme, setTheme }) {
         )}
 
         {/* SKILLS */}
-        {activeSection === 'skills' && (
-          <div style={{ maxWidth: 660 }}>
-            <SectionTitle>Skills</SectionTitle>
-            <Card>
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 13 }}>
-                <p style={{ fontSize: 12, fontWeight: 600, color: 'var(--text)' }}>Technical Skills</p>
-                <SaveBtn onClick={() => save({ skills: d.skills || [] })} />
+        {activeSection === 'skills' && (() => {
+          const addedSkills = d.skills || [];
+          const grouped = SKILL_CATS_P.reduce((acc, cat) => {
+            const inCat = addedSkills.filter(s => s.category === cat);
+            if (inCat.length > 0) acc[cat] = inCat;
+            return acc;
+          }, {});
+          return (
+          <div style={{ maxWidth: 720 }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', marginBottom: 16 }}>
+              <div>
+                <p style={{ fontSize: 10, fontWeight: 700, letterSpacing: '0.12em', textTransform: 'uppercase', color: 'var(--text-dim)', marginBottom: 3 }}>Skills</p>
+                <p style={{ fontSize: 12, color: 'var(--text-dim)' }}>{addedSkills.length} skill{addedSkills.length !== 1 ? 's' : ''} added</p>
               </div>
-              <div style={{ display: 'flex', flexWrap: 'wrap', gap: 5, marginBottom: 11 }}>
-                {SKILL_CATS_P.map(cat => (
-                  <button key={cat} onClick={() => setSkillCat(cat)} style={{ padding: '3px 8px', borderRadius: 20, fontSize: 11, cursor: 'pointer', fontFamily: 'inherit', border: `1px solid ${skillCat===cat?'var(--text)':'var(--border)'}`, background: skillCat===cat?'var(--text)':'transparent', color: skillCat===cat?'var(--bg)':'var(--text-dim)' }}>{cat}</button>
-                ))}
-              </div>
-              <div style={{ display: 'flex', flexWrap: 'wrap', gap: 5, paddingBottom: 11, marginBottom: 11, borderBottom: '1px solid var(--border)' }}>
-                {SKILL_OPTIONS_P.filter(s => s.cat === skillCat).map(skill => {
-                  const added = (d.skills || []).some(s => s.name === skill.name);
+              <SaveBtn onClick={() => save({ skills: d.skills || [] })} />
+            </div>
+
+            <div style={{ display: 'grid', gridTemplateColumns: '200px 1fr', gap: 14, alignItems: 'start' }}>
+
+              {/* LEFT — category list + add pills */}
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 2, position: 'sticky', top: 0 }}>
+                {SKILL_CATS_P.map(cat => {
+                  const countInCat = addedSkills.filter(s => s.category === cat).length;
                   return (
-                    <button key={skill.name} onClick={() => { if (added) return; setDraft(x => ({ ...x, skills: [...(x.skills||[]),{id:Date.now(),name:skill.name,level:3,category:skill.cat}] })); }} style={{ padding: '4px 8px', borderRadius: 6, fontSize: 11, cursor: added?'default':'pointer', fontFamily: 'inherit', border: `1px solid ${added?'var(--green)':'var(--border)'}`, background: added?'var(--green-tint)':'transparent', color: added?'var(--green-text)':'var(--text-dim)' }}>
-                      {skill.name}{added?' ✓':''}
+                    <button key={cat} onClick={() => setSkillCat(cat)} className="hn-item" style={{
+                      display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+                      padding: '8px 11px', borderRadius: 7, border: 'none', cursor: 'pointer', fontFamily: 'inherit',
+                      background: skillCat === cat ? 'var(--bg-subtle)' : 'transparent',
+                      color: skillCat === cat ? 'var(--text)' : 'var(--text-dim)',
+                      fontSize: 12, fontWeight: skillCat === cat ? 600 : 400, textAlign: 'left',
+                    }}>
+                      <span>{cat}</span>
+                      {countInCat > 0 && <span style={{ fontSize: 10, fontWeight: 700, color: 'var(--green)', background: 'var(--green-tint)', borderRadius: 20, padding: '1px 6px', minWidth: 18, textAlign: 'center' }}>{countInCat}</span>}
                     </button>
                   );
                 })}
               </div>
-              {(d.skills || []).length > 0 && (
-                <div style={{ display: 'flex', flexDirection: 'column', gap: 5 }}>
-                  {(d.skills || []).map((skill, i) => (
-                    <div key={skill.id || i} style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '6px 9px', borderRadius: 7, border: '1px solid var(--border)', background: 'var(--bg-subtle)' }}>
-                      <span style={{ fontSize: 11, fontWeight: 500, color: 'var(--text)', flex: 1 }}>{skill.name}</span>
-                      <span style={{ fontSize: 10, color: 'var(--text-dim)', width: 58 }}>{LEVEL_LABELS_P[skill.level]}</span>
-                      <div style={{ display: 'flex', gap: 3 }}>
-                        {[1,2,3,4,5].map(lv => (
-                          <button key={lv} onClick={() => setDraft(x => ({ ...x, skills: (x.skills||[]).map((s,j) => j===i?{...s,level:lv}:s) }))} style={{ width: 19, height: 19, borderRadius: 3, fontSize: 9, cursor: 'pointer', fontFamily: 'inherit', border: 'none', background: skill.level>=lv?'var(--green)':'var(--bg-card)', color: skill.level>=lv?'#fff':'var(--text-dim)', outline: skill.level>=lv?'none':'1px solid var(--border)' }}>{lv}</button>
-                        ))}
-                      </div>
-                      <button onClick={() => setDraft(x => ({ ...x, skills: (x.skills||[]).filter((_,j)=>j!==i) }))} style={{ background:'none',border:'none',cursor:'pointer',color:'var(--text-dim)',padding:0,fontSize:14 }}
-                        onMouseEnter={e => e.currentTarget.style.color='var(--red)'}
-                        onMouseLeave={e => e.currentTarget.style.color='var(--text-dim)'}>×</button>
-                    </div>
-                  ))}
+
+              {/* RIGHT — skill picker + your skills */}
+              <div>
+                {/* Picker for active category */}
+                <div style={{ background: 'var(--bg-card)', border: '1px solid var(--border)', borderRadius: 10, padding: '14px 16px', marginBottom: 12 }}>
+                  <p style={{ fontSize: 10, fontWeight: 700, letterSpacing: '0.1em', textTransform: 'uppercase', color: 'var(--text-dim)', marginBottom: 10 }}>{skillCat}</p>
+                  <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>
+                    {SKILL_OPTIONS_P.filter(s => s.cat === skillCat).map(skill => {
+                      const added = addedSkills.some(s => s.name === skill.name);
+                      return (
+                        <button key={skill.name} onClick={() => {
+                          if (added) return;
+                          setDraft(x => ({ ...x, skills: [...(x.skills||[]), { id: Date.now(), name: skill.name, level: 3, category: skill.cat }] }));
+                        }} style={{
+                          padding: '5px 11px', borderRadius: 20, fontSize: 11, fontFamily: 'inherit',
+                          cursor: added ? 'default' : 'pointer', transition: 'all 0.12s',
+                          border: `1px solid ${added ? 'var(--green)' : 'var(--border)'}`,
+                          background: added ? 'var(--green-tint)' : 'var(--bg-subtle)',
+                          color: added ? 'var(--green-text)' : 'var(--text-mid)',
+                          fontWeight: added ? 500 : 400,
+                        }}>
+                          {added ? '✓ ' : '+ '}{skill.name}
+                        </button>
+                      );
+                    })}
+                  </div>
                 </div>
-              )}
-            </Card>
+
+                {/* Added skills grouped by category */}
+                {Object.keys(grouped).length > 0 ? (
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+                    {Object.entries(grouped).map(([cat, skills]) => (
+                      <div key={cat} style={{ background: 'var(--bg-card)', border: '1px solid var(--border)', borderRadius: 10, padding: '12px 14px' }}>
+                        <p style={{ fontSize: 9, fontWeight: 700, letterSpacing: '0.1em', textTransform: 'uppercase', color: 'var(--text-dim)', marginBottom: 8 }}>{cat}</p>
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
+                          {skills.map((skill, _) => {
+                            const i = addedSkills.findIndex(s => s.name === skill.name);
+                            return (
+                              <div key={skill.id || skill.name} style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                                {/* Skill name */}
+                                <span style={{ fontSize: 12, color: 'var(--text)', flex: 1 }}>{skill.name}</span>
+                                {/* Level dots */}
+                                <div style={{ display: 'flex', gap: 3, alignItems: 'center' }}>
+                                  {[1,2,3,4,5].map(lv => (
+                                    <button key={lv} onClick={() => setDraft(x => ({ ...x, skills: (x.skills||[]).map((s,j) => j===i ? {...s,level:lv} : s) }))}
+                                      title={LEVEL_LABELS_P[lv]}
+                                      style={{ width: 8, height: 8, borderRadius: '50%', border: 'none', cursor: 'pointer', padding: 0, flexShrink: 0, background: skill.level >= lv ? 'var(--green)' : 'var(--border)', transition: 'background 0.12s' }} />
+                                  ))}
+                                </div>
+                                {/* Level label */}
+                                <span style={{ fontSize: 10, color: 'var(--text-dim)', width: 62, textAlign: 'right' }}>{LEVEL_LABELS_P[skill.level]}</span>
+                                {/* Remove */}
+                                <button onClick={() => setDraft(x => ({ ...x, skills: (x.skills||[]).filter((_,j) => j !== i) }))}
+                                  style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--border-mid)', padding: 0, lineHeight: 1, fontSize: 14, flexShrink: 0 }}
+                                  onMouseEnter={e => e.currentTarget.style.color = 'var(--red)'}
+                                  onMouseLeave={e => e.currentTarget.style.color = 'var(--border-mid)'}>×</button>
+                              </div>
+                            );
+                          })}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                ) : (
+                  <div style={{ padding: '24px 16px', textAlign: 'center', border: '1px dashed var(--border)', borderRadius: 10 }}>
+                    <p style={{ fontSize: 12, color: 'var(--text-dim)' }}>Click a skill above to add it</p>
+                  </div>
+                )}
+              </div>
+            </div>
           </div>
-        )}
+          );
+        })()}
 
         {/* PREFERENCES */}
         {activeSection === 'prefs' && (
