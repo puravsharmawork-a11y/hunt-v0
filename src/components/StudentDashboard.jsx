@@ -1723,7 +1723,6 @@ function ProfileTab({ studentProfile, setStudentProfile, theme, setTheme }) {
     { id:'overview', label:'Overview' },
     { id:'resume',   label:'Resume' },
     { id:'skills',   label:'Skills' },
-    { id:'links',    label:'Links & Profiles' },
     { id:'prefs',    label:'Preferences' },
     { id:'myhunt',   label:'My Hunt' },
     { id:'account',  label:'Account' },
@@ -1773,24 +1772,30 @@ function ProfileTab({ studentProfile, setStudentProfile, theme, setTheme }) {
         <div style={{ position: 'fixed', top: 18, left: '50%', transform: 'translateX(-50%)', zIndex: 9999, padding: '7px 16px', borderRadius: 7, fontSize: 12, fontWeight: 500, background: toast.type === 'err' ? 'rgba(192,57,43,0.95)' : 'rgba(26,122,74,0.95)', color: '#fff', pointerEvents: 'none', boxShadow: '0 3px 12px rgba(0,0,0,0.15)' }}>{toast.msg}</div>
       )}
 
-      {/* ── TOP TAB BAR ── */}
-      <div style={{ flexShrink: 0, borderBottom: '1px solid var(--border)', background: 'var(--bg-card)', padding: '0 32px', display: 'flex', alignItems: 'center', gap: 0 }}>
-        {SECTIONS.map(s => (
-          <button key={s.id} onClick={() => setActiveSection(s.id)} style={{
-            padding: '13px 18px', background: 'none', border: 'none', cursor: 'pointer',
-            fontSize: 13, fontWeight: activeSection === s.id ? 600 : 400,
-            color: activeSection === s.id ? 'var(--text)' : 'var(--text-dim)',
-            borderBottom: activeSection === s.id ? '2px solid var(--text)' : '2px solid transparent',
-            marginBottom: '-1px', whiteSpace: 'nowrap', fontFamily: 'inherit',
-            transition: 'color 0.1s',
-          }}>
-            {s.label}
-          </button>
-        ))}
+      {/* ── PROFILE HEADER + SUB-TABS ── */}
+      <div style={{ flexShrink: 0, padding: '28px 40px 0', background: 'var(--bg)' }}>
+        <p style={{ fontSize: 10, fontWeight: 600, letterSpacing: '0.1em', textTransform: 'uppercase', color: 'var(--text-dim)', marginBottom: 4 }}>Profile</p>
+        <h1 style={{ fontFamily: "'Editorial New', Georgia, serif", fontSize: 26, fontWeight: 400, color: 'var(--text)', marginBottom: 16 }}>
+          {d.full_name ? <>{d.full_name.split(' ')[0]}<em style={{ fontStyle: 'italic' }}>'s profile.</em></> : <em>Your profile.</em>}
+        </h1>
+        <div style={{ display: 'flex', borderBottom: '1px solid var(--border)' }}>
+          {SECTIONS.map(s => (
+            <button key={s.id} onClick={() => setActiveSection(s.id)} style={{
+              padding: '9px 18px', background: 'none', border: 'none', cursor: 'pointer',
+              fontSize: 13, fontWeight: activeSection === s.id ? 600 : 400,
+              color: activeSection === s.id ? 'var(--text)' : 'var(--text-dim)',
+              borderBottom: activeSection === s.id ? '2px solid var(--text)' : '2px solid transparent',
+              marginBottom: '-1px', whiteSpace: 'nowrap', fontFamily: 'inherit',
+              transition: 'color 0.1s',
+            }}>
+              {s.label}
+            </button>
+          ))}
+        </div>
       </div>
 
       {/* ── CONTENT ── */}
-      <div style={{ flex: 1, overflowY: 'auto', padding: '32px 40px 60px' }}>
+      <div style={{ flex: 1, overflowY: 'auto', padding: '28px 40px 60px' }}>
 
         {/* OVERVIEW */}
         {activeSection === 'overview' && (
@@ -2037,6 +2042,48 @@ function ProfileTab({ studentProfile, setStudentProfile, theme, setTheme }) {
                 <button onClick={() => { if(!newAward.trim())return;const aw=[...(d.awards||[]),newAward.trim()];setDraft(x=>({...x,awards:aw}));save({awards:aw});setNewAward(''); }} style={{ padding:'0 16px', borderRadius:7, border:'none', background:'var(--green)', color:'#fff', fontSize:14, cursor:'pointer', fontFamily:'inherit' }}>+</button>
               </div>
             </Card>
+
+            {/* Coding platforms */}
+            <Card>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
+                <p style={{ fontSize: 14, fontWeight: 600, color: 'var(--text)' }}>Competitive & Coding Profiles</p>
+                <SaveBtn onClick={() => save({ coding_profiles: d.coding_profiles })} />
+              </div>
+              {Object.entries(PLATFORM_LOGOS).map(([key, { label, color, svg }]) => (
+                <div key={key} style={{ display:'flex', alignItems:'center', gap:10, padding:'9px 12px', borderRadius:9, border:'1px solid var(--border)', background:'var(--bg-subtle)', marginBottom:8 }}>
+                  <div style={{ width:32, height:32, borderRadius:8, background:color, display:'flex', alignItems:'center', justifyContent:'center', flexShrink:0 }}>{svg}</div>
+                  <span style={{ fontSize:12, fontWeight:500, color:'var(--text-mid)', width:110, flexShrink:0 }}>{label}</span>
+                  <input style={{ ...inp_p, padding:'6px 10px' }}
+                    value={d.coding_profiles?.[key]||''}
+                    placeholder="username"
+                    onChange={e => setDraft(x => ({ ...x, coding_profiles: { ...(x.coding_profiles||{}), [key]: e.target.value } }))} />
+                </div>
+              ))}
+            </Card>
+
+            {/* Other links */}
+            <Card>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
+                <p style={{ fontSize: 14, fontWeight: 600, color: 'var(--text)' }}>Other Links</p>
+                <SaveBtn onClick={() => save({ other_links: otherLinks })} />
+              </div>
+              <p style={{ fontSize: 12, color: 'var(--text-dim)', marginBottom: 14 }}>Add any other links — papers, talks, open source contributions, etc.</p>
+              {otherLinks.map((link, i) => (
+                <div key={i} style={{ display:'flex', alignItems:'center', gap:8, padding:'8px 12px', borderRadius:8, border:'1px solid var(--border)', background:'var(--bg-subtle)', marginBottom:8 }}>
+                  <div style={{ width:28, height:28, borderRadius:6, background:'var(--bg-card)', border:'1px solid var(--border)', display:'flex', alignItems:'center', justifyContent:'center', flexShrink:0, fontSize:14 }}>🔗</div>
+                  <span style={{ fontSize:12, color:'var(--text)', flex:1 }}>{link.label}</span>
+                  <a href={link.url} target="_blank" rel="noopener noreferrer" style={{ fontSize:11, color:'var(--green)', textDecoration:'none', maxWidth:200, overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap' }}>{link.url}</a>
+                  <button onClick={() => { const nl=otherLinks.filter((_,j)=>j!==i); setOtherLinks(nl); save({other_links:nl}); }} style={{ background:'none',border:'none',cursor:'pointer',color:'var(--text-dim)',padding:0,fontSize:16 }}
+                    onMouseEnter={e=>e.currentTarget.style.color='var(--red)'}
+                    onMouseLeave={e=>e.currentTarget.style.color='var(--text-dim)'}>×</button>
+                </div>
+              ))}
+              <div style={{ display:'grid', gridTemplateColumns:'1fr 2fr', gap:8, marginBottom:8 }}>
+                <input style={inp_p} value={newOtherLink.label} placeholder="Label (e.g. Research Paper)" onChange={e=>setNewOtherLink(x=>({...x,label:e.target.value}))} />
+                <input style={inp_p} value={newOtherLink.url} placeholder="https://..." onChange={e=>setNewOtherLink(x=>({...x,url:e.target.value}))} />
+              </div>
+              <button onClick={() => { if(!newOtherLink.url.trim())return; const nl=[...otherLinks,{label:newOtherLink.label||newOtherLink.url,url:newOtherLink.url}]; setOtherLinks(nl); save({other_links:nl}); setNewOtherLink({label:'',url:''}); }} style={{ padding:'7px 16px', borderRadius:7, border:'none', background:'var(--green)', color:'#fff', fontSize:12, cursor:'pointer', fontFamily:'inherit' }}>Add Link</button>
+            </Card>
           </div>
         )}
 
@@ -2145,56 +2192,6 @@ function ProfileTab({ studentProfile, setStudentProfile, theme, setTheme }) {
             </div>
           );
         })()}
-
-        {/* LINKS & PROFILES */}
-        {activeSection === 'links' && (
-          <div style={{ maxWidth: 700 }}>
-            <p style={{ fontSize: 18, fontFamily: "'Editorial New', Georgia, serif", color: 'var(--text)', marginBottom: 4 }}>Links & Coding Profiles</p>
-            <p style={{ fontSize: 13, color: 'var(--text-dim)', marginBottom: 24 }}>All your profiles in one place — shown on your public profile.</p>
-
-            {/* Coding platforms */}
-            <Card>
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
-                <p style={{ fontSize: 14, fontWeight: 600, color: 'var(--text)' }}>Competitive & Coding Profiles</p>
-                <SaveBtn onClick={() => save({ coding_profiles: d.coding_profiles })} />
-              </div>
-              {Object.entries(PLATFORM_LOGOS).map(([key, { label, color, svg }]) => (
-                <div key={key} style={{ display:'flex', alignItems:'center', gap:10, padding:'9px 12px', borderRadius:9, border:'1px solid var(--border)', background:'var(--bg-subtle)', marginBottom:8 }}>
-                  <div style={{ width:32, height:32, borderRadius:8, background:color, display:'flex', alignItems:'center', justifyContent:'center', flexShrink:0 }}>{svg}</div>
-                  <span style={{ fontSize:12, fontWeight:500, color:'var(--text-mid)', width:110, flexShrink:0 }}>{label}</span>
-                  <input style={{ ...inp_p, padding:'6px 10px' }}
-                    value={d.coding_profiles?.[key]||''}
-                    placeholder="username"
-                    onChange={e => setDraft(x => ({ ...x, coding_profiles: { ...(x.coding_profiles||{}), [key]: e.target.value } }))} />
-                </div>
-              ))}
-            </Card>
-
-            {/* Other links */}
-            <Card>
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
-                <p style={{ fontSize: 14, fontWeight: 600, color: 'var(--text)' }}>Other Links</p>
-                <SaveBtn onClick={() => save({ other_links: otherLinks })} />
-              </div>
-              <p style={{ fontSize: 12, color: 'var(--text-dim)', marginBottom: 14 }}>Add any other links — papers, talks, open source contributions, etc.</p>
-              {otherLinks.map((link, i) => (
-                <div key={i} style={{ display:'flex', alignItems:'center', gap:8, padding:'8px 12px', borderRadius:8, border:'1px solid var(--border)', background:'var(--bg-subtle)', marginBottom:8 }}>
-                  <div style={{ width:28, height:28, borderRadius:6, background:'var(--bg-card)', border:'1px solid var(--border)', display:'flex', alignItems:'center', justifyContent:'center', flexShrink:0, fontSize:14 }}>🔗</div>
-                  <span style={{ fontSize:12, color:'var(--text)', flex:1 }}>{link.label}</span>
-                  <a href={link.url} target="_blank" rel="noopener noreferrer" style={{ fontSize:11, color:'var(--green)', textDecoration:'none', maxWidth:200, overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap' }}>{link.url}</a>
-                  <button onClick={() => { const nl=otherLinks.filter((_,j)=>j!==i); setOtherLinks(nl); save({other_links:nl}); }} style={{ background:'none',border:'none',cursor:'pointer',color:'var(--text-dim)',padding:0,fontSize:16 }}
-                    onMouseEnter={e=>e.currentTarget.style.color='var(--red)'}
-                    onMouseLeave={e=>e.currentTarget.style.color='var(--text-dim)'}>×</button>
-                </div>
-              ))}
-              <div style={{ display:'grid', gridTemplateColumns:'1fr 2fr', gap:8, marginBottom:8 }}>
-                <input style={inp_p} value={newOtherLink.label} placeholder="Label (e.g. Research Paper)" onChange={e=>setNewOtherLink(x=>({...x,label:e.target.value}))} />
-                <input style={inp_p} value={newOtherLink.url} placeholder="https://..." onChange={e=>setNewOtherLink(x=>({...x,url:e.target.value}))} />
-              </div>
-              <button onClick={() => { if(!newOtherLink.url.trim())return; const nl=[...otherLinks,{label:newOtherLink.label||newOtherLink.url,url:newOtherLink.url}]; setOtherLinks(nl); save({other_links:nl}); setNewOtherLink({label:'',url:''}); }} style={{ padding:'7px 16px', borderRadius:7, border:'none', background:'var(--green)', color:'#fff', fontSize:12, cursor:'pointer', fontFamily:'inherit' }}>Add Link</button>
-            </Card>
-          </div>
-        )}
 
         {/* PREFERENCES */}
         {activeSection === 'prefs' && (
