@@ -1632,9 +1632,6 @@ function NetworkTab({ studentProfile }) {
 // FIX 2: pencil icon edit mode per card
 // FIX 3: real file upload via supabase uploadResume
 // FIX 5: save uses top-level import, not dynamic import
-
-import React, { useState, useRef } from 'react';
-import { updateStudentProfile, uploadResume } from '../services/supabase';
 // ↑ If this file lives at tabs/ProfileTab.jsx, adjust path to ../../services/supabase
 // If it stays inside StudentDashboard.jsx, keep the existing dynamic import pattern
 // but use the version at the bottom of this file instead.
@@ -1758,7 +1755,7 @@ function getSkillLogo(name) {
 
 // ─── MAIN COMPONENT ───────────────────────────────────────────────────────────
 
-export default function ProfileTab({ studentProfile, setStudentProfile, theme, setTheme }) {
+function ProfileTab({ studentProfile, setStudentProfile, theme, setTheme }) {
   const [activeSection, setActiveSection] = useState('overview');
 
   // ── FIX 1: draft is ONLY updated by user typing, never by save() ──────────
