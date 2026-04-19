@@ -1682,6 +1682,7 @@ function ProfileTab({ studentProfile, setStudentProfile, theme, setTheme }) {
   const [newAward, setNewAward] = React.useState('');
   const [otherLinks, setOtherLinks] = React.useState(studentProfile?.other_links || []);
   const [newOtherLink, setNewOtherLink] = React.useState({ label:'', url:'' });
+  const [pendingSkill, setPendingSkill] = React.useState(null);
 
   const showToast = (msg, type='ok') => { setToast({ msg, type }); setTimeout(() => setToast(null), 2200); };
 
@@ -2092,8 +2093,6 @@ function ProfileTab({ studentProfile, setStudentProfile, theme, setTheme }) {
         {/* SKILLS */}
         {activeSection === 'skills' && (() => {
           const addedSkills = d.skills || [];
-          // pendingSkill: name of skill waiting for level pick
-          const [pendingSkill, setPendingSkill] = React.useState(null);
           const grouped = SKILL_CATS_P.reduce((acc, cat) => {
             const inCat = addedSkills.filter(s => s.category === cat);
             if (inCat.length > 0) acc[cat] = inCat;
