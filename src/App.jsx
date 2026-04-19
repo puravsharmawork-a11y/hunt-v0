@@ -5,7 +5,6 @@ import { onAuthStateChange } from './services/supabase';
 import LandingPage from './components/LandingPage';
 import StudentOnboarding from './components/StudentOnboarding';
 import StudentDashboard from './components/StudentDashboard';
-import StudentProfile from './components/StudentProfile';
 import RecruiterOnboarding from './components/RecruiterOnboarding';
 import RecruiterDashboard from './components/RecruiterDashboard';
 import ApplyPage from './components/ApplyPage';
@@ -54,10 +53,6 @@ function App() {
           path="/studentdashboard" 
           element={user ? <StudentDashboard /> : <Navigate to="/" />} 
         />
-        <Route 
-          path="/profile" 
-          element={user ? <StudentProfile /> : <Navigate to="/" />} 
-          />
         <Route 
           path="/recruiter/onboarding" 
           element={user ? <RecruiterOnboarding /> : <Navigate to="/" />} 
