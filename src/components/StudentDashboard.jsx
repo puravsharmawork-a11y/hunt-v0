@@ -1,6 +1,6 @@
 // src/components/StudentDashboard.jsx
 // ─── HUNT Candidate Dashboard ─────────────────────────────────────────────────
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import {
   Heart, X, TrendingUp, Target, Briefcase, MapPin, Clock,
   AlertCircle, CheckCircle2, ChevronRight, Zap, Award, LogOut,
