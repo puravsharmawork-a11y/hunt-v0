@@ -857,11 +857,11 @@ export default function StudentDashboard() {
                 if (!p?.profile_completeness || p.profile_completeness < 100)
                   tasks.push({ id: 'profile', title: 'Complete your profile', desc: `You're ${p?.profile_completeness || 0}% done — finish to improve match scores.`, cta: 'Complete now', action: () => navigate('/onboarding'), pct: p?.profile_completeness || 0 });
                 if (!p?.linkedin_url)
-                  tasks.push({ id: 'linkedin', title: 'Link LinkedIn', desc: 'Recruiters always check LinkedIn first. Add it to boost visibility.', cta: 'Add LinkedIn', action: () => navigate('/profile') });
+                  tasks.push({ id: 'linkedin', title: 'Link LinkedIn', desc: 'Recruiters always check LinkedIn first. Add it to boost visibility.', cta: 'Add LinkedIn', action: () => setActiveTab('profile') });
                 if (!p?.github_url)
-                  tasks.push({ id: 'github', title: 'Add GitHub', desc: 'Your GitHub is proof of work. It directly improves your match score.', cta: 'Add GitHub', action: () => navigate('/profile') });
+                  tasks.push({ id: 'github', title: 'Add GitHub', desc: 'Your GitHub is proof of work. It directly improves your match score.', cta: 'Add GitHub', action: () => setActiveTab('profile') });
                 if (!p?.resume_url)
-                  tasks.push({ id: 'resume', title: 'Upload resume', desc: 'Hiring managers are more likely to reach out when they see a resume.', cta: 'Upload now', action: () => navigate('/profile') });
+                  tasks.push({ id: 'resume', title: 'Upload resume', desc: 'Hiring managers are more likely to reach out when they see a resume.', cta: 'Upload now', action: () => setActiveTab('profile') });
                 if (tasks.length === 0) return null;
                 return (
                   <div style={{ marginBottom: '32px' }}>
