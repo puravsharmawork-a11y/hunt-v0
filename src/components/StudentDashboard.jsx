@@ -1725,6 +1725,8 @@ function ProfileTab({ studentProfile, setStudentProfile, theme, setTheme }) {
     { id:'skills',   label:'Skills' },
     { id:'prefs',    label:'Preferences' },
     { id:'myhunt',   label:'My Hunt' },
+    { id:'reviews',  label:'Reviews & Ratings' },
+    { id:'huntscore',label:'Hunt Score' },
     { id:'account',  label:'Account' },
   ];
 
@@ -2090,23 +2092,78 @@ function ProfileTab({ studentProfile, setStudentProfile, theme, setTheme }) {
         {/* SKILLS */}
         {activeSection === 'skills' && (() => {
           const addedSkills = d.skills || [];
+          // pendingSkill: name of skill waiting for level pick
+          const [pendingSkill, setPendingSkill] = React.useState(null);
           const grouped = SKILL_CATS_P.reduce((acc, cat) => {
             const inCat = addedSkills.filter(s => s.category === cat);
             if (inCat.length > 0) acc[cat] = inCat;
             return acc;
           }, {});
+
+          const LEVELS = [
+            { v:1, label:'Beginner',     desc:'Just started learning' },
+            { v:2, label:'Elementary',   desc:'Built a few small things' },
+            { v:3, label:'Intermediate', desc:'Used in real projects' },
+            { v:4, label:'Advanced',     desc:'Deep knowledge, prod use' },
+            { v:5, label:'Expert',       desc:'Mentor others, go-to person' },
+          ];
+
+          const confirmAdd = (level) => {
+            if (!pendingSkill) return;
+            const skillDef = SKILL_OPTIONS_P.find(s => s.name === pendingSkill);
+            if (!skillDef) return;
+            setDraft(x => ({ ...x, skills: [...(x.skills||[]), { id: Date.now(), name: pendingSkill, level, category: skillDef.cat }] }));
+            setPendingSkill(null);
+          };
+
           return (
             <div style={{ maxWidth: 760 }}>
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20 }}>
+              {/* Level picker modal */}
+              {pendingSkill && (
+                <>
+                  <div onClick={() => setPendingSkill(null)} style={{ position:'fixed', inset:0, zIndex:400, background:'rgba(0,0,0,0.3)', backdropFilter:'blur(2px)' }} />
+                  <div style={{ position:'fixed', top:'50%', left:'50%', transform:'translate(-50%,-50%)', zIndex:401, background:'var(--bg-card)', border:'1px solid var(--border)', borderRadius:16, padding:'28px 28px 24px', width:360, boxShadow:'0 20px 60px rgba(0,0,0,0.18)' }}>
+                    <div style={{ display:'flex', alignItems:'center', gap:10, marginBottom:6 }}>
+                      <span style={{ fontSize:20, display:'flex', alignItems:'center' }}>{getSkillLogo(pendingSkill)}</span>
+                      <p style={{ fontFamily:"'Editorial New', Georgia, serif", fontSize:20, color:'var(--text)' }}>{pendingSkill}</p>
+                    </div>
+                    <p style={{ fontSize:12, color:'var(--text-dim)', marginBottom:20 }}>How well do you know this?</p>
+                    <div style={{ display:'flex', flexDirection:'column', gap:6 }}>
+                      {LEVELS.map(lv => (
+                        <button key={lv.v} onClick={() => confirmAdd(lv.v)} style={{
+                          display:'flex', alignItems:'center', justifyContent:'space-between',
+                          padding:'10px 14px', borderRadius:9, border:'1px solid var(--border)',
+                          background:'var(--bg-subtle)', cursor:'pointer', fontFamily:'inherit',
+                          transition:'all 0.1s',
+                        }}
+                        onMouseEnter={e=>{ e.currentTarget.style.borderColor='var(--green)'; e.currentTarget.style.background='var(--green-tint)'; }}
+                        onMouseLeave={e=>{ e.currentTarget.style.borderColor='var(--border)'; e.currentTarget.style.background='var(--bg-subtle)'; }}>
+                          <div style={{ display:'flex', gap:8, alignItems:'center' }}>
+                            <div style={{ display:'flex', gap:3 }}>
+                              {[1,2,3,4,5].map(d => <div key={d} style={{ width:6, height:6, borderRadius:'50%', background: d<=lv.v ? 'var(--green)' : 'var(--border)' }} />)}
+                            </div>
+                            <span style={{ fontSize:13, fontWeight:600, color:'var(--text)' }}>{lv.label}</span>
+                          </div>
+                          <span style={{ fontSize:11, color:'var(--text-dim)' }}>{lv.desc}</span>
+                        </button>
+                      ))}
+                    </div>
+                    <button onClick={() => setPendingSkill(null)} style={{ marginTop:14, width:'100%', padding:'8px', borderRadius:8, border:'1px solid var(--border)', background:'transparent', color:'var(--text-dim)', fontSize:12, cursor:'pointer', fontFamily:'inherit' }}>Cancel</button>
+                  </div>
+                </>
+              )}
+
+              <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center', marginBottom:20 }}>
                 <div>
-                  <p style={{ fontSize: 18, fontFamily: "'Editorial New', Georgia, serif", color: 'var(--text)', marginBottom: 3 }}>Technical Skills</p>
-                  <p style={{ fontSize: 13, color: 'var(--text-dim)' }}>{addedSkills.length} skill{addedSkills.length !== 1 ? 's' : ''} added</p>
+                  <p style={{ fontSize:18, fontFamily:"'Editorial New', Georgia, serif", color:'var(--text)', marginBottom:3 }}>Technical Skills</p>
+                  <p style={{ fontSize:13, color:'var(--text-dim)' }}>{addedSkills.length} skill{addedSkills.length !== 1 ? 's' : ''} added</p>
                 </div>
                 <SaveBtn onClick={() => save({ skills: d.skills || [] })} />
               </div>
-              <div style={{ display: 'grid', gridTemplateColumns: '180px 1fr', gap: 16, alignItems: 'start' }}>
+
+              <div style={{ display:'grid', gridTemplateColumns:'180px 1fr', gap:16, alignItems:'start' }}>
                 {/* Category nav */}
-                <div style={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+                <div style={{ display:'flex', flexDirection:'column', gap:2 }}>
                   {SKILL_CATS_P.map(cat => {
                     const cnt = addedSkills.filter(s => s.category === cat).length;
                     return (
@@ -2123,56 +2180,58 @@ function ProfileTab({ studentProfile, setStudentProfile, theme, setTheme }) {
                     );
                   })}
                 </div>
+
                 {/* Right panel */}
                 <div>
                   {/* Picker */}
-                  <div style={{ background:'var(--bg-card)', border:'1px solid var(--border)', borderRadius:12, padding:'16px 18px', marginBottom:14 }}>
+                  <div style={{ background:'var(--bg-card)', border:'1px solid var(--border)', borderRadius:12, padding:'16px 18px', marginBottom:20 }}>
                     <p style={{ fontSize:11, fontWeight:700, letterSpacing:'0.1em', textTransform:'uppercase', color:'var(--text-dim)', marginBottom:12 }}>{skillCat}</p>
                     <div style={{ display:'flex', flexWrap:'wrap', gap:8 }}>
                       {SKILL_OPTIONS_P.filter(s => s.cat === skillCat).map(skill => {
                         const added = addedSkills.some(s => s.name === skill.name);
                         return (
-                          <button key={skill.name} onClick={() => {
-                            if (added) return;
-                            setDraft(x => ({ ...x, skills: [...(x.skills||[]), { id: Date.now(), name: skill.name, level: 3, category: skill.cat }] }));
-                          }} style={{
-                            display:'flex', alignItems:'center', gap:6,
-                            padding:'6px 12px', borderRadius:20, fontSize:12, fontFamily:'inherit',
-                            cursor: added ? 'default' : 'pointer', transition:'all 0.12s',
-                            border: `1px solid ${added ? 'var(--green)' : 'var(--border)'}`,
-                            background: added ? 'var(--green-tint)' : 'var(--bg-subtle)',
-                            color: added ? 'var(--green-text)' : 'var(--text-mid)',
-                          }}>
+                          <button key={skill.name} onClick={() => { if (!added) setPendingSkill(skill.name); }}
+                            style={{
+                              display:'flex', alignItems:'center', gap:6,
+                              padding:'6px 12px', borderRadius:20, fontSize:12, fontFamily:'inherit',
+                              cursor: added ? 'default' : 'pointer', transition:'all 0.12s',
+                              border: `1px solid ${added ? 'var(--green)' : 'var(--border)'}`,
+                              background: added ? 'var(--green-tint)' : 'var(--bg-subtle)',
+                              color: added ? 'var(--green-text)' : 'var(--text-mid)',
+                            }}>
                             <span style={{ display:'flex', alignItems:'center' }}>{getSkillLogo(skill.name)}</span>
-                            {added ? '✓ ' : ''}{skill.name}
+                            {added ? '✓ ' : '+ '}{skill.name}
                           </button>
                         );
                       })}
                     </div>
                   </div>
-                  {/* Added skills */}
-                  {Object.keys(grouped).length > 0 ? (
-                    <div style={{ display:'flex', flexDirection:'column', gap:10 }}>
-                      {Object.entries(grouped).map(([cat, skills]) => (
-                        <div key={cat} style={{ background:'var(--bg-card)', border:'1px solid var(--border)', borderRadius:12, padding:'14px 16px' }}>
+
+                  {/* Added skills — flat chip grid, no cards */}
+                  {addedSkills.length > 0 ? (
+                    <div>
+                      {Object.keys(grouped).length > 0 && Object.entries(grouped).map(([cat, skills]) => (
+                        <div key={cat} style={{ marginBottom: 20 }}>
                           <p style={{ fontSize:10, fontWeight:700, letterSpacing:'0.1em', textTransform:'uppercase', color:'var(--text-dim)', marginBottom:10 }}>{cat}</p>
-                          <div style={{ display:'flex', flexDirection:'column', gap:6 }}>
+                          <div style={{ display:'flex', flexWrap:'wrap', gap:8 }}>
                             {skills.map((skill) => {
                               const i = addedSkills.findIndex(s => s.name === skill.name);
+                              const levelColors = ['','#9B9B97','#D4A84B','#1A7A4A','#0A66C2','#7C3AED'];
                               return (
-                                <div key={skill.id||skill.name} style={{ display:'flex', alignItems:'center', gap:10 }}>
-                                  <span style={{ display:'flex', alignItems:'center', width:20 }}>{getSkillLogo(skill.name)}</span>
-                                  <span style={{ fontSize:13, color:'var(--text)', flex:1 }}>{skill.name}</span>
-                                  <div style={{ display:'flex', gap:3 }}>
+                                <div key={skill.id||skill.name}
+                                  style={{ display:'inline-flex', alignItems:'center', gap:6, padding:'6px 10px 6px 8px', borderRadius:8, border:'1px solid var(--border)', background:'var(--bg-card)', fontSize:12, color:'var(--text)', position:'relative', cursor:'default' }}
+                                  title={`${skill.name} · ${LEVEL_LABELS_P[skill.level]}`}>
+                                  <span style={{ display:'flex', alignItems:'center', flexShrink:0 }}>{getSkillLogo(skill.name)}</span>
+                                  <span style={{ fontWeight:500 }}>{skill.name}</span>
+                                  {/* tiny dot level indicator */}
+                                  <div style={{ display:'flex', gap:2, marginLeft:2 }}>
                                     {[1,2,3,4,5].map(lv => (
-                                      <button key={lv} onClick={() => setDraft(x=>({...x, skills:(x.skills||[]).map((s,j)=>j===i?{...s,level:lv}:s)}))}
-                                        title={LEVEL_LABELS_P[lv]}
-                                        style={{ width:9, height:9, borderRadius:'50%', border:'none', cursor:'pointer', padding:0, flexShrink:0, background: skill.level>=lv ? 'var(--green)' : 'var(--border)', transition:'background 0.12s' }} />
+                                      <div key={lv} style={{ width:4, height:4, borderRadius:'50%', background: skill.level>=lv ? levelColors[skill.level] : 'var(--border)' }} />
                                     ))}
                                   </div>
-                                  <span style={{ fontSize:11, color:'var(--text-dim)', width:68, textAlign:'right' }}>{LEVEL_LABELS_P[skill.level]}</span>
+                                  {/* remove × on hover */}
                                   <button onClick={() => setDraft(x=>({...x, skills:(x.skills||[]).filter((_,j)=>j!==i)}))}
-                                    style={{ background:'none',border:'none',cursor:'pointer',color:'var(--border-mid)',padding:0,lineHeight:1,fontSize:16,flexShrink:0 }}
+                                    style={{ background:'none', border:'none', cursor:'pointer', color:'var(--border-mid)', padding:'0 0 0 2px', lineHeight:1, fontSize:13, flexShrink:0 }}
                                     onMouseEnter={e=>e.currentTarget.style.color='var(--red)'}
                                     onMouseLeave={e=>e.currentTarget.style.color='var(--border-mid)'}>×</button>
                                 </div>
@@ -2184,7 +2243,7 @@ function ProfileTab({ studentProfile, setStudentProfile, theme, setTheme }) {
                     </div>
                   ) : (
                     <div style={{ padding:'32px', textAlign:'center', border:'2px dashed var(--border)', borderRadius:12 }}>
-                      <p style={{ fontSize:13, color:'var(--text-dim)' }}>Click a skill above to add it</p>
+                      <p style={{ fontSize:13, color:'var(--text-dim)' }}>Click a skill above — you'll pick your level before it's added</p>
                     </div>
                   )}
                 </div>
@@ -2251,38 +2310,178 @@ function ProfileTab({ studentProfile, setStudentProfile, theme, setTheme }) {
 
         {/* MY HUNT */}
         {activeSection === 'myhunt' && (
-          <div style={{ maxWidth: 680 }}>
-            <div style={{ marginBottom: 24 }}>
-              <h1 style={{ fontFamily:"'Editorial New', Georgia, serif", fontSize:32, fontWeight:400, color:'var(--text)', marginBottom:4 }}>My Hunt.</h1>
-              <p style={{ fontSize:13, color:'var(--text-dim)' }}>Private — not shown to recruiters. Your real reasons.</p>
+          <div style={{ maxWidth: 600 }}>
+            {/* Header */}
+            <div style={{ marginBottom: 48 }}>
+              <p style={{ fontSize:10, fontWeight:700, letterSpacing:'0.14em', textTransform:'uppercase', color:'var(--green)', marginBottom:10 }}>Private · Only you see this</p>
+              <h1 style={{ fontFamily:"'Editorial New', Georgia, serif", fontSize:38, fontWeight:400, color:'var(--text)', lineHeight:1.15, marginBottom:12 }}>
+                What are you<br /><em>really</em> hunting for?
+              </h1>
+              <p style={{ fontSize:14, color:'var(--text-dim)', lineHeight:1.7, maxWidth:480 }}>
+                Not your resume. Not the job title. The real stuff — your drives, your beliefs, your <em>why</em>. This stays private. It's just for you.
+              </p>
             </div>
-            {[
-              { key:'my_hunt', title:"What's your hunt?", sub:"Not the job title — what are you actually after?", ph:"I'm hunting for the intersection of technology and education..." },
-              { key:'philosophy', title:'Philosophy & worldview', sub:"How do you see the world? What do you believe?", ph:"I believe the best products come from deep empathy..." },
-              { key:'inspirations', title:'People & things that inspire you', sub:"Books, people, projects that changed you.", ph:"Naval Ravikant, Paul Graham's essays, The Mom Test..." },
-              { key:'life_outside', title:'Life outside work', sub:"Who are you when you're not coding?", ph:"Cricket every Sunday, Carnatic music for 3 years..." },
-            ].map(({ key, title, sub, ph }) => (
-              <Card key={key}>
-                <p style={{ fontSize:14, fontWeight:600, color:'var(--text)', marginBottom:3 }}>{title}</p>
-                <p style={{ fontSize:12, color:'var(--text-dim)', marginBottom:12 }}>{sub}</p>
-                <textarea style={{ ...inp_p, resize:'none' }} rows={4} value={d[key]||''} placeholder={ph} onChange={e=>setDraft(x=>({...x,[key]:e.target.value}))} />
-                <button onClick={() => save({ [key]: d[key] })} style={{ marginTop:10, padding:'7px 16px', borderRadius:7, border:'none', background:'var(--green)', color:'#fff', fontSize:12, cursor:'pointer', fontFamily:'inherit' }}>Save</button>
-              </Card>
-            ))}
-            <Card>
-              <p style={{ fontSize:14, fontWeight:600, color:'var(--text)', marginBottom:3 }}>A quote that defines you</p>
-              <div style={{ display:'flex', flexDirection:'column', gap:9, marginBottom:12 }}>
-                <input style={inp_p} value={d.quote||''} placeholder="The people who are crazy enough..." onChange={e=>setDraft(x=>({...x,quote:e.target.value}))} />
-                <input style={inp_p} value={d.quote_author||''} placeholder="— Steve Jobs (or yourself)" onChange={e=>setDraft(x=>({...x,quote_author:e.target.value}))} />
+
+            {/* Section 01 */}
+            <div style={{ marginBottom: 48 }}>
+              <div style={{ display:'flex', alignItems:'baseline', gap:14, marginBottom:14 }}>
+                <span style={{ fontSize:11, fontWeight:700, color:'var(--green)', letterSpacing:'0.1em', fontFamily:"'Editorial New', Georgia, serif" }}>01</span>
+                <div>
+                  <p style={{ fontFamily:"'Editorial New', Georgia, serif", fontSize:20, color:'var(--text)', marginBottom:3 }}>The Hunt</p>
+                  <p style={{ fontSize:12, color:'var(--text-dim)' }}>Not the job title. What are you actually after?</p>
+                </div>
+                <div style={{ marginLeft:'auto' }}>
+                  {d.my_hunt && <button onClick={() => save({my_hunt:d.my_hunt})} style={{ padding:'5px 12px', borderRadius:6, border:'none', background:'var(--green)', color:'#fff', fontSize:11, cursor:'pointer', fontFamily:'inherit' }}>Save</button>}
+                </div>
               </div>
-              {d.quote && (
-                <div style={{ padding:'14px 18px', borderRadius:9, background:'var(--bg-subtle)', borderLeft:'3px solid var(--green)', marginBottom:12 }}>
-                  <p style={{ fontFamily:"'Editorial New', Georgia, serif", fontSize:15, color:'var(--text)', lineHeight:1.6, fontStyle:'italic', marginBottom:5 }}>"{d.quote}"</p>
-                  {d.quote_author && <p style={{ fontSize:11, color:'var(--text-dim)' }}>{d.quote_author}</p>}
+              <textarea value={d.my_hunt||''} onChange={e=>setDraft(x=>({...x,my_hunt:e.target.value}))}
+                placeholder="I'm hunting for the place where craft meets impact. Not just shipping features — building something that actually changes how someone spends their day..."
+                style={{ ...inp_p, resize:'none', lineHeight:1.8, fontSize:14, padding:'14px 16px', background:'transparent', border:'none', borderBottom:'1px solid var(--border)', borderRadius:0, paddingLeft:0 }} rows={4} />
+            </div>
+
+            {/* Divider */}
+            <div style={{ height:1, background:'var(--border)', marginBottom:48 }} />
+
+            {/* Section 02 */}
+            <div style={{ marginBottom: 48 }}>
+              <div style={{ display:'flex', alignItems:'baseline', gap:14, marginBottom:14 }}>
+                <span style={{ fontSize:11, fontWeight:700, color:'var(--green)', letterSpacing:'0.1em', fontFamily:"'Editorial New', Georgia, serif" }}>02</span>
+                <div>
+                  <p style={{ fontFamily:"'Editorial New', Georgia, serif", fontSize:20, color:'var(--text)', marginBottom:3 }}>Philosophy</p>
+                  <p style={{ fontSize:12, color:'var(--text-dim)' }}>How you see the world. What you believe is true.</p>
+                </div>
+                <div style={{ marginLeft:'auto' }}>
+                  {d.philosophy && <button onClick={() => save({philosophy:d.philosophy})} style={{ padding:'5px 12px', borderRadius:6, border:'none', background:'var(--green)', color:'#fff', fontSize:11, cursor:'pointer', fontFamily:'inherit' }}>Save</button>}
+                </div>
+              </div>
+              <textarea value={d.philosophy||''} onChange={e=>setDraft(x=>({...x,philosophy:e.target.value}))}
+                placeholder="I believe the best products start with genuine frustration — your own. You can't design well for problems you've never felt..."
+                style={{ ...inp_p, resize:'none', lineHeight:1.8, fontSize:14, padding:'14px 16px', background:'transparent', border:'none', borderBottom:'1px solid var(--border)', borderRadius:0, paddingLeft:0 }} rows={4} />
+            </div>
+
+            <div style={{ height:1, background:'var(--border)', marginBottom:48 }} />
+
+            {/* Section 03 */}
+            <div style={{ marginBottom: 48 }}>
+              <div style={{ display:'flex', alignItems:'baseline', gap:14, marginBottom:14 }}>
+                <span style={{ fontSize:11, fontWeight:700, color:'var(--green)', letterSpacing:'0.1em', fontFamily:"'Editorial New', Georgia, serif" }}>03</span>
+                <div>
+                  <p style={{ fontFamily:"'Editorial New', Georgia, serif", fontSize:20, color:'var(--text)', marginBottom:3 }}>What moves you</p>
+                  <p style={{ fontSize:12, color:'var(--text-dim)' }}>Books, people, ideas that rewired how you think.</p>
+                </div>
+                <div style={{ marginLeft:'auto' }}>
+                  {d.inspirations && <button onClick={() => save({inspirations:d.inspirations})} style={{ padding:'5px 12px', borderRadius:6, border:'none', background:'var(--green)', color:'#fff', fontSize:11, cursor:'pointer', fontFamily:'inherit' }}>Save</button>}
+                </div>
+              </div>
+              <textarea value={d.inspirations||''} onChange={e=>setDraft(x=>({...x,inspirations:e.target.value}))}
+                placeholder="Paul Graham's essays got me comfortable with uncertainty. The Mom Test made me rethink every conversation I'd had with users. Feynman — the joy of figuring things out..."
+                style={{ ...inp_p, resize:'none', lineHeight:1.8, fontSize:14, padding:'14px 16px', background:'transparent', border:'none', borderBottom:'1px solid var(--border)', borderRadius:0, paddingLeft:0 }} rows={4} />
+            </div>
+
+            <div style={{ height:1, background:'var(--border)', marginBottom:48 }} />
+
+            {/* Section 04 */}
+            <div style={{ marginBottom: 48 }}>
+              <div style={{ display:'flex', alignItems:'baseline', gap:14, marginBottom:14 }}>
+                <span style={{ fontSize:11, fontWeight:700, color:'var(--green)', letterSpacing:'0.1em', fontFamily:"'Editorial New', Georgia, serif" }}>04</span>
+                <div>
+                  <p style={{ fontFamily:"'Editorial New', Georgia, serif", fontSize:20, color:'var(--text)', marginBottom:3 }}>Life outside work</p>
+                  <p style={{ fontSize:12, color:'var(--text-dim)' }}>Who are you when the laptop is closed?</p>
+                </div>
+                <div style={{ marginLeft:'auto' }}>
+                  {d.life_outside && <button onClick={() => save({life_outside:d.life_outside})} style={{ padding:'5px 12px', borderRadius:6, border:'none', background:'var(--green)', color:'#fff', fontSize:11, cursor:'pointer', fontFamily:'inherit' }}>Save</button>}
+                </div>
+              </div>
+              <textarea value={d.life_outside||''} onChange={e=>setDraft(x=>({...x,life_outside:e.target.value}))}
+                placeholder="Cricket every Sunday morning — I bowl medium-pace. Three years of Carnatic music before I pivoted to code. Still cook every meal..."
+                style={{ ...inp_p, resize:'none', lineHeight:1.8, fontSize:14, padding:'14px 16px', background:'transparent', border:'none', borderBottom:'1px solid var(--border)', borderRadius:0, paddingLeft:0 }} rows={4} />
+            </div>
+
+            <div style={{ height:1, background:'var(--border)', marginBottom:48 }} />
+
+            {/* Quote */}
+            <div style={{ marginBottom: 48 }}>
+              <div style={{ display:'flex', alignItems:'baseline', gap:14, marginBottom:20 }}>
+                <span style={{ fontSize:11, fontWeight:700, color:'var(--green)', letterSpacing:'0.1em', fontFamily:"'Editorial New', Georgia, serif" }}>"</span>
+                <div>
+                  <p style={{ fontFamily:"'Editorial New', Georgia, serif", fontSize:20, color:'var(--text)', marginBottom:3 }}>A line you live by</p>
+                  <p style={{ fontSize:12, color:'var(--text-dim)' }}>Something that keeps pulling you forward.</p>
+                </div>
+                <div style={{ marginLeft:'auto' }}>
+                  {d.quote && <button onClick={() => save({quote:d.quote,quote_author:d.quote_author})} style={{ padding:'5px 12px', borderRadius:6, border:'none', background:'var(--green)', color:'#fff', fontSize:11, cursor:'pointer', fontFamily:'inherit' }}>Save</button>}
+                </div>
+              </div>
+              {d.quote ? (
+                <div style={{ borderLeft:'2px solid var(--green)', paddingLeft:20, marginBottom:16 }}>
+                  <p style={{ fontFamily:"'Editorial New', Georgia, serif", fontSize:22, color:'var(--text)', lineHeight:1.5, fontStyle:'italic', marginBottom:8 }}>"{d.quote}"</p>
+                  {d.quote_author && <p style={{ fontSize:12, color:'var(--text-dim)' }}>{d.quote_author}</p>}
+                </div>
+              ) : (
+                <div style={{ borderLeft:'2px solid var(--border)', paddingLeft:20, marginBottom:16 }}>
+                  <p style={{ fontFamily:"'Editorial New', Georgia, serif", fontSize:18, color:'var(--text-dim)', fontStyle:'italic' }}>Your quote will appear here…</p>
                 </div>
               )}
-              <button onClick={() => save({ quote: d.quote, quote_author: d.quote_author })} style={{ padding:'7px 16px', borderRadius:7, border:'none', background:'var(--green)', color:'#fff', fontSize:12, cursor:'pointer', fontFamily:'inherit' }}>Save</button>
-            </Card>
+              <div style={{ display:'flex', flexDirection:'column', gap:8 }}>
+                <input style={{ ...inp_p, fontSize:14, fontFamily:"'Editorial New', Georgia, serif", fontStyle:'italic' }} value={d.quote||''} placeholder="The people who are crazy enough to think they can change the world…" onChange={e=>setDraft(x=>({...x,quote:e.target.value}))} />
+                <input style={{ ...inp_p, fontSize:12 }} value={d.quote_author||''} placeholder="— Steve Jobs (or write your own)" onChange={e=>setDraft(x=>({...x,quote_author:e.target.value}))} />
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* REVIEWS & RATINGS */}
+        {activeSection === 'reviews' && (
+          <div style={{ maxWidth: 640 }}>
+            <div style={{ marginBottom: 32 }}>
+              <p style={{ fontSize:10, fontWeight:700, letterSpacing:'0.12em', textTransform:'uppercase', color:'var(--text-dim)', marginBottom:6 }}>Reviews & Ratings</p>
+              <h1 style={{ fontFamily:"'Editorial New', Georgia, serif", fontSize:28, fontWeight:400, color:'var(--text)', marginBottom:8 }}>What recruiters say.</h1>
+              <p style={{ fontSize:13, color:'var(--text-dim)', lineHeight:1.6, maxWidth:440 }}>After internships close, recruiters rate your performance. These ratings are visible to future recruiters and boost your HUNT Score.</p>
+            </div>
+            <div style={{ padding:'64px 32px', textAlign:'center', border:'2px dashed var(--border)', borderRadius:14, background:'var(--bg-card)' }}>
+              <div style={{ width:48, height:48, borderRadius:'50%', background:'var(--bg-subtle)', border:'1px solid var(--border)', display:'flex', alignItems:'center', justifyContent:'center', margin:'0 auto 16px', fontSize:20 }}>⭐</div>
+              <p style={{ fontFamily:"'Editorial New', Georgia, serif", fontSize:18, color:'var(--text)', marginBottom:6 }}>No reviews yet.</p>
+              <p style={{ fontSize:13, color:'var(--text-dim)', maxWidth:320, margin:'0 auto', lineHeight:1.6 }}>Complete an internship through HUNT and your recruiter will be invited to leave a review. Those reviews build your reputation here.</p>
+            </div>
+          </div>
+        )}
+
+        {/* HUNT SCORE */}
+        {activeSection === 'huntscore' && (
+          <div style={{ maxWidth: 640 }}>
+            <div style={{ marginBottom: 32 }}>
+              <p style={{ fontSize:10, fontWeight:700, letterSpacing:'0.12em', textTransform:'uppercase', color:'var(--text-dim)', marginBottom:6 }}>Hunt Score</p>
+              <h1 style={{ fontFamily:"'Editorial New', Georgia, serif", fontSize:28, fontWeight:400, color:'var(--text)', marginBottom:8 }}>Your signal, scored.</h1>
+              <p style={{ fontSize:13, color:'var(--text-dim)', lineHeight:1.6, maxWidth:480 }}>Your HUNT Score is a dynamic credibility score built from verified skills, project proof, recruiter feedback, and consistency. Recruiters see it. Make it count.</p>
+            </div>
+            {/* Score placeholder */}
+            <div style={{ background:'var(--bg-card)', border:'1px solid var(--border)', borderRadius:14, padding:'32px', marginBottom:16, display:'flex', alignItems:'center', gap:28 }}>
+              <div style={{ width:80, height:80, borderRadius:'50%', background:'var(--bg-subtle)', border:'2px solid var(--border)', display:'flex', alignItems:'center', justifyContent:'center', flexShrink:0 }}>
+                <p style={{ fontFamily:"'Editorial New', Georgia, serif", fontSize:26, color:'var(--text-dim)', fontWeight:400 }}>—</p>
+              </div>
+              <div>
+                <p style={{ fontFamily:"'Editorial New', Georgia, serif", fontSize:18, color:'var(--text)', marginBottom:4 }}>Not yet calculated</p>
+                <p style={{ fontSize:13, color:'var(--text-dim)', lineHeight:1.6 }}>Complete your profile, add verified projects, and get your first recruiter rating to unlock your score.</p>
+              </div>
+            </div>
+            {/* Score components */}
+            {[
+              { label:'Profile completeness', desc:'Name, college, bio, photo', done: false },
+              { label:'Verified skills', desc:'Skills with proof of work', done: false },
+              { label:'Project portfolio', desc:'At least 2 projects with links', done: false },
+              { label:'First recruiter rating', desc:'Complete an internship through HUNT', done: false },
+              { label:'Response rate', desc:'Reply to recruiter messages within 48h', done: false },
+            ].map((item, i) => (
+              <div key={i} style={{ display:'flex', alignItems:'center', gap:14, padding:'12px 16px', borderRadius:9, border:'1px solid var(--border)', background:'var(--bg-card)', marginBottom:8 }}>
+                <div style={{ width:20, height:20, borderRadius:'50%', border:`2px solid ${item.done ? 'var(--green)' : 'var(--border)'}`, background: item.done ? 'var(--green-tint)' : 'transparent', display:'flex', alignItems:'center', justifyContent:'center', flexShrink:0 }}>
+                  {item.done && <span style={{ fontSize:10, color:'var(--green)' }}>✓</span>}
+                </div>
+                <div style={{ flex:1 }}>
+                  <p style={{ fontSize:13, fontWeight:500, color: item.done ? 'var(--text)' : 'var(--text-mid)', marginBottom:1 }}>{item.label}</p>
+                  <p style={{ fontSize:11, color:'var(--text-dim)' }}>{item.desc}</p>
+                </div>
+                <span style={{ fontSize:11, color: item.done ? 'var(--green)' : 'var(--text-dim)', fontWeight: item.done ? 600 : 400 }}>{item.done ? 'Done' : 'Pending'}</span>
+              </div>
+            ))}
           </div>
         )}
 
