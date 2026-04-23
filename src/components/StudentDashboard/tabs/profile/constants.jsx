@@ -2,29 +2,119 @@ import React from 'react';
 
 // ─── Profile constants ─────────────────────────────────────────────────────────
 export const SKILL_OPTIONS_P = [
+  // Languages
   { name: 'JavaScript', cat: 'Language' }, { name: 'Python', cat: 'Language' },
   { name: 'TypeScript', cat: 'Language' }, { name: 'Java', cat: 'Language' },
   { name: 'C / C++', cat: 'Language' }, { name: 'Golang', cat: 'Language' },
-  { name: 'SQL', cat: 'Language' }, { name: 'React', cat: 'Frontend' },
-  { name: 'Next.js', cat: 'Frontend' }, { name: 'Tailwind CSS', cat: 'Frontend' },
+  { name: 'SQL', cat: 'Language' }, { name: 'Rust', cat: 'Language' },
+  { name: 'Kotlin', cat: 'Language' }, { name: 'Swift', cat: 'Language' },
+  { name: 'PHP', cat: 'Language' }, { name: 'Ruby', cat: 'Language' },
+  { name: 'R', cat: 'Language' }, { name: 'Scala', cat: 'Language' },
+  { name: 'Dart', cat: 'Language' }, { name: 'C#', cat: 'Language' },
+
+  // Frontend
+  { name: 'HTML', cat: 'Frontend' }, { name: 'CSS', cat: 'Frontend' },
+  { name: 'Web Development', cat: 'Frontend' },
+  { name: 'React', cat: 'Frontend' }, { name: 'Next.js', cat: 'Frontend' },
+  { name: 'Tailwind CSS', cat: 'Frontend' }, { name: 'Vue.js', cat: 'Frontend' },
+  { name: 'Angular', cat: 'Frontend' }, { name: 'Svelte', cat: 'Frontend' },
+  { name: 'Redux', cat: 'Frontend' }, { name: 'Sass/SCSS', cat: 'Frontend' },
+  { name: 'Bootstrap', cat: 'Frontend' }, { name: 'Material UI', cat: 'Frontend' },
+  { name: 'jQuery', cat: 'Frontend' }, { name: 'Webpack', cat: 'Frontend' },
+  { name: 'Vite', cat: 'Frontend' },
+
+  // Backend
   { name: 'Node.js', cat: 'Backend' }, { name: 'Express.js', cat: 'Backend' },
   { name: 'Django', cat: 'Backend' }, { name: 'FastAPI', cat: 'Backend' },
-  { name: 'REST API', cat: 'Backend' }, { name: 'GraphQL', cat: 'Backend' },
+  { name: 'Flask', cat: 'Backend' }, { name: 'Spring Boot', cat: 'Backend' },
+  { name: 'Laravel', cat: 'Backend' }, { name: 'Ruby on Rails', cat: 'Backend' },
+  { name: 'NestJS', cat: 'Backend' }, { name: 'REST API', cat: 'Backend' },
+  { name: 'GraphQL', cat: 'Backend' }, { name: 'Microservices', cat: 'Backend' },
+  { name: 'WebSockets', cat: 'Backend' },
+
+  // Database
   { name: 'PostgreSQL', cat: 'Database' }, { name: 'MongoDB', cat: 'Database' },
   { name: 'MySQL', cat: 'Database' }, { name: 'Redis', cat: 'Database' },
-  { name: 'Machine Learning', cat: 'Data Science' }, { name: 'TensorFlow', cat: 'Data Science' },
-  { name: 'PyTorch', cat: 'Data Science' }, { name: 'Pandas', cat: 'Data Science' },
-  { name: 'Docker', cat: 'DevOps' }, { name: 'AWS', cat: 'DevOps' },
-  { name: 'CI/CD', cat: 'DevOps' }, { name: 'Linux', cat: 'DevOps' },
-  { name: 'Git', cat: 'Tools' }, { name: 'Figma', cat: 'Design' },
+  { name: 'SQLite', cat: 'Database' }, { name: 'Firebase', cat: 'Database' },
+  { name: 'Supabase', cat: 'Database' }, { name: 'DynamoDB', cat: 'Database' },
+  { name: 'Cassandra', cat: 'Database' }, { name: 'ElasticSearch', cat: 'Database' },
+
+  // Data Science & ML
+  { name: 'Machine Learning', cat: 'Data Science' },
+  { name: 'Deep Learning', cat: 'Data Science' },
+  { name: 'TensorFlow', cat: 'Data Science' },
+  { name: 'PyTorch', cat: 'Data Science' },
+  { name: 'Scikit-learn', cat: 'Data Science' },
+  { name: 'Pandas', cat: 'Data Science' },
+  { name: 'NumPy', cat: 'Data Science' },
+  { name: 'Matplotlib', cat: 'Data Science' },
+  { name: 'Data Analysis', cat: 'Data Science' },
+  { name: 'NLP', cat: 'Data Science' },
+  { name: 'Computer Vision', cat: 'Data Science' },
+  { name: 'Statistics', cat: 'Data Science' },
+  { name: 'Tableau', cat: 'Data Science' },
+  { name: 'Power BI', cat: 'Data Science' },
+
+  // CS Fundamentals
+  { name: 'DSA', cat: 'CS Fundamentals' },
+  { name: 'Algorithms', cat: 'CS Fundamentals' },
+  { name: 'Data Structures', cat: 'CS Fundamentals' },
+  { name: 'Operating Systems', cat: 'CS Fundamentals' },
+  { name: 'Computer Networks', cat: 'CS Fundamentals' },
+  { name: 'Database Management', cat: 'CS Fundamentals' },
+  { name: 'System Design', cat: 'CS Fundamentals' },
+  { name: 'OOP', cat: 'CS Fundamentals' },
+
+  // DevOps
+  { name: 'Docker', cat: 'DevOps' }, { name: 'Kubernetes', cat: 'DevOps' },
+  { name: 'AWS', cat: 'DevOps' }, { name: 'Azure', cat: 'DevOps' },
+  { name: 'GCP', cat: 'DevOps' }, { name: 'CI/CD', cat: 'DevOps' },
+  { name: 'Linux', cat: 'DevOps' }, { name: 'Jenkins', cat: 'DevOps' },
+  { name: 'Terraform', cat: 'DevOps' }, { name: 'Ansible', cat: 'DevOps' },
+  { name: 'Nginx', cat: 'DevOps' }, { name: 'Shell Scripting', cat: 'DevOps' },
+
+  // Tools
+  { name: 'Git', cat: 'Tools' }, { name: 'GitHub', cat: 'Tools' },
+  { name: 'VS Code', cat: 'Tools' }, { name: 'Postman', cat: 'Tools' },
+  { name: 'Jira', cat: 'Tools' }, { name: 'Notion', cat: 'Tools' },
+  { name: 'Slack', cat: 'Tools' },
+
+  // Design
+  { name: 'Figma', cat: 'Design' }, { name: 'Adobe XD', cat: 'Design' },
+  { name: 'Photoshop', cat: 'Design' }, { name: 'Illustrator', cat: 'Design' },
+  { name: 'UI/UX Design', cat: 'Design' }, { name: 'Wireframing', cat: 'Design' },
+  { name: 'Prototyping', cat: 'Design' },
+
+  // Mobile
   { name: 'Flutter', cat: 'Mobile' }, { name: 'React Native', cat: 'Mobile' },
+  { name: 'Android Dev', cat: 'Mobile' }, { name: 'iOS Dev', cat: 'Mobile' },
+  { name: 'Jetpack Compose', cat: 'Mobile' }, { name: 'SwiftUI', cat: 'Mobile' },
+
+  // Marketing
+  { name: 'SEO', cat: 'Marketing' }, { name: 'Social Media Marketing', cat: 'Marketing' },
+  { name: 'Content Writing', cat: 'Marketing' }, { name: 'Email Marketing', cat: 'Marketing' },
+  { name: 'Google Ads', cat: 'Marketing' }, { name: 'Meta Ads', cat: 'Marketing' },
+  { name: 'Google Analytics', cat: 'Marketing' }, { name: 'Copywriting', cat: 'Marketing' },
+  { name: 'Brand Strategy', cat: 'Marketing' },
+
+  // E-commerce
+  { name: 'Shopify', cat: 'E-commerce' }, { name: 'WooCommerce', cat: 'E-commerce' },
+  { name: 'Amazon Seller', cat: 'E-commerce' }, { name: 'Product Listing', cat: 'E-commerce' },
+
+  // Business
+  { name: 'Google Workspace', cat: 'Business' }, { name: 'MS Office', cat: 'Business' },
+  { name: 'Sales Analysis', cat: 'Business' }, { name: 'Competitor Research', cat: 'Business' },
+  { name: 'Project Management', cat: 'Business' }, { name: 'Agile/Scrum', cat: 'Business' },
 ];
+
 export const SKILL_CATS_P = [...new Set(SKILL_OPTIONS_P.map(s => s.cat))];
 export const LEVEL_LABELS_P = ['', 'Beginner', 'Elementary', 'Intermediate', 'Advanced', 'Expert'];
 export const ROLE_OPTIONS_P = [
   'Full Stack Developer', 'Backend Developer', 'Frontend Developer',
   'Mobile Developer', 'DevOps Engineer', 'Data Analyst',
   'ML Engineer', 'UI/UX Designer', 'Security Engineer', 'QA Engineer',
+  'Product Manager', 'Marketing Intern', 'Content Writer', 'Sales Intern',
+  'Business Analyst', 'E-Commerce Intern', 'SEO Specialist',
 ];
 
 export const inp_p = { width: '100%', padding: '9px 12px', borderRadius: 7, border: '1px solid var(--border)', background: 'var(--bg-subtle)', color: 'var(--text)', fontSize: 12, fontFamily: 'inherit', outline: 'none', boxSizing: 'border-box' };
@@ -40,20 +130,51 @@ export function Toggle_P({ on, onChange }) {
 // ── Tech logos (emoji/SVG) ─────────────────────────────────────────────────
 export const SKILL_LOGOS = {
   'JavaScript': '🟨', 'Python': '🐍', 'TypeScript': '🔷', 'Java': '☕',
-  'C / C++': '⚙️', 'Golang': '🐹', 'SQL': '🗄️',
+  'C / C++': '⚙️', 'Golang': '🐹', 'SQL': '🗄️', 'Rust': '🦀',
+  'Kotlin': '🅺', 'Swift': '🦅', 'PHP': '🐘', 'Ruby': '💎',
+  'R': '📊', 'Scala': '🎯', 'Dart': '🎯', 'C#': '#️⃣',
+  'HTML': '📄', 'CSS': '🎨', 'Web Development': '🌐',
   'React': <svg width="14" height="14" viewBox="0 0 24 24" fill="#61DAFB"><path d="M12 13.5a1.5 1.5 0 1 1 0-3 1.5 1.5 0 0 1 0 3z"/><path d="M12 21.59C9.33 19.8 2.5 15.33 2.5 12S9.33 4.2 12 2.41C14.67 4.2 21.5 8.67 21.5 12S14.67 19.8 12 21.59zM12 3.59C9.9 5.15 4 9.19 4 12s5.9 6.85 8 8.41C14.1 18.85 20 14.81 20 12S14.1 5.15 12 3.59z" opacity=".3"/><ellipse cx="12" cy="12" rx="10" ry="4" fill="none" stroke="#61DAFB" strokeWidth="1.5" transform="rotate(0 12 12)"/><ellipse cx="12" cy="12" rx="10" ry="4" fill="none" stroke="#61DAFB" strokeWidth="1.5" transform="rotate(60 12 12)"/><ellipse cx="12" cy="12" rx="10" ry="4" fill="none" stroke="#61DAFB" strokeWidth="1.5" transform="rotate(120 12 12)"/></svg>,
   'Next.js': <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><path d="M11.572 0c-.176 0-.31.001-.358.007a19.76 19.76 0 0 1-.364.033C7.443.346 4.25 2.185 2.228 5.012a11.875 11.875 0 0 0-2.119 5.243c-.096.659-.108.854-.108 1.747s.012 1.089.108 1.748c.652 4.506 3.86 8.292 8.209 9.695.779.25 1.6.422 2.534.525.363.04 1.935.04 2.299 0 1.611-.178 2.977-.577 4.323-1.264.207-.106.247-.134.219-.158-.02-.013-.9-1.193-1.955-2.62l-1.919-2.592-2.404-3.558a338.739 338.739 0 0 0-2.422-3.556c-.009-.002-.018 1.579-.023 3.51-.007 3.38-.01 3.515-.052 3.595a.426.426 0 0 1-.206.214c-.075.037-.14.044-.495.044H7.81l-.108-.068a.438.438 0 0 1-.157-.171l-.05-.106.006-4.703.007-4.705.072-.092a.645.645 0 0 1 .174-.143c.096-.047.134-.051.54-.051.478 0 .558.018.682.154.035.038 1.337 1.999 2.895 4.361a10760.433 10760.433 0 0 0 4.735 7.17l1.9 2.879.096-.063a12.317 12.317 0 0 0 2.466-2.163 11.944 11.944 0 0 0 2.824-6.134c.096-.66.108-.854.108-1.748 0-.893-.012-1.088-.108-1.747-.652-4.506-3.859-8.292-8.208-9.695a12.597 12.597 0 0 0-2.499-.523A33.119 33.119 0 0 0 11.573 0z"/></svg>,
   'Node.js': <svg width="14" height="14" viewBox="0 0 24 24" fill="#339933"><path d="M11.998 24a.844.844 0 0 1-.421-.113l-1.336-.791c-.2-.111-.102-.15-.036-.173.266-.093.32-.114.603-.274a.095.095 0 0 1 .091.007l1.027.609a.131.131 0 0 0 .122 0l4.006-2.313a.124.124 0 0 0 .061-.108V7.234a.126.126 0 0 0-.062-.109L11.998 4.8a.123.123 0 0 0-.122 0L7.872 7.126a.127.127 0 0 0-.063.109v4.619a.126.126 0 0 0 .063.108l1.097.634a1.826 1.826 0 0 0 .928.255c.52 0 .828-.316.828-.866V7.7c0-.137.11-.246.247-.246h1.052c.136 0 .246.109.246.246v4.29c0 1.697-.93 2.67-2.55 2.67-.499 0-.892-.065-1.21-.224l-1.048-.6a1.259 1.259 0 0 1-.627-1.088V7.234a1.26 1.26 0 0 1 .627-1.089L11.576.831a1.303 1.303 0 0 1 1.244 0l4.01 2.315a1.261 1.261 0 0 1 .628 1.089v4.619a1.261 1.261 0 0 1-.628 1.088l-4.01 2.315a1.303 1.303 0 0 1-1.244 0l-1.097-.634V7.7c0-.137.11-.246.246-.246h1.052c.137 0 .247.109.247.246v4.29c0 .55.307.866.828.866a1.829 1.829 0 0 0 .928-.255l1.097-.634a.127.127 0 0 0 .063-.108V3.235a.126.126 0 0 0-.062-.109L11.998.813a.122.122 0 0 0-.122 0L7.872 3.126a.128.128 0 0 0-.063.109v4.619c0 .045.024.087.063.109l4.006 2.313a.124.124 0 0 0 .122 0l1.336-.771a.125.125 0 0 0 .063-.109V5.068a.125.125 0 0 0-.062-.109l-1.026-.594a.124.124 0 0 0-.122 0L11.02 4.73a.094.094 0 0 1-.091.007c-.283-.16-.337-.181-.603-.274-.066-.023-.164-.062.036-.173l1.336-.791a.843.843 0 0 1 .842 0l1.27.733a.844.844 0 0 1 .422.731v1.465a.844.844 0 0 1-.422.732l-1.27.733a.843.843 0 0 1-.842 0L10.43 6.36a.844.844 0 0 1-.422-.732V4.163a.844.844 0 0 1 .422-.731l1.27-.733a.843.843 0 0 1 .298-.065z"/></svg>,
   'Docker': <svg width="14" height="14" viewBox="0 0 24 24" fill="#2496ED"><path d="M13.983 11.078h2.119a.186.186 0 0 0 .186-.185V9.006a.186.186 0 0 0-.186-.186h-2.119a.185.185 0 0 0-.185.185v1.888c0 .102.083.185.185.185m-2.954-5.43h2.118a.186.186 0 0 0 .186-.186V3.574a.186.186 0 0 0-.186-.185h-2.118a.185.185 0 0 0-.185.185v1.888c0 .102.082.185.185.185m0 2.716h2.118a.187.187 0 0 0 .186-.186V6.29a.186.186 0 0 0-.186-.185h-2.118a.185.185 0 0 0-.185.185v1.887c0 .102.082.185.185.186m-2.93 0h2.12a.186.186 0 0 0 .184-.186V6.29a.185.185 0 0 0-.185-.185H8.1a.185.185 0 0 0-.185.185v1.887c0 .102.083.185.185.186m-2.964 0h2.119a.186.186 0 0 0 .185-.186V6.29a.185.185 0 0 0-.185-.185H5.136a.186.186 0 0 0-.186.185v1.887c0 .102.084.185.186.186m5.893 2.715h2.118a.186.186 0 0 0 .186-.185V9.006a.186.186 0 0 0-.186-.186h-2.118a.185.185 0 0 0-.185.185v1.888c0 .102.082.185.185.185m-2.93 0h2.12a.185.185 0 0 0 .184-.185V9.006a.185.185 0 0 0-.184-.186h-2.12a.185.185 0 0 0-.184.185v1.888c0 .102.083.185.185.185m-2.964 0h2.119a.185.185 0 0 0 .185-.185V9.006a.185.185 0 0 0-.184-.186h-2.12a.186.186 0 0 0-.186.186v1.887c0 .102.084.185.186.185m-2.92 0h2.12a.185.185 0 0 0 .184-.185V9.006a.185.185 0 0 0-.184-.186h-2.12a.185.185 0 0 0-.185.185v1.888c0 .102.083.185.185.185M23.763 9.89c-.065-.051-.672-.51-1.954-.51-.338.001-.676.03-1.01.087-.248-1.7-1.653-2.53-1.716-2.566l-.344-.199-.226.327c-.284.438-.49.922-.612 1.43-.23.97-.09 1.882.403 2.661-.595.332-1.55.413-1.744.42H.751a.751.751 0 0 0-.75.748 11.376 11.376 0 0 0 .692 4.062c.545 1.428 1.355 2.48 2.41 3.124 1.18.723 3.1 1.137 5.275 1.137.983.003 1.963-.086 2.93-.266a12.248 12.248 0 0 0 3.823-1.389c.98-.567 1.86-1.288 2.61-2.136 1.252-1.418 1.998-2.997 2.553-4.4h.221c1.372 0 2.215-.549 2.68-1.009.309-.293.55-.65.707-1.046l.098-.288Z"/></svg>,
-  'Git': <svg width="14" height="14" viewBox="0 0 24 24" fill="#F05032"><path d="M23.546 10.93L13.067.452a1.55 1.55 0 0 0-2.188 0L8.708 2.627l2.76 2.76a1.838 1.838 0 0 1 2.327 2.341l2.658 2.66a1.838 1.838 0 0 1 1.9 3.039 1.837 1.837 0 0 1-2.6 0 1.846 1.846 0 0 1-.404-1.996L12.86 8.955v6.525c.176.086.342.203.483.346a1.846 1.846 0 0 1 0 2.6 1.846 1.846 0 0 1-2.6 0 1.846 1.846 0 0 1 0-2.6c.157-.157.34-.279.536-.362V8.909a1.847 1.847 0 0 1-1.003-2.416l-2.71-2.7-.975.976a1.55 1.55 0 0 0 0 2.187L16.155 17.07a1.55 1.55 0 0 0 2.187 0l5.204-5.207a1.55 1.55 0 0 0 0-2.932z" opacity=".1"/><path d="M23.546 10.93L13.067.452a1.55 1.55 0 0 0-2.188 0L8.708 2.627l2.76 2.76a1.838 1.838 0 0 1 2.327 2.341l2.658 2.66a1.838 1.838 0 0 1 1.9 3.039 1.837 1.837 0 0 1-2.6 0 1.846 1.846 0 0 1-.404-1.996L12.86 8.955v6.525c.176.086.342.203.483.346a1.846 1.846 0 0 1 0 2.6 1.846 1.846 0 0 1-2.6 0 1.846 1.846 0 0 1 0-2.6c.157-.157.34-.279.536-.362V8.909a1.847 1.847 0 0 1-1.003-2.416l-2.71-2.7-5.26 5.255a1.55 1.55 0 0 0 0 2.188L13.63 23.548a1.55 1.55 0 0 0 2.187 0l7.73-7.727a1.55 1.55 0 0 0 0-2.188"/></svg>,
+  'Git': <svg width="14" height="14" viewBox="0 0 24 24" fill="#F05032"><path d="M23.546 10.93L13.067.452a1.55 1.55 0 0 0-2.188 0L8.708 2.627l2.76 2.76a1.838 1.838 0 0 1 2.327 2.341l2.658 2.66a1.838 1.838 0 0 1 1.9 3.039 1.837 1.837 0 0 1-2.6 0 1.846 1.846 0 0 1-.404-1.996L12.86 8.955v6.525c.176.086.342.203.483.346a1.846 1.846 0 0 1 0 2.6 1.846 1.846 0 0 1-2.6 0 1.846 1.846 0 0 1 0-2.6c.157-.157.34-.279.536-.362V8.909a1.847 1.847 0 0 1-1.003-2.416l-2.71-2.7-5.26 5.255a1.55 1.55 0 0 0 0 2.188L13.63 23.548a1.55 1.55 0 0 0 2.187 0l7.73-7.727a1.55 1.55 0 0 0 0-2.188"/></svg>,
   'Figma': <svg width="14" height="14" viewBox="0 0 24 24"><path fill="#F24E1E" d="M8 24c2.208 0 4-1.792 4-4v-4H8c-2.208 0-4 1.792-4 4s1.792 4 4 4z"/><path fill="#FF7262" d="M4 12c0-2.208 1.792-4 4-4h4v8H8c-2.208 0-4-1.792-4-4z"/><path fill="#A259FF" d="M4 4c0-2.208 1.792-4 4-4h4v8H8C5.792 8 4 6.208 4 4z"/><path fill="#1ABCFE" d="M12 0h4c2.208 0 4 1.792 4 4s-1.792 4-4 4h-4V0z"/><path fill="#0ACF83" d="M20 12c0 2.208-1.792 4-4 4s-4-1.792-4-4 1.792-4 4-4 4 1.792 4 4z"/></svg>,
   'PostgreSQL': '🐘', 'MongoDB': '🍃', 'MySQL': '🐬', 'Redis': '🔴',
-  'Machine Learning': '🤖', 'TensorFlow': '⚡', 'PyTorch': '🔥', 'Pandas': '🐼',
-  'AWS': <svg width="14" height="14" viewBox="0 0 24 24" fill="#FF9900"><path d="M6.763 10.036c0 .296.032.535.088.71.064.176.144.368.256.576.04.063.056.127.056.183 0 .08-.048.16-.152.24l-.503.335a.383.383 0 0 1-.208.072c-.08 0-.16-.04-.239-.112a2.47 2.47 0 0 1-.287-.375 6.18 6.18 0 0 1-.248-.471c-.622.734-1.405 1.101-2.347 1.101-.67 0-1.205-.191-1.596-.574-.391-.384-.59-.894-.59-1.533 0-.678.239-1.23.726-1.644.487-.415 1.133-.623 1.955-.623.272 0 .551.024.846.064.296.04.6.104.918.176v-.583c0-.607-.127-1.03-.375-1.277-.255-.248-.686-.367-1.3-.367-.28 0-.568.031-.863.103-.295.072-.583.16-.862.272a2.287 2.287 0 0 1-.28.104.488.488 0 0 1-.127.023c-.112 0-.168-.08-.168-.247v-.391c0-.128.016-.224.056-.28a.597.597 0 0 1 .224-.167c.279-.144.614-.264 1.005-.36a4.84 4.84 0 0 1 1.246-.151c.95 0 1.644.216 2.091.647.439.43.662 1.085.662 1.963v2.586zm-3.24 1.214c.263 0 .534-.048.822-.144.287-.096.543-.271.758-.51.128-.152.224-.32.272-.512.047-.191.08-.423.08-.694v-.335a6.66 6.66 0 0 0-.735-.136 6.02 6.02 0 0 0-.75-.048c-.535 0-.926.104-1.19.32-.263.215-.39.518-.39.917 0 .375.095.655.295.846.191.2.47.296.838.296zm6.41.862c-.144 0-.24-.024-.304-.08-.064-.048-.12-.16-.168-.311L7.586 5.55a1.398 1.398 0 0 1-.072-.32c0-.128.064-.2.191-.2h.783c.151 0 .255.025.31.08.065.048.113.16.16.312l1.342 5.284 1.245-5.284c.04-.16.088-.264.151-.312a.549.549 0 0 1 .32-.08h.638c.152 0 .256.025.32.08.063.048.12.16.151.312l1.261 5.348 1.381-5.348c.048-.16.104-.264.16-.312a.52.52 0 0 1 .311-.08h.743c.127 0 .2.065.2.2 0 .04-.009.08-.017.128a1.137 1.137 0 0 1-.056.2l-1.923 6.17c-.048.16-.104.263-.168.311a.51.51 0 0 1-.303.08h-.687c-.151 0-.255-.024-.32-.08-.063-.056-.119-.16-.15-.32l-1.238-5.148-1.23 5.14c-.04.16-.087.264-.15.32-.065.056-.177.08-.32.08zm10.256.215c-.415 0-.83-.048-1.229-.143-.399-.096-.71-.2-.918-.32-.128-.071-.215-.151-.247-.223a.563.563 0 0 1-.048-.224v-.407c0-.167.064-.247.183-.247.048 0 .096.008.144.024.048.016.12.048.2.08.271.12.566.215.878.279.319.064.63.096.95.096.502 0 .894-.088 1.165-.264a.86.86 0 0 0 .415-.758.777.777 0 0 0-.215-.559c-.144-.151-.416-.287-.807-.415l-1.157-.36c-.583-.183-1.014-.454-1.277-.813a1.902 1.902 0 0 1-.4-1.158c0-.335.073-.63.216-.886.144-.255.335-.479.575-.654.24-.184.51-.32.83-.415.32-.096.655-.136 1.006-.136.175 0 .359.008.535.032.183.024.35.056.518.088.16.04.312.08.455.127.144.048.256.096.336.144a.69.69 0 0 1 .24.2.43.43 0 0 1 .071.263v.375c0 .168-.064.256-.184.256a.83.83 0 0 1-.303-.096 3.652 3.652 0 0 0-1.532-.311c-.455 0-.815.071-1.062.223-.248.152-.375.383-.375.71 0 .224.08.416.24.567.159.152.454.304.877.44l1.134.358c.574.184.99.44 1.237.767.247.327.367.702.367 1.117 0 .343-.072.655-.207.926-.144.272-.336.511-.583.703-.248.2-.543.343-.886.447-.36.111-.734.167-1.142.167zM21.698 16.207c-2.626 1.94-6.442 2.969-9.722 2.969-4.598 0-8.74-1.7-11.87-4.526-.247-.223-.024-.527.272-.352 3.384 1.963 7.559 3.147 11.877 3.147 2.914 0 6.114-.607 9.06-1.852.439-.2.814.287.383.614z"/><path fill="#FF9900" d="M22.792 14.961c-.336-.43-2.22-.207-3.074-.103-.255.032-.295-.192-.063-.36 1.5-1.053 3.967-.75 4.254-.399.287.36-.08 2.826-1.485 4.007-.215.184-.423.088-.327-.151.32-.79 1.03-2.57.695-2.994z"/></svg>,
-  'CI/CD': '🔄', 'Linux': '🐧',
-  'Express.js': '🚂', 'Django': '🎸', 'FastAPI': '⚡', 'REST API': '🔌', 'GraphQL': '🔮',
+  'SQLite': '📦', 'Firebase': '🔥', 'Supabase': '⚡',
+  'Machine Learning': '🤖', 'Deep Learning': '🧠', 'TensorFlow': '⚡',
+  'PyTorch': '🔥', 'Pandas': '🐼', 'NumPy': '🔢', 'Scikit-learn': '📊',
+  'Data Analysis': '📈', 'NLP': '💬', 'Computer Vision': '👁️',
+  'Statistics': '📉', 'Tableau': '📊', 'Power BI': '📊', 'Matplotlib': '📈',
+  'DSA': '🧩', 'Algorithms': '🧮', 'Data Structures': '🌳',
+  'Operating Systems': '💻', 'Computer Networks': '🌐',
+  'Database Management': '🗄️', 'System Design': '🏗️', 'OOP': '🎯',
+  'AWS': <svg width="14" height="14" viewBox="0 0 24 24" fill="#FF9900"><path d="M6.763 10.036c0 .296.032.535.088.71.064.176.144.368.256.576.04.063.056.127.056.183 0 .08-.048.16-.152.24l-.503.335a.383.383 0 0 1-.208.072c-.08 0-.16-.04-.239-.112a2.47 2.47 0 0 1-.287-.375 6.18 6.18 0 0 1-.248-.471c-.622.734-1.405 1.101-2.347 1.101-.67 0-1.205-.191-1.596-.574-.391-.384-.59-.894-.59-1.533 0-.678.239-1.23.726-1.644.487-.415 1.133-.623 1.955-.623.272 0 .551.024.846.064.296.04.6.104.918.176v-.583c0-.607-.127-1.03-.375-1.277-.255-.248-.686-.367-1.3-.367-.28 0-.568.031-.863.103-.295.072-.583.16-.862.272a2.287 2.287 0 0 1-.28.104.488.488 0 0 1-.127.023c-.112 0-.168-.08-.168-.247v-.391c0-.128.016-.224.056-.28a.597.597 0 0 1 .224-.167c.279-.144.614-.264 1.005-.36a4.84 4.84 0 0 1 1.246-.151c.95 0 1.644.216 2.091.647.439.43.662 1.085.662 1.963v2.586z"/></svg>,
+  'Azure': '🔷', 'GCP': '☁️', 'Kubernetes': '☸️',
+  'CI/CD': '🔄', 'Linux': '🐧', 'Jenkins': '⚙️', 'Terraform': '🏔️',
+  'Ansible': '🔧', 'Nginx': '🚦', 'Shell Scripting': '💻',
+  'Express.js': '🚂', 'Django': '🎸', 'FastAPI': '⚡', 'REST API': '🔌',
+  'GraphQL': '🔮', 'Flask': '🧪', 'Spring Boot': '🌱', 'Laravel': '🎭',
+  'Ruby on Rails': '💎', 'NestJS': '🐈', 'Microservices': '🧱',
+  'WebSockets': '🔌',
   'Tailwind CSS': <svg width="14" height="14" viewBox="0 0 24 24" fill="#06B6D4"><path d="M12.001 4.8c-3.2 0-5.2 1.6-6 4.8 1.2-1.6 2.6-2.2 4.2-1.8.913.228 1.565.89 2.288 1.624C13.666 10.618 15.027 12 18.001 12c3.2 0 5.2-1.6 6-4.8-1.2 1.6-2.6 2.2-4.2 1.8-.913-.228-1.565-.89-2.288-1.624C16.337 6.182 14.976 4.8 12.001 4.8zm-6 7.2c-3.2 0-5.2 1.6-6 4.8 1.2-1.6 2.6-2.2 4.2-1.8.913.228 1.565.89 2.288 1.624 1.177 1.194 2.538 2.576 5.512 2.576 3.2 0 5.2-1.6 6-4.8-1.2 1.6-2.6 2.2-4.2 1.8-.913-.228-1.565-.89-2.288-1.624C10.337 13.382 8.976 12 6.001 12z"/></svg>,
-  'React Native': '📱', 'Flutter': '🦋', 'Firebase': '🔥',
+  'Vue.js': '💚', 'Angular': '🅰️', 'Svelte': '🟠', 'Redux': '🟣',
+  'Sass/SCSS': '💅', 'Bootstrap': '🅱️', 'Material UI': '🎨',
+  'jQuery': '💲', 'Webpack': '📦', 'Vite': '⚡',
+  'React Native': '📱', 'Flutter': '🦋', 'Android Dev': '🤖',
+  'iOS Dev': '🍎', 'Jetpack Compose': '🧩', 'SwiftUI': '🦅',
+  'GitHub': '🐙', 'VS Code': '💻', 'Postman': '📮',
+  'Jira': '🎯', 'Notion': '📝', 'Slack': '💬',
+  'Adobe XD': '🎨', 'Photoshop': '🖼️', 'Illustrator': '✏️',
+  'UI/UX Design': '🎨', 'Wireframing': '📐', 'Prototyping': '🔧',
+  'SEO': '🔍', 'Social Media Marketing': '📱', 'Content Writing': '✍️',
+  'Email Marketing': '📧', 'Google Ads': '🎯', 'Meta Ads': '📘',
+  'Google Analytics': '📊', 'Copywriting': '✍️', 'Brand Strategy': '🏷️',
+  'Shopify': '🛒', 'WooCommerce': '🛍️', 'Amazon Seller': '📦',
+  'Product Listing': '📋',
+  'Google Workspace': '📧', 'MS Office': '📊', 'Sales Analysis': '💰',
+  'Competitor Research': '🔎', 'Project Management': '📋', 'Agile/Scrum': '🔁',
+  'DynamoDB': '⚡', 'Cassandra': '🗃️', 'ElasticSearch': '🔎',
 };
 
 export const getSkillLogo = (name) => {
