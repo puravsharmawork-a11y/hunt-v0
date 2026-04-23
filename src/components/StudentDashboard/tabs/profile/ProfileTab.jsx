@@ -5,7 +5,7 @@ import {
 } from './constants';
 
 // ─── Profile Tab ───────────────────────────────────────────────────────────────
-export default function ProfileTab({ studentProfile, setStudentProfile, theme, setTheme }) {
+export function ProfileTab({ studentProfile, setStudentProfile, theme, setTheme }) {
   const [activeSection, setActiveSection] = React.useState('overview');
   const [draft, setDraft] = React.useState(() => JSON.parse(JSON.stringify(studentProfile || {})));
   const [saving, setSaving] = React.useState(false);
