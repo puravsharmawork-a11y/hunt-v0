@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import PersonCard from '../explore/PersonCard';
+import { PersonCard } from '../explore/PersonCard';
 import { LI_SVG, WA_SVG } from '../shared/icons';
 
 // ─── Network Tab ───────────────────────────────────────────────────────────────
@@ -21,7 +21,7 @@ const MOCK_DISCOVER = [
   { id: 'd6', name: 'Tanya Iyer', college: 'IIIT Hyderabad', role: 'Data Engineer', skills: ['Spark', 'Python'], connections: 11 },
 ];
 
-export default function NetworkTab({ studentProfile }) {
+export function NetworkTab({ studentProfile }) {
   const [networkSubTab, setNetworkSubTab] = useState('connections');
   const [discoverSearch, setDiscoverSearch] = useState('');
   const [csvImported, setCsvImported] = useState(false);
