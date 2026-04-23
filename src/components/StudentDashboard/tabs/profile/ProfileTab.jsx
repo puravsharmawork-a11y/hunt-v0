@@ -26,7 +26,7 @@ export default function ProfileTab({ studentProfile, setStudentProfile, theme, s
   const save = async (updates) => {
     setSaving(true);
     try {
-      const { updateStudentProfile } = await import('../../../services/supabase');
+      const { updateStudentProfile } = await import('../../../../services/supabase');
       const merged = { ...studentProfile, ...updates };
       let sc = 0;
       if (merged.full_name) sc += 10; if (merged.college) sc += 10;
