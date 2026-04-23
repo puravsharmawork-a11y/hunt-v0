@@ -12,14 +12,14 @@ import { calculateMatchScore } from '../../services/matching';
 import { sendToAirtable, prepareApplicationData } from '../../services/airtable';
 
 import { applyTokens } from './theme/applyTokens';
-import LoadingScreen from './shared/LoadingScreen';
-import Sidebar from './layout/Sidebar';
-import NotificationFlyout from './layout/NotificationFlyout';
-import SettingsPanel from './layout/SettingsPanel';
-import HomeTab from './tabs/HomeTab';
-import ExploreTab from './tabs/ExploreTab';
-import NetworkTab from './tabs/NetworkTab';
-import ProfileTab from './tabs/profile/ProfileTab';
+import { LoadingScreen } from './shared/LoadingScreen';
+import { Sidebar } from './layout/Sidebar';
+import { NotificationFlyout } from './layout/NotificationFlyout';
+import { SettingsPanel } from './layout/SettingsPanel';
+import { HomeTab } from './tabs/HomeTab';
+import { ExploreTab } from './tabs/ExploreTab';
+import { NetworkTab } from './tabs/NetworkTab';
+import { ProfileTab } from './tabs/profile/ProfileTab';
 
 // ─── Main Dashboard ────────────────────────────────────────────────────────────
 export default function StudentDashboard() {
