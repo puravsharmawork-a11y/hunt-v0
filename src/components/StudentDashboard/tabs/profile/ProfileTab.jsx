@@ -249,7 +249,8 @@ export function ProfileTab({ studentProfile, setStudentProfile, theme, setTheme 
         <h1 style={{ fontFamily: "'Editorial New', Georgia, serif", fontSize: 26, fontWeight: 400, color: 'var(--text)', marginBottom: 16 }}>
           {d.full_name ? <>{d.full_name.split(' ')[0]}<em style={{ fontStyle: 'italic' }}>'s profile.</em></> : <em>Your profile.</em>}
         </h1>
-        <div style={{ display: 'flex', borderBottom: '1px solid var(--border)', overflowX: 'auto' }}>
+        <div style={{ display: 'flex', borderBottom: '1px solid var(--border)', overflowX: 'auto', overflowY: 'hidden', scrollbarWidth: 'none', WebkitOverflowScrolling: 'touch' }} className="hunt-subtabs-scroll">
+          <style>{`.hunt-no-scrollbar::-webkit-scrollbar { display: none; }`}</style>
           {SECTIONS.map(s => (
             <button key={s.id} onClick={() => setActiveSection(s.id)} style={{
               padding: '9px 18px', background: 'none', border: 'none', cursor: 'pointer',
