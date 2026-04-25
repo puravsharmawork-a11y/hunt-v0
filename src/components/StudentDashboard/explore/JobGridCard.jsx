@@ -18,17 +18,30 @@ export function JobGridCard({ job, matchData, isSelected, onClick, isSaved, onSa
     onMouseEnter={e => { if (!isSelected) e.currentTarget.style.borderColor = 'var(--border-mid)'; }}
     onMouseLeave={e => { if (!isSelected) e.currentTarget.style.borderColor = 'var(--border)'; }}
     >
-      {/* Bookmark button */}
-      <button onClick={e => { e.stopPropagation(); onSave(job); }} style={{
+      {/* Top-right cluster: match % + bookmark, side-by-side, never overlapping */}
+      <div style={{
         position: 'absolute', top: '12px', right: '12px',
-        background: 'none', border: 'none', cursor: 'pointer', padding: '4px',
-        color: isSaved ? 'var(--green)' : 'var(--text-dim)',
-        display: 'flex', alignItems: 'center',
-      }} title={isSaved ? 'Unsave' : 'Save'}>
-        <Bookmark size={14} fill={isSaved ? 'var(--green)' : 'none'} />
-      </button>
+        display: 'flex', alignItems: 'center', gap: '6px',
+        zIndex: 1,
+      }}>
+        {matchData && (
+          <div style={{
+            fontSize: '13px', fontFamily: "'Editorial New', Georgia, serif",
+            padding: '3px 8px', borderRadius: '6px', lineHeight: 1.2,
+            color: scoreColor(matchData.score), background: scoreBg(matchData.score),
+          }}>{matchData.score}%</div>
+        )}
+        <button onClick={e => { e.stopPropagation(); onSave(job); }} style={{
+          background: 'none', border: 'none', cursor: 'pointer', padding: '2px',
+          color: isSaved ? 'var(--green)' : 'var(--text-dim)',
+          display: 'flex', alignItems: 'center',
+        }} title={isSaved ? 'Unsave' : 'Save'}>
+          <Bookmark size={14} fill={isSaved ? 'var(--green)' : 'none'} />
+        </button>
+      </div>
 
-      <div style={{ display: 'flex', alignItems: 'flex-start', gap: '12px', marginBottom: '12px' }}>
+      {/* Header — reserve space on the right for the absolute cluster above */}
+      <div style={{ display: 'flex', alignItems: 'flex-start', gap: '12px', marginBottom: '12px', paddingRight: '88px' }}>
         <span style={{ fontSize: '28px', lineHeight: 1, flexShrink: 0 }}>{job.logo}</span>
         <div style={{ flex: 1, minWidth: 0 }}>
           <p style={{ fontSize: '10px', fontWeight: 600, letterSpacing: '0.1em', textTransform: 'uppercase', color: 'var(--text-dim)', marginBottom: '2px' }}>
@@ -41,13 +54,6 @@ export function JobGridCard({ job, matchData, isSelected, onClick, isSaved, onSa
             WebkitLineClamp: 2, WebkitBoxOrient: 'vertical',
           }}>{job.role}</h3>
         </div>
-        {matchData && (
-          <div style={{
-            flexShrink: 0, fontSize: '13px', fontFamily: "'Editorial New', Georgia, serif",
-            padding: '3px 8px', borderRadius: '6px',
-            color: scoreColor(matchData.score), background: scoreBg(matchData.score),
-          }}>{matchData.score}%</div>
-        )}
       </div>
 
       <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px', marginBottom: '10px' }}>
