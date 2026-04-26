@@ -89,6 +89,16 @@
 //   └─ Main shell with sidebar
 // ════════════════════════════════════════════════════════════════════════════
 
+// src/components/RecruiterDashboard.jsx
+//
+// ════════════════════════════════════════════════════════════════════════════
+// HUNT — RECRUITER DASHBOARD (v2 — fixed, no AI)
+// ════════════════════════════════════════════════════════════════════════════
+//
+// Run 01_database_migration.sql in Supabase SQL Editor BEFORE using this file.
+// After running the SQL, go to Supabase Settings → API → "Reload schema".
+// ════════════════════════════════════════════════════════════════════════════
+
 import React, { useState, useEffect, useRef, useMemo } from 'react';
 import {
   Plus, LogOut, Sun, Moon, Copy, Check, X, ChevronRight, ChevronDown,
@@ -144,13 +154,35 @@ const applyTokens = (theme) =>
 // ═══════════════════════════════════════════════════════════════════════════
 // 2. SUPABASE HELPERS
 // ═══════════════════════════════════════════════════════════════════════════
+
+// Strips empty/null/undefined values before any UPDATE so we never PATCH
+// columns with garbage values.
+function cleanPatch(patch, { drop = [] } = {}) {
+  const out = {};
+  for (const [k, v] of Object.entries(patch)) {
+    if (drop.includes(k)) continue;
+    if (v === undefined || v === null) continue;
+    if (typeof v === 'string' && v.trim() === '') continue;
+    out[k] = v;
+  }
+  return out;
+}
+
 async function getRecruiterProfile() {
   const user = await getCurrentUser();
+  if (!user) throw new Error('Not signed in');
   const { data, error } = await supabase
-    .from('recruiters').select('*, startups(*)').eq('auth_id', user.id).single();
-  if (error) throw error;
+    .from('recruiters')
+    .select('*, startups(*)')
+    .eq('auth_id', user.id)
+    .maybeSingle();              // tolerates 0 rows instead of throwing
+  if (error) {
+    console.error('getRecruiterProfile failed:', error);
+    throw new Error(error.message || 'Failed to load recruiter');
+  }
   return data;
 }
+
 async function getRecruiterJobs(recruiterId) {
   const { data, error } = await supabase
     .from('jobs').select('*').eq('recruiter_id', recruiterId)
@@ -158,20 +190,41 @@ async function getRecruiterJobs(recruiterId) {
   if (error) throw error;
   return data || [];
 }
+
 async function createJob(jobData) {
-  const { data, error } = await supabase.from('jobs').insert([jobData]).select().single();
-  if (error) throw error;
+  const safe = cleanPatch(jobData);
+  const { data, error } = await supabase
+    .from('jobs')
+    .insert([safe])
+    .select()
+    .single();
+  if (error) {
+    console.error('createJob failed:', error);
+    throw new Error(error.message || 'Failed to create job');
+  }
   return data;
 }
+
 async function updateJob(jobId, patch) {
-  const { data, error } = await supabase.from('jobs').update(patch).eq('id', jobId).select().single();
-  if (error) throw error;
+  const safe = cleanPatch(patch);
+  const { data, error } = await supabase
+    .from('jobs')
+    .update(safe)
+    .eq('id', jobId)
+    .select()
+    .single();
+  if (error) {
+    console.error('updateJob failed:', error);
+    throw new Error(error.message || 'Update failed');
+  }
   return data;
 }
+
 async function deleteJob(jobId) {
   const { error } = await supabase.from('jobs').delete().eq('id', jobId);
   if (error) throw error;
 }
+
 async function getJobApplications(jobId) {
   const { data, error } = await supabase
     .from('applications')
@@ -181,64 +234,86 @@ async function getJobApplications(jobId) {
   if (error) throw error;
   return data || [];
 }
+
+// Two-step query — avoids the !inner join that 400s when the FK relationship
+// isn't recognized by the PostgREST schema cache.
 async function getAllApplicationsForRecruiter(recruiterId) {
-  const { data, error } = await supabase
+  const { data: jobs, error: jobsErr } = await supabase
+    .from('jobs')
+    .select('id, role, logo')
+    .eq('recruiter_id', recruiterId);
+  if (jobsErr) throw jobsErr;
+  if (!jobs?.length) return [];
+
+  const jobIds = jobs.map(j => j.id);
+  const jobLookup = Object.fromEntries(jobs.map(j => [j.id, j]));
+
+  const { data: apps, error: appsErr } = await supabase
     .from('applications')
-    .select(`*, students(*), jobs!inner(id, role, logo, recruiter_id)`)
-    .eq('jobs.recruiter_id', recruiterId)
+    .select('*, students(*)')
+    .in('job_id', jobIds)
     .order('match_score', { ascending: false });
-  if (error) throw error;
-  return data || [];
+  if (appsErr) throw appsErr;
+
+  return (apps || []).map(a => ({ ...a, jobs: jobLookup[a.job_id] }));
 }
+
 async function updateApplicationStatus(appId, status, extra = {}) {
   const patch = { status, ...extra };
   if (status === 'shortlisted') patch.shortlisted_at = new Date().toISOString();
   if (status === 'interview')   patch.interviewed_at = new Date().toISOString();
   if (status === 'hired')       patch.hired_at       = new Date().toISOString();
-  const { data, error } = await supabase.from('applications').update(patch).eq('id', appId).select().single();
-  if (error) throw error;
-  return data;
-}
-async function updateStartupProfile(startupId, patch) {
-  const { data, error } = await supabase.from('startups').update(patch).eq('id', startupId).select().single();
-  if (error) throw error;
-  return data;
-}
-async function updateRecruiterProfile(recruiterId, patch) {
-  const { data, error } = await supabase.from('recruiters').update(patch).eq('id', recruiterId).select().single();
-  if (error) throw error;
+  const { data, error } = await supabase
+    .from('applications')
+    .update(patch)
+    .eq('id', appId)
+    .select()
+    .single();
+  if (error) {
+    console.error('updateApplicationStatus failed:', error);
+    throw new Error(error.message || 'Status update failed');
+  }
   return data;
 }
 
-// AI role generation — calls Claude. Replace with your actual AI service when wired up.
-async function generateRoleWithAI(prompt, recruiter) {
-  const sysPrompt = `You generate structured internship role data for the HUNT platform. Return ONLY valid JSON with these keys:
-{
-  "role": string,
-  "description": string (2-3 sentences, what the intern will actually work on),
-  "stipend": string (e.g. "₹25,000/month"),
-  "duration": string (e.g. "3 months"),
-  "location": string (e.g. "Remote" or "Bangalore"),
-  "type": "Paid Internship" | "Unpaid Internship" | "Contract" | "Part-time",
-  "required_skills": [{"name": string, "level": 1-5, "weight": number 0-1}] (3-5 skills, weights sum to 1),
-  "nice_to_have": string[] (2-4 items)
+async function updateStartupProfile(startupId, patch) {
+  const safe = cleanPatch(patch);
+  if (safe.founded_year !== undefined) {
+    const n = parseInt(safe.founded_year, 10);
+    if (Number.isNaN(n)) delete safe.founded_year;
+    else safe.founded_year = n;
+  }
+  const { data, error } = await supabase
+    .from('startups')
+    .update(safe)
+    .eq('id', startupId)
+    .select()
+    .single();
+  if (error) {
+    console.error('updateStartupProfile failed:', error);
+    throw new Error(error.message || 'Update failed');
+  }
+  return data;
 }
-No prose, no markdown fences. Just JSON.`;
-  const res = await fetch('https://api.anthropic.com/v1/messages', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({
-      model: 'claude-sonnet-4-20250514',
-      max_tokens: 1000,
-      system: sysPrompt,
-      messages: [{ role: 'user', content: `Company: ${recruiter.startups?.name || recruiter.company_name}\nIndustry: ${recruiter.startups?.industry || 'tech'}\n\nThe recruiter says: "${prompt}"` }],
-    }),
-  });
-  const data = await res.json();
-  const text = data.content?.find(b => b.type === 'text')?.text || '';
-  const cleaned = text.replace(/```json|```/g, '').trim();
-  return JSON.parse(cleaned);
+
+async function updateRecruiterProfile(recruiterId, patch) {
+  // email is shown disabled in the form — must never be in the PATCH
+  const safe = cleanPatch(patch, { drop: ['email'] });
+  const { data, error } = await supabase
+    .from('recruiters')
+    .update(safe)
+    .eq('id', recruiterId)
+    .select()
+    .single();
+  if (error) {
+    console.error('updateRecruiterProfile failed:', error);
+    throw new Error(error.message || 'Update failed');
+  }
+  return data;
 }
+
+// NOTE: generateRoleWithAI removed — direct browser → Anthropic calls are
+// blocked by CORS. AI assistant disabled until we add an Edge Function proxy.
 
 // ═══════════════════════════════════════════════════════════════════════════
 // 3. CONSTANTS
@@ -308,6 +383,7 @@ function Toast({ msg, type }) {
     zIndex: 9999, padding: '9px 18px', borderRadius: 8, fontSize: 12, fontWeight: 500,
     background: type === 'error' ? 'rgba(192,57,43,0.95)' : 'rgba(26,122,74,0.95)',
     color: '#fff', boxShadow: '0 4px 20px rgba(0,0,0,0.2)', animation: 'fadeDown 0.2s ease',
+    maxWidth: '90vw', textAlign: 'center',
   }}>{msg}</div>;
 }
 function Avatar({ name, size = 36, color = 'var(--ember)' }) {
@@ -360,7 +436,7 @@ function btnGhost() {
 }
 
 // ═══════════════════════════════════════════════════════════════════════════
-// 5. POST ROLE — MANUAL FORM (kept from v1 with cleanup)
+// 5. POST ROLE — MANUAL FORM
 // ═══════════════════════════════════════════════════════════════════════════
 function PostRoleManual({ recruiter, prefill, onSuccess, onError }) {
   const [saving, setSaving] = useState(false);
@@ -382,7 +458,6 @@ function PostRoleManual({ recruiter, prefill, onSuccess, onError }) {
     positions: 1,
   }));
 
-  // Sync prefill when AI returns new data
   useEffect(() => {
     if (prefill) setForm(f => ({ ...f, ...prefill, logo: prefill.logo || f.logo, visibility: f.visibility, max_applicants: f.max_applicants, minimum_match_threshold: f.minimum_match_threshold, positions: f.positions }));
   }, [prefill]);
@@ -414,7 +489,7 @@ function PostRoleManual({ recruiter, prefill, onSuccess, onError }) {
     try {
       const totalW = form.required_skills.reduce((s, sk) => s + sk.weight, 0);
       const normSkills = form.required_skills.map(sk => ({ ...sk, weight: parseFloat((sk.weight / totalW).toFixed(3)) }));
-      const startupName = recruiter.startups?.name || recruiter.company_name;
+      const startupName = recruiter.startups?.name || recruiter.company_name || 'Company';
       const slug = `${startupName.toLowerCase().replace(/\s+/g, '-')}-${form.role.toLowerCase().replace(/\s+/g, '-')}-${Date.now()}`;
       await createJob({
         recruiter_id:        recruiter.id,
@@ -438,7 +513,7 @@ function PostRoleManual({ recruiter, prefill, onSuccess, onError }) {
         status:              'live',
       });
       onSuccess();
-    } catch (e) { onError('Failed: ' + e.message); }
+    } catch (e) { onError('Failed: ' + (e.message || 'Unknown error')); }
     finally    { setSaving(false); }
   };
 
@@ -596,73 +671,21 @@ function PostRoleManual({ recruiter, prefill, onSuccess, onError }) {
 }
 
 // ═══════════════════════════════════════════════════════════════════════════
-// 6. POST ROLE — AI CHAT
+// 6. POST ROLE — AI CHAT (DISABLED — placeholder until Edge Function wired up)
 // ═══════════════════════════════════════════════════════════════════════════
-function PostRoleAI({ recruiter, onGenerated, onError }) {
-  const [messages, setMessages] = useState([
-    { role: 'assistant', content: `Hey! Tell me what role you're hiring for. Anything works — "we need a React intern who can ship fast" or "looking for a backend dev, 3 months, ₹25k". I'll structure it.` }
-  ]);
-  const [input, setInput] = useState('');
-  const [busy, setBusy] = useState(false);
-  const scrollRef = useRef();
-
-  useEffect(() => { scrollRef.current?.scrollTo({ top: scrollRef.current.scrollHeight, behavior: 'smooth' }); }, [messages]);
-
-  const send = async () => {
-    if (!input.trim() || busy) return;
-    const userMsg = input.trim();
-    setMessages(m => [...m, { role: 'user', content: userMsg }]);
-    setInput(''); setBusy(true);
-    try {
-      const generated = await generateRoleWithAI(userMsg, recruiter);
-      setMessages(m => [...m, {
-        role: 'assistant',
-        content: `I drafted "${generated.role}" — review on the right and tweak anything before publishing.`,
-      }]);
-      onGenerated(generated);
-    } catch (e) {
-      setMessages(m => [...m, { role: 'assistant', content: `Hmm, couldn't generate that. Try rephrasing — be specific about skills, duration, stipend.` }]);
-    } finally { setBusy(false); }
-  };
-
+function PostRoleAI() {
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', height: '100%', minHeight: 480 }}>
-      <div ref={scrollRef} style={{
-        flex: 1, overflowY: 'auto', padding: '16px',
-        background: 'var(--bg-subtle)', borderRadius: 10,
-        border: '1px solid var(--border)', marginBottom: 12,
-        display: 'flex', flexDirection: 'column', gap: 10,
-      }}>
-        {messages.map((m, i) => (
-          <div key={i} style={{ display: 'flex', justifyContent: m.role === 'user' ? 'flex-end' : 'flex-start' }}>
-            <div style={{
-              maxWidth: '85%', padding: '10px 14px', borderRadius: 12,
-              background: m.role === 'user' ? 'var(--ember)' : 'var(--bg-card)',
-              color: m.role === 'user' ? '#fff' : 'var(--text)',
-              border: m.role === 'user' ? 'none' : '1px solid var(--border)',
-              fontSize: 13, lineHeight: 1.5,
-            }}>{m.content}</div>
-          </div>
-        ))}
-        {busy && (
-          <div style={{ display: 'flex', alignItems: 'center', gap: 6, color: 'var(--text-dim)', fontSize: 12 }}>
-            <Sparkles size={12} /> Drafting…
-          </div>
-        )}
-      </div>
-      <div style={{ display: 'flex', gap: 8 }}>
-        <FocusTextarea value={input} onChange={e => setInput(e.target.value)}
-          placeholder="Describe the role you're hiring for…" rows={2}
-          onKeyDown={e => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); send(); } }}
-          style={{ flex: 1, minHeight: 'auto' }} />
-        <button onClick={send} disabled={busy || !input.trim()} style={{
-          ...btnPrimary(busy || !input.trim()), padding: '0 16px', alignSelf: 'stretch',
-        }}>
-          <Send size={14} />
-        </button>
-      </div>
-      <p style={{ fontSize: 10, color: 'var(--text-dim)', marginTop: 6, textAlign: 'center' }}>
-        Each generation populates the form on the right. Edit freely before publishing.
+    <div style={{
+      display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
+      height: '100%', minHeight: 480, padding: 32, textAlign: 'center',
+      background: 'var(--bg-subtle)', border: '1px dashed var(--border)', borderRadius: 10,
+    }}>
+      <Sparkles size={28} style={{ color: 'var(--text-dim)', marginBottom: 12 }} />
+      <p style={{ fontFamily: 'Georgia, serif', fontSize: 16, color: 'var(--text)', margin: 0 }}>
+        AI assistant coming soon
+      </p>
+      <p style={{ fontSize: 12, color: 'var(--text-dim)', marginTop: 8, lineHeight: 1.5, maxWidth: 280 }}>
+        For now, fill out the form on the right to post a role. The AI helper will be back later.
       </p>
     </div>
   );
@@ -1046,7 +1069,6 @@ function HomeTab({ recruiter, jobs, allApps, onNavigate, onSelectApp }) {
   const hired      = allApps.filter(a => a.status === 'hired').length;
   const avgScore   = allApps.length ? Math.round(allApps.reduce((s, a) => s + (a.match_score || 0), 0) / allApps.length) : 0;
 
-  // Top picks across all roles, capped at 6, only above 60%
   const topPicks = useMemo(() => {
     return [...allApps]
       .filter(a => (a.match_score || 0) >= 60 && a.status !== 'rejected')
@@ -1203,7 +1225,6 @@ function CandidatesTab({ allApps, onStatusChange }) {
     if (filter === 'unreviewed')   list = list.filter(a => !a.status || a.status === 'pending');
     if (filter === 'shortlisted')  list = list.filter(a => a.status === 'shortlisted');
     if (filter === 'high-match')   list = list.filter(a => (a.match_score || 0) >= 80);
-    // Cap respects total: if fewer applicants than cap, show all
     return list.slice(0, Math.min(cap, list.length));
   }, [allApps, filter, cap]);
 
@@ -1349,38 +1370,33 @@ function PipelineTab({ allApps, onStatusChange }) {
 }
 
 // ═══════════════════════════════════════════════════════════════════════════
-// 15. TAB: POST A ROLE (manual + AI side-by-side)
+// 15. TAB: POST A ROLE (manual form + AI placeholder)
 // ═══════════════════════════════════════════════════════════════════════════
 function PostTab({ recruiter, onPosted, showToast }) {
-  const [aiPrefill, setAiPrefill] = useState(null);
-
   return (
     <div>
       <div style={{ marginBottom: 18 }}>
         <p style={{ fontSize: 11, color: 'var(--ember)', textTransform: 'uppercase', letterSpacing: '0.12em', fontWeight: 500, marginBottom: 6 }}>Post a role</p>
         <h1 style={{ fontFamily: 'Georgia, serif', fontSize: 26, color: 'var(--text)', margin: 0, fontWeight: 400 }}>Hire your next intern.</h1>
-        <p style={{ fontSize: 12, color: 'var(--text-mid)', marginTop: 6 }}>Chat with AI on the left, fine-tune on the right, publish.</p>
+        <p style={{ fontSize: 12, color: 'var(--text-mid)', marginTop: 6 }}>Fill in the role details and publish.</p>
       </div>
 
       <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16 }}>
         <div style={{ background: 'var(--bg-card)', border: '1px solid var(--border)', borderRadius: 12, padding: 16, display: 'flex', flexDirection: 'column' }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 10 }}>
-            <Sparkles size={14} style={{ color: 'var(--ember)' }} />
-            <span style={{ fontSize: 11, fontWeight: 500, color: 'var(--ember)', textTransform: 'uppercase', letterSpacing: '0.1em' }}>AI Assistant</span>
+            <Sparkles size={14} style={{ color: 'var(--text-dim)' }} />
+            <span style={{ fontSize: 11, fontWeight: 500, color: 'var(--text-dim)', textTransform: 'uppercase', letterSpacing: '0.1em' }}>AI Assistant</span>
           </div>
-          <PostRoleAI recruiter={recruiter} onGenerated={setAiPrefill} onError={msg => showToast(msg, 'error')} />
+          <PostRoleAI />
         </div>
 
         <div style={{ background: 'var(--bg-card)', border: '1px solid var(--border)', borderRadius: 12, padding: 16 }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 14 }}>
             <Edit3 size={14} style={{ color: 'var(--text-mid)' }} />
             <span style={{ fontSize: 11, fontWeight: 500, color: 'var(--text-mid)', textTransform: 'uppercase', letterSpacing: '0.1em' }}>Role details</span>
-            {aiPrefill && (
-              <span style={{ fontSize: 9, padding: '2px 6px', borderRadius: 4, background: 'var(--ember-tint)', color: 'var(--ember)', marginLeft: 'auto' }}>AI populated</span>
-            )}
           </div>
-          <PostRoleManual recruiter={recruiter} prefill={aiPrefill}
-            onSuccess={() => { setAiPrefill(null); onPosted(); }}
+          <PostRoleManual recruiter={recruiter} prefill={null}
+            onSuccess={() => onPosted()}
             onError={msg => showToast(msg, 'error')} />
         </div>
       </div>
@@ -1444,13 +1460,20 @@ function StartupProfileForm({ startup, canEdit, onUpdate, showToast }) {
   const set = k => v => setForm(f => ({ ...f, [k]: v }));
 
   const save = async () => {
+    if (!startup.id) {
+      showToast('No startup linked to this account yet.', 'error');
+      return;
+    }
     setSaving(true);
     try {
       await updateStartupProfile(startup.id, form);
       showToast('Startup profile updated');
       onUpdate();
-    } catch (e) { showToast('Failed to update', 'error'); }
-    finally { setSaving(false); }
+    } catch (e) {
+      showToast(e.message || 'Failed to update', 'error');
+    } finally {
+      setSaving(false);
+    }
   };
 
   return (
@@ -1540,8 +1563,11 @@ function RecruiterProfileForm({ recruiter, onUpdate, showToast }) {
       await updateRecruiterProfile(recruiter.id, form);
       showToast('Profile updated');
       onUpdate();
-    } catch (e) { showToast('Failed to update', 'error'); }
-    finally { setSaving(false); }
+    } catch (e) {
+      showToast(e.message || 'Failed to update', 'error');
+    } finally {
+      setSaving(false);
+    }
   };
 
   return (
@@ -1663,6 +1689,11 @@ export default function RecruiterDashboard() {
 
   useEffect(() => { applyTokens(theme); localStorage.setItem('hunt-theme', theme); }, [theme]);
 
+  const showToast = (msg, type = 'success') => {
+    setToast({ msg, type });
+    setTimeout(() => setToast(null), 3500);
+  };
+
   useEffect(() => { (async () => {
     try {
       const r = await getRecruiterProfile();
@@ -1673,14 +1704,13 @@ export default function RecruiterDashboard() {
         getAllApplicationsForRecruiter(r.id),
       ]);
       setJobs(j); setAllApps(a);
-    } catch (e) { showToast('Failed to load dashboard', 'error'); }
-    finally { setLoading(false); }
+    } catch (e) {
+      console.error('Dashboard load failed:', e);
+      showToast(e.message || 'Failed to load dashboard', 'error');
+    } finally {
+      setLoading(false);
+    }
   })(); }, []);
-
-  const showToast = (msg, type = 'success') => {
-    setToast({ msg, type });
-    setTimeout(() => setToast(null), 2500);
-  };
 
   const refreshJobs = async () => {
     if (!recruiter) return;
@@ -1702,7 +1732,9 @@ export default function RecruiterDashboard() {
       await updateJob(job.id, { status: next, is_active: next === 'live' });
       setJobs(j => j.map(x => x.id === job.id ? { ...x, status: next, is_active: next === 'live' } : x));
       showToast(next === 'live' ? 'Role resumed' : 'Role paused');
-    } catch { showToast('Update failed', 'error'); }
+    } catch (e) {
+      showToast(e.message || 'Update failed', 'error');
+    }
   };
 
   const handleCopyLink = (job) => {
@@ -1716,7 +1748,9 @@ export default function RecruiterDashboard() {
       await deleteJob(job.id);
       setJobs(j => j.filter(x => x.id !== job.id));
       showToast('Role deleted');
-    } catch { showToast('Delete failed', 'error'); }
+    } catch (e) {
+      showToast(e.message || 'Delete failed', 'error');
+    }
   };
 
   const handleStatusChange = async (appId, status) => {
@@ -1725,7 +1759,9 @@ export default function RecruiterDashboard() {
       setAllApps(a => a.map(x => x.id === appId ? { ...x, status } : x));
       const labels = { shortlisted: 'Shortlisted', interview: 'Moved to interview', hired: 'Hired! 🎉', rejected: 'Passed' };
       showToast(labels[status] || 'Updated');
-    } catch { showToast('Update failed', 'error'); }
+    } catch (e) {
+      showToast(e.message || 'Update failed', 'error');
+    }
   };
 
   const handleSignOut = async () => {
@@ -1737,6 +1773,16 @@ export default function RecruiterDashboard() {
       <div style={{ textAlign: 'center' }}>
         <div style={{ fontSize: 36, marginBottom: 12 }}>⏳</div>
         <p style={{ fontFamily: 'Georgia, serif', fontSize: 16, color: 'var(--text)' }}>Loading dashboard…</p>
+      </div>
+    </div>
+  );
+
+  if (!recruiter) return (
+    <div style={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'var(--bg)', fontFamily: "'DM Sans', system-ui, sans-serif" }}>
+      <div style={{ textAlign: 'center', maxWidth: 400, padding: 24 }}>
+        <div style={{ fontSize: 36, marginBottom: 12 }}>👋</div>
+        <p style={{ fontFamily: 'Georgia, serif', fontSize: 18, color: 'var(--text)', marginBottom: 8 }}>Finish setting up your account</p>
+        <p style={{ fontSize: 13, color: 'var(--text-dim)' }}>We couldn't find your recruiter profile. Please complete onboarding to continue.</p>
       </div>
     </div>
   );
