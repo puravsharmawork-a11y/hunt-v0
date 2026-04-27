@@ -120,6 +120,23 @@
 // After running the SQL, go to Supabase Settings → API → "Reload schema".
 // ════════════════════════════════════════════════════════════════════════════
 
+// src/components/RecruiterDashboard.jsx
+//
+// ════════════════════════════════════════════════════════════════════════════
+// HUNT — RECRUITER DASHBOARD (v4 — Clean 5-tab nav, mirrors StudentDashboard)
+// ════════════════════════════════════════════════════════════════════════════
+//
+// NAV STRUCTURE:
+//   Home     → overview, stats, quick actions (Post a role triggers drawer)
+//   Roles    → subtabs: Live | Paused | Closed   +  "Post a role" button top-right
+//   Hiring   → subtabs: Top Picks | Pipeline
+//   Profile  → subtabs: Startup | You
+//   Network  → stub (mirrors StudentDashboard pattern)
+//
+//  "Post a role" is a slide-over drawer — accessible from Home quick actions
+//   AND Roles tab header button. No longer a standalone sidebar tab.
+// ════════════════════════════════════════════════════════════════════════════
+
 import React, { useState, useEffect, useMemo } from 'react';
 import {
   Plus, LogOut, Sun, Moon, X, ChevronRight,
@@ -132,7 +149,7 @@ import { useNavigate } from 'react-router-dom';
 import { supabase, getCurrentUser, signOut } from '../services/supabase';
 
 // ═══════════════════════════════════════════════════════════════════════════
-// 1. DESIGN TOKENS (mirror student dashboard exactly)
+// 1. DESIGN TOKENS
 // ═══════════════════════════════════════════════════════════════════════════
 const tokens = {
   light: {
@@ -206,10 +223,7 @@ async function getRecruiterProfile() {
     .select('*, startups(*)')
     .eq('auth_id', user.id)
     .maybeSingle();
-  if (error) {
-    console.error('getRecruiterProfile failed:', error);
-    throw new Error(error.message || 'Failed to load recruiter');
-  }
+  if (error) throw new Error(error.message || 'Failed to load recruiter');
   return data;
 }
 
@@ -223,30 +237,15 @@ async function getRecruiterJobs(recruiterId) {
 
 async function createJob(jobData) {
   const safe = cleanPatch(jobData);
-  const { data, error } = await supabase
-    .from('jobs')
-    .insert([safe])
-    .select()
-    .single();
-  if (error) {
-    console.error('createJob failed:', error);
-    throw new Error(error.message || 'Failed to create job');
-  }
+  const { data, error } = await supabase.from('jobs').insert([safe]).select().single();
+  if (error) throw new Error(error.message || 'Failed to create job');
   return data;
 }
 
 async function updateJob(jobId, patch) {
   const safe = cleanPatch(patch);
-  const { data, error } = await supabase
-    .from('jobs')
-    .update(safe)
-    .eq('id', jobId)
-    .select()
-    .single();
-  if (error) {
-    console.error('updateJob failed:', error);
-    throw new Error(error.message || 'Update failed');
-  }
+  const { data, error } = await supabase.from('jobs').update(safe).eq('id', jobId).select().single();
+  if (error) throw new Error(error.message || 'Update failed');
   return data;
 }
 
@@ -267,22 +266,15 @@ async function getJobApplications(jobId) {
 
 async function getAllApplicationsForRecruiter(recruiterId) {
   const { data: jobs, error: jobsErr } = await supabase
-    .from('jobs')
-    .select('id, role, logo')
-    .eq('recruiter_id', recruiterId);
+    .from('jobs').select('id, role, logo').eq('recruiter_id', recruiterId);
   if (jobsErr) throw jobsErr;
   if (!jobs?.length) return [];
-
   const jobIds = jobs.map(j => j.id);
   const jobLookup = Object.fromEntries(jobs.map(j => [j.id, j]));
-
   const { data: apps, error: appsErr } = await supabase
-    .from('applications')
-    .select('*, students(*)')
-    .in('job_id', jobIds)
+    .from('applications').select('*, students(*)').in('job_id', jobIds)
     .order('match_score', { ascending: false });
   if (appsErr) throw appsErr;
-
   return (apps || []).map(a => ({ ...a, jobs: jobLookup[a.job_id] }));
 }
 
@@ -292,15 +284,8 @@ async function updateApplicationStatus(appId, status, extra = {}) {
   if (status === 'interview')   patch.interviewed_at = new Date().toISOString();
   if (status === 'hired')       patch.hired_at       = new Date().toISOString();
   const { data, error } = await supabase
-    .from('applications')
-    .update(patch)
-    .eq('id', appId)
-    .select()
-    .single();
-  if (error) {
-    console.error('updateApplicationStatus failed:', error);
-    throw new Error(error.message || 'Status update failed');
-  }
+    .from('applications').update(patch).eq('id', appId).select().single();
+  if (error) throw new Error(error.message || 'Status update failed');
   return data;
 }
 
@@ -312,30 +297,16 @@ async function updateStartupProfile(startupId, patch) {
     else safe.founded_year = n;
   }
   const { data, error } = await supabase
-    .from('startups')
-    .update(safe)
-    .eq('id', startupId)
-    .select()
-    .single();
-  if (error) {
-    console.error('updateStartupProfile failed:', error);
-    throw new Error(error.message || 'Update failed');
-  }
+    .from('startups').update(safe).eq('id', startupId).select().single();
+  if (error) throw new Error(error.message || 'Update failed');
   return data;
 }
 
 async function updateRecruiterProfile(recruiterId, patch) {
   const safe = cleanPatch(patch, { drop: ['email'] });
   const { data, error } = await supabase
-    .from('recruiters')
-    .update(safe)
-    .eq('id', recruiterId)
-    .select()
-    .single();
-  if (error) {
-    console.error('updateRecruiterProfile failed:', error);
-    throw new Error(error.message || 'Update failed');
-  }
+    .from('recruiters').update(safe).eq('id', recruiterId).select().single();
+  if (error) throw new Error(error.message || 'Update failed');
   return data;
 }
 
@@ -352,14 +323,13 @@ const SKILL_OPTIONS = [
 ];
 const LOGO_EMOJIS = ['🚀','⚡','🎯','💡','🔥','🌊','🛠️','📊','🎨','🌱','⭐','🦾','🧬','🌐','🔮','🎮'];
 
+// ─── 5 sidebar tabs — no "Post a role" slot ──────────────────────────────
 const NAV_ITEMS = [
-  { id: 'home',       label: 'Home',        icon: Home },
-  { id: 'roles',      label: 'Roles',       icon: Layers },
-  { id: 'candidates', label: 'Candidates',  icon: UserCheck },
-  { id: 'pipeline',   label: 'Pipeline',    icon: GitBranch },
-  { id: 'post',       label: 'Post a role', icon: Plus },
-  { id: 'profile',    label: 'Profile',     icon: Building2 },
-  { id: 'network',    label: 'Network',     icon: Network },
+  { id: 'home',    label: 'Home',    icon: Home },
+  { id: 'roles',   label: 'Roles',   icon: Layers },
+  { id: 'hiring',  label: 'Hiring',  icon: UserCheck },
+  { id: 'profile', label: 'Profile', icon: Building2 },
+  { id: 'network', label: 'Network', icon: Network },
 ];
 
 const STATUS_META = {
@@ -459,52 +429,73 @@ function btnGhost() {
     transition: 'border-color 0.15s, color 0.15s',
   };
 }
-
-// Eyebrow + heading combo (matches student dashboard pattern)
-function PageHeader({ eyebrow, title, subtitle }) {
+function PageHeader({ eyebrow, title, subtitle, action }) {
   return (
-    <div style={{ marginBottom: 28 }}>
-      <p style={{ fontSize: 10, fontWeight: 600, letterSpacing: '0.1em', textTransform: 'uppercase', color: 'var(--text-dim)', marginBottom: 6 }}>
-        {eyebrow}
-      </p>
-      <h1 style={{ fontFamily: "'Editorial New', Georgia, serif", fontSize: 28, fontWeight: 400, color: 'var(--text)', margin: 0, lineHeight: 1.2 }}>
-        {title}
-      </h1>
-      {subtitle && (
-        <p style={{ fontSize: 13, color: 'var(--text-mid)', marginTop: 8, lineHeight: 1.5, maxWidth: 560 }}>
-          {subtitle}
+    <div style={{ marginBottom: 28, display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between' }}>
+      <div>
+        <p style={{ fontSize: 10, fontWeight: 600, letterSpacing: '0.1em', textTransform: 'uppercase', color: 'var(--text-dim)', marginBottom: 6 }}>
+          {eyebrow}
         </p>
-      )}
+        <h1 style={{ fontFamily: "'Editorial New', Georgia, serif", fontSize: 28, fontWeight: 400, color: 'var(--text)', margin: 0, lineHeight: 1.2 }}>
+          {title}
+        </h1>
+        {subtitle && (
+          <p style={{ fontSize: 13, color: 'var(--text-mid)', marginTop: 8, lineHeight: 1.5, maxWidth: 560 }}>
+            {subtitle}
+          </p>
+        )}
+      </div>
+      {action && <div style={{ flexShrink: 0, marginTop: 4 }}>{action}</div>}
+    </div>
+  );
+}
+
+// Reusable underline sub-tab strip (matches StudentDashboard exactly)
+function SubTabStrip({ tabs, active, onChange }) {
+  return (
+    <div style={{ display: 'flex', borderBottom: '1px solid var(--border)', marginBottom: 22 }}>
+      {tabs.map(t => (
+        <button key={t.id} onClick={() => onChange(t.id)} style={{
+          padding: '10px 18px', fontSize: 13, fontFamily: 'inherit', cursor: 'pointer',
+          background: 'transparent', border: 'none',
+          borderBottom: `2px solid ${active === t.id ? 'var(--text)' : 'transparent'}`,
+          color: active === t.id ? 'var(--text)' : 'var(--text-dim)',
+          fontWeight: active === t.id ? 600 : 400, marginBottom: -1,
+          transition: 'color 0.15s, border-color 0.15s', whiteSpace: 'nowrap',
+        }}>{t.label}</button>
+      ))}
     </div>
   );
 }
 
 // ═══════════════════════════════════════════════════════════════════════════
-// 5. POST ROLE — MANUAL FORM
+// 5. POST ROLE — SLIDE-OVER DRAWER
+//    Triggered from: Roles tab header button OR Home quick action
 // ═══════════════════════════════════════════════════════════════════════════
-function PostRoleManual({ recruiter, prefill, onSuccess, onError }) {
-  const [saving, setSaving] = useState(false);
+function PostRoleDrawer({ recruiter, open, onClose, onSuccess, showToast }) {
   const [skillInput, setSkillInput] = useState('');
-  const [niceInput, setNiceInput] = useState('');
+  const [niceInput, setNiceInput]   = useState('');
+  const [saving, setSaving]         = useState(false);
   const [form, setForm] = useState(() => ({
-    logo: prefill?.logo || recruiter.startups?.logo_emoji || '🚀',
-    role: prefill?.role || '',
-    description: prefill?.description || '',
-    stipend: prefill?.stipend || '',
-    duration: prefill?.duration || '',
-    location: prefill?.location || '',
-    type: prefill?.type || 'Paid Internship',
-    visibility: 'public',
-    required_skills: prefill?.required_skills || [],
-    nice_to_have: prefill?.nice_to_have || [],
-    max_applicants: 50,
-    minimum_match_threshold: 50,
-    positions: 1,
+    logo: recruiter?.startups?.logo_emoji || '🚀',
+    role: '', description: '', stipend: '', duration: '',
+    location: '', type: 'Paid Internship', visibility: 'public',
+    required_skills: [], nice_to_have: [],
+    max_applicants: 50, minimum_match_threshold: 50, positions: 1,
   }));
 
+  // Reset form when drawer closes
   useEffect(() => {
-    if (prefill) setForm(f => ({ ...f, ...prefill, logo: prefill.logo || f.logo, visibility: f.visibility, max_applicants: f.max_applicants, minimum_match_threshold: f.minimum_match_threshold, positions: f.positions }));
-  }, [prefill]);
+    if (!open) {
+      setForm({
+        logo: recruiter?.startups?.logo_emoji || '🚀',
+        role: '', description: '', stipend: '', duration: '',
+        location: '', type: 'Paid Internship', visibility: 'public',
+        required_skills: [], nice_to_have: [],
+        max_applicants: 50, minimum_match_threshold: 50, positions: 1,
+      });
+    }
+  }, [open]);
 
   const set = (k) => (v) => setForm(f => ({ ...f, [k]: v }));
 
@@ -523,12 +514,11 @@ function PostRoleManual({ recruiter, prefill, onSuccess, onError }) {
   };
 
   const handleSubmit = async () => {
-    if (!form.role.trim())     return onError('Role title is required.');
-    if (!form.stipend.trim())  return onError('Stipend is required.');
-    if (!form.duration.trim()) return onError('Duration is required.');
-    if (!form.location.trim()) return onError('Location is required.');
-    if (form.required_skills.length === 0) return onError('Add at least one required skill.');
-
+    if (!form.role.trim())     return showToast('Role title is required.', 'error');
+    if (!form.stipend.trim())  return showToast('Stipend is required.', 'error');
+    if (!form.duration.trim()) return showToast('Duration is required.', 'error');
+    if (!form.location.trim()) return showToast('Location is required.', 'error');
+    if (form.required_skills.length === 0) return showToast('Add at least one required skill.', 'error');
     setSaving(true);
     try {
       const totalW = form.required_skills.reduce((s, sk) => s + sk.weight, 0);
@@ -536,28 +526,18 @@ function PostRoleManual({ recruiter, prefill, onSuccess, onError }) {
       const startupName = recruiter.startups?.name || recruiter.company_name || 'Company';
       const slug = `${startupName.toLowerCase().replace(/\s+/g, '-')}-${form.role.toLowerCase().replace(/\s+/g, '-')}-${Date.now()}`;
       await createJob({
-        recruiter_id:        recruiter.id,
-        company:             startupName,
-        logo:                form.logo,
-        role:                form.role.trim(),
-        description:         form.description.trim(),
-        stipend:             form.stipend.trim(),
-        duration:            form.duration.trim(),
-        location:            form.location.trim(),
-        type:                form.type,
-        visibility:          form.visibility,
-        share_slug:          slug,
-        required_skills:     normSkills,
-        nice_to_have:        form.nice_to_have,
-        max_applicants:      form.max_applicants,
+        recruiter_id: recruiter.id, company: startupName,
+        logo: form.logo, role: form.role.trim(), description: form.description.trim(),
+        stipend: form.stipend.trim(), duration: form.duration.trim(), location: form.location.trim(),
+        type: form.type, visibility: form.visibility, share_slug: slug,
+        required_skills: normSkills, nice_to_have: form.nice_to_have,
+        max_applicants: form.max_applicants,
         minimum_match_threshold: form.minimum_match_threshold,
-        positions:           form.positions,
-        current_applicants:  0,
-        is_active:           true,
-        status:              'live',
+        positions: form.positions, current_applicants: 0, is_active: true, status: 'live',
       });
       onSuccess();
-    } catch (e) { onError('Failed: ' + (e.message || 'Unknown error')); }
+      onClose();
+    } catch (e) { showToast('Failed: ' + (e.message || 'Unknown error'), 'error'); }
     finally    { setSaving(false); }
   };
 
@@ -570,168 +550,203 @@ function PostRoleManual({ recruiter, prefill, onSuccess, onError }) {
   });
 
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', gap: 18 }}>
-      <div style={{ display: 'flex', gap: 14, alignItems: 'flex-end' }}>
-        <div style={{ flexShrink: 0 }}>
-          <Label>Logo</Label>
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 5, width: 152 }}>
-            {LOGO_EMOJIS.slice(0, 8).map(e => (
-              <button key={e} onClick={() => set('logo')(e)} style={{
-                width: 34, height: 34, borderRadius: 6, fontSize: 17, cursor: 'pointer',
-                border: `1.5px solid ${form.logo === e ? 'var(--text)' : 'var(--border)'}`,
-                background: form.logo === e ? 'var(--bg-subtle)' : 'var(--bg-subtle)',
-              }}>{e}</button>
-            ))}
+    <>
+      {/* Backdrop */}
+      {open && (
+        <div onClick={onClose} style={{
+          position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.35)',
+          zIndex: 9000, backdropFilter: 'blur(2px)',
+        }} />
+      )}
+
+      {/* Drawer panel */}
+      <div style={{
+        position: 'fixed', top: 0, right: 0, bottom: 0,
+        width: 500, background: 'var(--bg-card)', borderLeft: '1px solid var(--border)',
+        zIndex: 9001, display: 'flex', flexDirection: 'column',
+        transform: open ? 'translateX(0)' : 'translateX(100%)',
+        transition: 'transform 0.28s cubic-bezier(0.4, 0, 0.2, 1)',
+        boxShadow: open ? '-8px 0 40px rgba(0,0,0,0.12)' : 'none',
+      }}>
+        {/* Drawer header */}
+        <div style={{
+          padding: '18px 22px', borderBottom: '1px solid var(--border)',
+          display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexShrink: 0,
+        }}>
+          <div>
+            <p style={{ fontSize: 10, fontWeight: 600, letterSpacing: '0.1em', textTransform: 'uppercase', color: 'var(--text-dim)', margin: 0, marginBottom: 4 }}>
+              Post a role
+            </p>
+            <h2 style={{ fontFamily: "'Editorial New', Georgia, serif", fontSize: 20, fontWeight: 400, color: 'var(--text)', margin: 0 }}>
+              Hire your next <em>intern.</em>
+            </h2>
           </div>
+          <button onClick={onClose} style={{
+            background: 'transparent', border: '1px solid var(--border)',
+            borderRadius: 7, cursor: 'pointer', color: 'var(--text-dim)',
+            display: 'flex', alignItems: 'center', justifyContent: 'center',
+            width: 32, height: 32, flexShrink: 0,
+          }}><X size={14} /></button>
         </div>
-        <div style={{ flex: 1 }}>
-          <Label required>Role title</Label>
-          <FocusInput value={form.role} onChange={e => set('role')(e.target.value)} placeholder="Backend Engineering Intern" />
-        </div>
-      </div>
 
-      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
-        <div><Label required>Stipend</Label><FocusInput value={form.stipend} onChange={e => set('stipend')(e.target.value)} placeholder="₹25,000/month" /></div>
-        <div><Label required>Duration</Label><FocusInput value={form.duration} onChange={e => set('duration')(e.target.value)} placeholder="3 / 6 months" /></div>
-        <div><Label required>Location</Label><FocusInput value={form.location} onChange={e => set('location')(e.target.value)} placeholder="Remote / Mumbai" /></div>
-        <div><Label>Type</Label>
-          <FocusSelect value={form.type} onChange={e => set('type')(e.target.value)}>
-            <option>Paid Internship</option><option>Unpaid Internship</option>
-            <option>Contract</option><option>Part-time</option>
-          </FocusSelect>
-        </div>
-      </div>
+        {/* Scrollable form body */}
+        <div style={{ flex: 1, overflowY: 'auto', padding: '22px' }}>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 18 }}>
 
-      <div>
-        <Label>Description</Label>
-        <FocusTextarea value={form.description} onChange={e => set('description')(e.target.value)} rows={3}
-          placeholder="What will the intern actually work on? Be specific — 2-3 sentences." />
-      </div>
-
-      <div>
-        <Label required>Required skills</Label>
-        <p style={{ fontSize: 11, color: 'var(--text-dim)', marginBottom: 8 }}>Type a skill and press Enter. Set level 1–5 for each.</p>
-        <div style={{ display: 'flex', gap: 8, marginBottom: 10 }}>
-          <FocusInput value={skillInput} onChange={e => setSkillInput(e.target.value)}
-            placeholder="React, Node.js, Python…" onKeyDown={e => e.key === 'Enter' && (e.preventDefault(), addSkill())}
-            list="skill-suggestions" style={{ flex: 1 }} />
-          <datalist id="skill-suggestions">{SKILL_OPTIONS.map(s => <option key={s} value={s} />)}</datalist>
-          <button onClick={addSkill} style={btnPrimary(false)}>Add</button>
-        </div>
-        {form.required_skills.length > 0 && (
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
-            {form.required_skills.map(skill => (
-              <div key={skill.name} style={{
-                display: 'flex', alignItems: 'center', gap: 10,
-                padding: '8px 12px', borderRadius: 8,
-                border: '1px solid var(--border)', background: 'var(--bg-subtle)',
-              }}>
-                <span style={{ fontSize: 12, fontWeight: 500, color: 'var(--text)', flex: 1 }}>{skill.name}</span>
-                <span style={{ fontSize: 10, color: 'var(--text-dim)' }}>Level</span>
-                <div style={{ display: 'flex', gap: 3 }}>
-                  {[1,2,3,4,5].map(lv => (
-                    <button key={lv} onClick={() => setForm(f => ({ ...f, required_skills: f.required_skills.map(s => s.name === skill.name ? { ...s, level: lv } : s) }))}
-                      style={{
-                        width: 22, height: 22, borderRadius: 4, fontSize: 10, fontWeight: 600,
-                        cursor: 'pointer', fontFamily: 'inherit', border: 'none',
-                        background: skill.level >= lv ? 'var(--text)' : 'var(--bg-card)',
-                        color: skill.level >= lv ? 'var(--bg)' : 'var(--text-dim)',
-                        outline: skill.level >= lv ? 'none' : '1px solid var(--border)',
-                      }}>{lv}</button>
+            {/* Logo + Role */}
+            <div style={{ display: 'flex', gap: 14, alignItems: 'flex-end' }}>
+              <div style={{ flexShrink: 0 }}>
+                <Label>Logo</Label>
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 5, width: 152 }}>
+                  {LOGO_EMOJIS.slice(0, 8).map(e => (
+                    <button key={e} onClick={() => set('logo')(e)} style={{
+                      width: 34, height: 34, borderRadius: 6, fontSize: 17, cursor: 'pointer',
+                      border: `1.5px solid ${form.logo === e ? 'var(--text)' : 'var(--border)'}`,
+                      background: 'var(--bg-subtle)',
+                    }}>{e}</button>
                   ))}
                 </div>
-                <button onClick={() => removeSkill(skill.name)}
-                  style={{ background: 'transparent', border: 'none', cursor: 'pointer', color: 'var(--text-dim)', display: 'flex', padding: 0 }}>
-                  <X size={14} />
-                </button>
               </div>
-            ))}
-          </div>
-        )}
-      </div>
+              <div style={{ flex: 1 }}>
+                <Label required>Role title</Label>
+                <FocusInput value={form.role} onChange={e => set('role')(e.target.value)} placeholder="Backend Engineering Intern" />
+              </div>
+            </div>
 
-      <div>
-        <Label>Nice to have (optional)</Label>
-        <div style={{ display: 'flex', gap: 8, marginBottom: 8 }}>
-          <FocusInput value={niceInput} onChange={e => setNiceInput(e.target.value)}
-            placeholder="Docker, AWS…" onKeyDown={e => e.key === 'Enter' && (e.preventDefault(), addNice())}
-            list="skill-suggestions" style={{ flex: 1 }} />
-          <button onClick={addNice} style={btnGhost()}>Add</button>
-        </div>
-        {form.nice_to_have.length > 0 && (
-          <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>
-            {form.nice_to_have.map(s => (
-              <span key={s} style={{ display: 'flex', alignItems: 'center', gap: 4, fontSize: 11, padding: '3px 10px', borderRadius: 20, border: '1px solid var(--border)', color: 'var(--text-mid)' }}>
-                {s}
-                <button onClick={() => setForm(f => ({ ...f, nice_to_have: f.nice_to_have.filter(x => x !== s) }))}
-                  style={{ background: 'transparent', border: 'none', cursor: 'pointer', color: 'var(--text-dim)', display: 'flex', padding: 0 }}>
-                  <X size={10} />
-                </button>
-              </span>
-            ))}
-          </div>
-        )}
-      </div>
+            {/* Grid fields */}
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
+              <div><Label required>Stipend</Label><FocusInput value={form.stipend} onChange={e => set('stipend')(e.target.value)} placeholder="₹25,000/month" /></div>
+              <div><Label required>Duration</Label><FocusInput value={form.duration} onChange={e => set('duration')(e.target.value)} placeholder="3 / 6 months" /></div>
+              <div><Label required>Location</Label><FocusInput value={form.location} onChange={e => set('location')(e.target.value)} placeholder="Remote / Mumbai" /></div>
+              <div><Label>Type</Label>
+                <FocusSelect value={form.type} onChange={e => set('type')(e.target.value)}>
+                  <option>Paid Internship</option><option>Unpaid Internship</option>
+                  <option>Contract</option><option>Part-time</option>
+                </FocusSelect>
+              </div>
+            </div>
 
-      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 12 }}>
-        <div>
-          <Label>Visibility</Label>
-          <div style={{ display: 'flex', gap: 6 }}>
-            {['public', 'private'].map(v => (
-              <button key={v} onClick={() => set('visibility')(v)} style={chipBtn(form.visibility === v)}>
-                {v === 'public' ? 'Public' : 'Link only'}
-              </button>
-            ))}
+            {/* Description */}
+            <div>
+              <Label>Description</Label>
+              <FocusTextarea value={form.description} onChange={e => set('description')(e.target.value)} rows={3}
+                placeholder="What will the intern actually work on? Be specific — 2-3 sentences." />
+            </div>
+
+            {/* Required skills */}
+            <div>
+              <Label required>Required skills</Label>
+              <p style={{ fontSize: 11, color: 'var(--text-dim)', marginBottom: 8 }}>Type a skill and press Enter. Set level 1–5 for each.</p>
+              <div style={{ display: 'flex', gap: 8, marginBottom: 10 }}>
+                <FocusInput value={skillInput} onChange={e => setSkillInput(e.target.value)}
+                  placeholder="React, Node.js, Python…" onKeyDown={e => e.key === 'Enter' && (e.preventDefault(), addSkill())}
+                  list="skill-suggestions-drawer" style={{ flex: 1 }} />
+                <datalist id="skill-suggestions-drawer">{SKILL_OPTIONS.map(s => <option key={s} value={s} />)}</datalist>
+                <button onClick={addSkill} style={btnPrimary(false)}>Add</button>
+              </div>
+              {form.required_skills.length > 0 && (
+                <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+                  {form.required_skills.map(skill => (
+                    <div key={skill.name} style={{
+                      display: 'flex', alignItems: 'center', gap: 10,
+                      padding: '8px 12px', borderRadius: 8,
+                      border: '1px solid var(--border)', background: 'var(--bg-subtle)',
+                    }}>
+                      <span style={{ fontSize: 12, fontWeight: 500, color: 'var(--text)', flex: 1 }}>{skill.name}</span>
+                      <span style={{ fontSize: 10, color: 'var(--text-dim)' }}>Level</span>
+                      <div style={{ display: 'flex', gap: 3 }}>
+                        {[1,2,3,4,5].map(lv => (
+                          <button key={lv} onClick={() => setForm(f => ({ ...f, required_skills: f.required_skills.map(s => s.name === skill.name ? { ...s, level: lv } : s) }))}
+                            style={{
+                              width: 22, height: 22, borderRadius: 4, fontSize: 10, fontWeight: 600,
+                              cursor: 'pointer', fontFamily: 'inherit', border: 'none',
+                              background: skill.level >= lv ? 'var(--text)' : 'var(--bg-card)',
+                              color: skill.level >= lv ? 'var(--bg)' : 'var(--text-dim)',
+                              outline: skill.level >= lv ? 'none' : '1px solid var(--border)',
+                            }}>{lv}</button>
+                        ))}
+                      </div>
+                      <button onClick={() => removeSkill(skill.name)}
+                        style={{ background: 'transparent', border: 'none', cursor: 'pointer', color: 'var(--text-dim)', display: 'flex', padding: 0 }}>
+                        <X size={14} />
+                      </button>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+
+            {/* Nice to have */}
+            <div>
+              <Label>Nice to have (optional)</Label>
+              <div style={{ display: 'flex', gap: 8, marginBottom: 8 }}>
+                <FocusInput value={niceInput} onChange={e => setNiceInput(e.target.value)}
+                  placeholder="Docker, AWS…" onKeyDown={e => e.key === 'Enter' && (e.preventDefault(), addNice())}
+                  list="skill-suggestions-drawer" style={{ flex: 1 }} />
+                <button onClick={addNice} style={btnGhost()}>Add</button>
+              </div>
+              {form.nice_to_have.length > 0 && (
+                <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>
+                  {form.nice_to_have.map(s => (
+                    <span key={s} style={{ display: 'flex', alignItems: 'center', gap: 4, fontSize: 11, padding: '3px 10px', borderRadius: 20, border: '1px solid var(--border)', color: 'var(--text-mid)' }}>
+                      {s}
+                      <button onClick={() => setForm(f => ({ ...f, nice_to_have: f.nice_to_have.filter(x => x !== s) }))}
+                        style={{ background: 'transparent', border: 'none', cursor: 'pointer', color: 'var(--text-dim)', display: 'flex', padding: 0 }}>
+                        <X size={10} />
+                      </button>
+                    </span>
+                  ))}
+                </div>
+              )}
+            </div>
+
+            {/* Config row */}
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 12 }}>
+              <div>
+                <Label>Visibility</Label>
+                <div style={{ display: 'flex', gap: 6 }}>
+                  {['public', 'private'].map(v => (
+                    <button key={v} onClick={() => set('visibility')(v)} style={chipBtn(form.visibility === v)}>
+                      {v === 'public' ? 'Public' : 'Link only'}
+                    </button>
+                  ))}
+                </div>
+              </div>
+              <div>
+                <Label>Max applicants</Label>
+                <div style={{ display: 'flex', gap: 4 }}>
+                  {[25, 50, 100].map(n => (
+                    <button key={n} onClick={() => set('max_applicants')(n)} style={chipBtn(form.max_applicants === n)}>{n}</button>
+                  ))}
+                </div>
+              </div>
+              <div>
+                <Label>Min match %</Label>
+                <div style={{ display: 'flex', gap: 4 }}>
+                  {[40, 50, 70].map(n => (
+                    <button key={n} onClick={() => set('minimum_match_threshold')(n)} style={chipBtn(form.minimum_match_threshold === n)}>{n}%</button>
+                  ))}
+                </div>
+              </div>
+            </div>
+
           </div>
         </div>
-        <div>
-          <Label>Max applicants</Label>
-          <div style={{ display: 'flex', gap: 4 }}>
-            {[25, 50, 100].map(n => (
-              <button key={n} onClick={() => set('max_applicants')(n)} style={chipBtn(form.max_applicants === n)}>{n}</button>
-            ))}
-          </div>
-        </div>
-        <div>
-          <Label>Min match %</Label>
-          <div style={{ display: 'flex', gap: 4 }}>
-            {[40, 50, 70].map(n => (
-              <button key={n} onClick={() => set('minimum_match_threshold')(n)} style={chipBtn(form.minimum_match_threshold === n)}>{n}%</button>
-            ))}
-          </div>
+
+        {/* Sticky footer CTA */}
+        <div style={{ padding: '14px 22px', borderTop: '1px solid var(--border)', flexShrink: 0, background: 'var(--bg-card)' }}>
+          <button onClick={handleSubmit} disabled={saving}
+            style={{ ...btnPrimary(saving), width: '100%', justifyContent: 'center', padding: '13px 16px', fontSize: 13 }}>
+            {saving ? 'Posting…' : 'Post role'} {!saving && <ChevronRight size={14} />}
+          </button>
         </div>
       </div>
-
-      <button onClick={handleSubmit} disabled={saving} style={{ ...btnPrimary(saving), padding: '13px 16px', justifyContent: 'center', fontSize: 13 }}>
-        {saving ? 'Posting…' : 'Post role'} {!saving && <ChevronRight size={14} />}
-      </button>
-    </div>
+    </>
   );
 }
 
 // ═══════════════════════════════════════════════════════════════════════════
-// 6. POST ROLE — AI CHAT (placeholder)
-// ═══════════════════════════════════════════════════════════════════════════
-function PostRoleAI() {
-  return (
-    <div style={{
-      display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
-      height: '100%', minHeight: 480, padding: 36, textAlign: 'center',
-      background: 'var(--bg-subtle)', border: '1px dashed var(--border)', borderRadius: 12,
-    }}>
-      <Sparkles size={28} style={{ color: 'var(--text-dim)', marginBottom: 12 }} />
-      <p style={{ fontFamily: "'Editorial New', Georgia, serif", fontSize: 18, color: 'var(--text)', margin: 0, fontWeight: 400 }}>
-        AI assistant <em>coming soon.</em>
-      </p>
-      <p style={{ fontSize: 12, color: 'var(--text-dim)', marginTop: 10, lineHeight: 1.6, maxWidth: 300 }}>
-        For now, fill out the form on the right to post a role. The AI helper will be back later.
-      </p>
-    </div>
-  );
-}
-
-// ═══════════════════════════════════════════════════════════════════════════
-// 7. APPLICANT SNAPSHOT
+// 6. APPLICANT SNAPSHOT
 // ═══════════════════════════════════════════════════════════════════════════
 function ApplicantSnapshot({ app, onStatusChange, onClose, compact = false }) {
   const s = app.students || {};
@@ -824,10 +839,10 @@ function ApplicantSnapshot({ app, onStatusChange, onClose, compact = false }) {
         )}
 
         <div style={{ display: 'flex', gap: 6, marginBottom: 16, flexWrap: 'wrap' }}>
-          {s.github_url   && <a href={s.github_url}   target="_blank" rel="noopener noreferrer" style={linkChip}><Github size={11} /> GitHub</a>}
-          {s.linkedin_url && <a href={s.linkedin_url} target="_blank" rel="noopener noreferrer" style={linkChip}><ExternalLink size={11} /> LinkedIn</a>}
-          {s.portfolio_url&& <a href={s.portfolio_url}target="_blank" rel="noopener noreferrer" style={linkChip}><ExternalLink size={11} /> Portfolio</a>}
-          {s.resume_url   && <a href={s.resume_url}   target="_blank" rel="noopener noreferrer" style={{ ...linkChip, color: 'var(--text)', borderColor: 'var(--text)' }}>📄 Resume</a>}
+          {s.github_url    && <a href={s.github_url}    target="_blank" rel="noopener noreferrer" style={linkChip}><Github size={11} /> GitHub</a>}
+          {s.linkedin_url  && <a href={s.linkedin_url}  target="_blank" rel="noopener noreferrer" style={linkChip}><ExternalLink size={11} /> LinkedIn</a>}
+          {s.portfolio_url && <a href={s.portfolio_url} target="_blank" rel="noopener noreferrer" style={linkChip}><ExternalLink size={11} /> Portfolio</a>}
+          {s.resume_url    && <a href={s.resume_url}    target="_blank" rel="noopener noreferrer" style={{ ...linkChip, color: 'var(--text)', borderColor: 'var(--text)' }}>📄 Resume</a>}
         </div>
 
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: 6 }}>
@@ -859,7 +874,7 @@ const linkChip = {
 };
 
 // ═══════════════════════════════════════════════════════════════════════════
-// 8. CANDIDATE HIGHLIGHT CARD
+// 7. CANDIDATE HIGHLIGHT CARD
 // ═══════════════════════════════════════════════════════════════════════════
 function CandidateHighlightCard({ app, onClick, isSelected }) {
   const s = app.students || {};
@@ -885,13 +900,11 @@ function CandidateHighlightCard({ app, onClick, isSelected }) {
         </div>
         <ScoreNumber score={score} size={20} />
       </div>
-
       {app.jobs?.role && (
         <p style={{ fontSize: 10, color: 'var(--text-mid)', margin: 0 }}>
           {app.jobs.logo} {app.jobs.role}
         </p>
       )}
-
       {skills.length > 0 && (
         <div style={{ display: 'flex', flexWrap: 'wrap', gap: 4 }}>
           {skills.map((sk, i) => (
@@ -904,7 +917,6 @@ function CandidateHighlightCard({ app, onClick, isSelected }) {
           )}
         </div>
       )}
-
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', paddingTop: 8, borderTop: '1px solid var(--border)' }}>
         <StatusPill status={app.status || 'pending'} />
         <ChevronRight size={14} style={{ color: 'var(--text-dim)' }} />
@@ -914,12 +926,11 @@ function CandidateHighlightCard({ app, onClick, isSelected }) {
 }
 
 // ═══════════════════════════════════════════════════════════════════════════
-// 9. ROLE CARD
+// 8. ROLE CARD
 // ═══════════════════════════════════════════════════════════════════════════
 function RoleCard({ job, onClick, onTogglePause, onCopyLink, onDelete }) {
   const filled = (job.current_applicants || 0) / (job.max_applicants || 50);
   const status = job.status || (job.is_active ? 'live' : 'paused');
-
   const statusStyle = status === 'live'
     ? { color: 'var(--green-text)', bg: 'var(--green-tint)', border: 'var(--green)', label: '● Live' }
     : status === 'paused'
@@ -930,9 +941,7 @@ function RoleCard({ job, onClick, onTogglePause, onCopyLink, onDelete }) {
     <div onClick={onClick} className="hn-card" style={{
       background: 'var(--bg-card)', border: '1px solid var(--border)',
       borderRadius: 12, padding: 18, cursor: 'pointer',
-      transition: 'border-color 0.15s, box-shadow 0.15s',
-      display: 'flex', flexDirection: 'column', gap: 12,
-      minHeight: 180,
+      transition: 'border-color 0.15s', display: 'flex', flexDirection: 'column', gap: 12, minHeight: 180,
     }}>
       <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between' }}>
         <div style={{ display: 'flex', alignItems: 'flex-start', gap: 11 }}>
@@ -946,22 +955,18 @@ function RoleCard({ job, onClick, onTogglePause, onCopyLink, onDelete }) {
           fontSize: 9, padding: '2px 8px', borderRadius: 10, fontWeight: 500,
           background: statusStyle.bg, color: statusStyle.color,
           border: `1px solid ${statusStyle.border}`,
-          textTransform: 'uppercase', letterSpacing: '0.05em',
-          whiteSpace: 'nowrap', flexShrink: 0,
+          textTransform: 'uppercase', letterSpacing: '0.05em', whiteSpace: 'nowrap', flexShrink: 0,
         }}>{statusStyle.label}</span>
       </div>
-
       <div style={{ display: 'flex', gap: 12, fontSize: 10, color: 'var(--text-mid)', flexWrap: 'wrap' }}>
         <span style={{ display: 'flex', alignItems: 'center', gap: 4 }}><MapPin size={10} /> {job.location}</span>
         <span style={{ display: 'flex', alignItems: 'center', gap: 4 }}><Users size={10} /> {job.current_applicants || 0}/{job.max_applicants || 50}</span>
       </div>
-
       <div>
         <div style={{ height: 3, borderRadius: 2, background: 'var(--border)', overflow: 'hidden' }}>
           <div style={{ height: '100%', width: `${Math.min(filled, 1) * 100}%`, background: filled > 0.8 ? 'var(--red)' : filled > 0.5 ? 'var(--amber)' : 'var(--green)', borderRadius: 2, transition: 'width 0.4s' }} />
         </div>
       </div>
-
       <div onClick={e => e.stopPropagation()} style={{ display: 'flex', gap: 4, marginTop: 'auto' }}>
         <button onClick={() => onCopyLink(job)} style={{ ...iconBtn, flex: 1 }} title="Copy share link"><Link2 size={12} /></button>
         <button onClick={() => onTogglePause(job)} style={iconBtn} title={status === 'live' ? 'Pause' : 'Resume'}>
@@ -980,7 +985,7 @@ const iconBtn = {
 };
 
 // ═══════════════════════════════════════════════════════════════════════════
-// 10. ROLE DETAIL VIEW
+// 9. ROLE DETAIL VIEW (opens inline inside RolesTab)
 // ═══════════════════════════════════════════════════════════════════════════
 function RoleDetailView({ job, onBack, onCopyLink }) {
   const [apps, setApps] = useState([]);
@@ -1027,12 +1032,11 @@ function RoleDetailView({ job, onBack, onCopyLink }) {
           </div>
           <button onClick={() => onCopyLink(job)} style={btnGhost()}><Link2 size={12} /> Share</button>
         </div>
-
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 10 }}>
           {[
-            { label: 'Applicants', val: apps.length },
-            { label: 'Avg score',  val: `${avgScore}%` },
-            { label: 'Shortlisted',val: counts.shortlisted || 0 },
+            { label: 'Applicants',  val: apps.length },
+            { label: 'Avg score',   val: `${avgScore}%` },
+            { label: 'Shortlisted', val: counts.shortlisted || 0 },
             { label: 'Interviewing',val: counts.interview || 0 },
           ].map(s => (
             <div key={s.label} style={{ background: 'var(--bg-subtle)', border: '1px solid var(--border)', borderRadius: 8, padding: '12px 14px' }}>
@@ -1043,6 +1047,7 @@ function RoleDetailView({ job, onBack, onCopyLink }) {
         </div>
       </div>
 
+      {/* Status filter chips */}
       <div style={{ display: 'flex', gap: 6, marginBottom: 14, flexWrap: 'wrap' }}>
         {[
           { id: 'all',         label: `All (${counts.all || 0})` },
@@ -1065,7 +1070,7 @@ function RoleDetailView({ job, onBack, onCopyLink }) {
       {loading ? (
         <p style={{ textAlign: 'center', color: 'var(--text-dim)', padding: 40, fontSize: 13 }}>Loading applicants…</p>
       ) : filtered.length === 0 ? (
-        <EmptyState icon="🎯" title="No applicants in this view." message="Try a different filter or share your role link to get applications." />
+        <EmptyState icon="🎯" title="No applicants in this view." message="Try a different filter or share your role link." />
       ) : (
         <div style={{ display: 'grid', gridTemplateColumns: selectedApp ? '1fr 380px' : '1fr', gap: 16 }}>
           <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
@@ -1092,8 +1097,7 @@ function ApplicantRow({ app, rank, onClick, isSelected }) {
       background: 'var(--bg-card)',
       border: isSelected ? '1.5px solid var(--text)' : '1px solid var(--border)',
       borderRadius: 10, padding: '13px 16px', cursor: 'pointer',
-      display: 'flex', alignItems: 'center', gap: 12,
-      transition: 'border-color 0.15s',
+      display: 'flex', alignItems: 'center', gap: 12, transition: 'border-color 0.15s',
     }}>
       <span style={{ fontSize: 10, color: 'var(--text-dim)', width: 22, flexShrink: 0, textAlign: 'center', fontFamily: "'Editorial New', Georgia, serif" }}>#{rank}</span>
       <Avatar name={s.full_name} size={34} />
@@ -1110,14 +1114,14 @@ function ApplicantRow({ app, rank, onClick, isSelected }) {
 }
 
 // ═══════════════════════════════════════════════════════════════════════════
-// 11. TAB: HOME
+// 10. TAB: HOME
 // ═══════════════════════════════════════════════════════════════════════════
-function HomeTab({ recruiter, jobs, allApps, onNavigate, onSelectApp }) {
-  const liveJobs   = jobs.filter(j => (j.status || (j.is_active ? 'live' : 'paused')) === 'live');
-  const totalApps  = allApps.length;
-  const shortlisted= allApps.filter(a => a.status === 'shortlisted').length;
-  const hired      = allApps.filter(a => a.status === 'hired').length;
-  const avgScore   = allApps.length ? Math.round(allApps.reduce((s, a) => s + (a.match_score || 0), 0) / allApps.length) : 0;
+function HomeTab({ recruiter, jobs, allApps, onNavigate, onPostRole }) {
+  const liveJobs    = jobs.filter(j => (j.status || (j.is_active ? 'live' : 'paused')) === 'live');
+  const totalApps   = allApps.length;
+  const shortlisted = allApps.filter(a => a.status === 'shortlisted').length;
+  const hired       = allApps.filter(a => a.status === 'hired').length;
+  const avgScore    = allApps.length ? Math.round(allApps.reduce((s, a) => s + (a.match_score || 0), 0) / allApps.length) : 0;
 
   const topPicks = useMemo(() => {
     return [...allApps]
@@ -1127,7 +1131,7 @@ function HomeTab({ recruiter, jobs, allApps, onNavigate, onSelectApp }) {
   }, [allApps]);
 
   const startupName = recruiter.startups?.name || recruiter.company_name || 'there';
-  const firstName = recruiter.contact_name?.split(' ')[0] || 'recruiter';
+  const firstName   = recruiter.contact_name?.split(' ')[0] || 'recruiter';
 
   return (
     <div>
@@ -1142,10 +1146,10 @@ function HomeTab({ recruiter, jobs, allApps, onNavigate, onSelectApp }) {
       {/* Stat row */}
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 12, marginBottom: 32 }}>
         {[
-          { label: 'Live roles',   val: liveJobs.length },
-          { label: 'Applicants',   val: totalApps },
-          { label: 'Shortlisted',  val: shortlisted },
-          { label: 'Hired',        val: hired },
+          { label: 'Live roles',  val: liveJobs.length },
+          { label: 'Applicants',  val: totalApps },
+          { label: 'Shortlisted', val: shortlisted },
+          { label: 'Hired',       val: hired },
         ].map(s => (
           <div key={s.label} style={{ background: 'var(--bg-card)', border: '1px solid var(--border)', borderRadius: 12, padding: '16px 20px' }}>
             <p style={{ fontSize: 10, fontWeight: 600, letterSpacing: '0.1em', textTransform: 'uppercase', color: 'var(--text-dim)', marginBottom: 8 }}>{s.label}</p>
@@ -1155,10 +1159,11 @@ function HomeTab({ recruiter, jobs, allApps, onNavigate, onSelectApp }) {
       </div>
 
       <div style={{ display: 'grid', gridTemplateColumns: '1fr 280px', gap: 28 }}>
+        {/* Top picks */}
         <div>
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 14 }}>
             <h3 style={{ fontFamily: "'Editorial New', Georgia, serif", fontSize: 18, color: 'var(--text)', margin: 0, fontWeight: 400 }}>Top picks for you</h3>
-            <button onClick={() => onNavigate('candidates')} style={{ ...btnGhost(), padding: '5px 10px' }}>
+            <button onClick={() => onNavigate('hiring')} style={{ ...btnGhost(), padding: '5px 10px' }}>
               See all <ChevronRight size={11} />
             </button>
           </div>
@@ -1167,22 +1172,24 @@ function HomeTab({ recruiter, jobs, allApps, onNavigate, onSelectApp }) {
           ) : (
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: 10 }}>
               {topPicks.map(app => (
-                <CandidateHighlightCard key={app.id} app={app} onClick={() => onSelectApp(app)} />
+                <CandidateHighlightCard key={app.id} app={app} onClick={() => onNavigate('hiring')} />
               ))}
             </div>
           )}
         </div>
 
+        {/* Quick actions */}
         <div>
           <h3 style={{ fontFamily: "'Editorial New', Georgia, serif", fontSize: 18, color: 'var(--text)', margin: '0 0 14px', fontWeight: 400 }}>Quick actions</h3>
           <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
-            <button onClick={() => onNavigate('post')} style={{ ...btnPrimary(false), justifyContent: 'flex-start', padding: '12px 14px' }}>
+            {/* "Post a role" triggers drawer — same as Roles tab button */}
+            <button onClick={onPostRole} style={{ ...btnPrimary(false), justifyContent: 'flex-start', padding: '12px 14px' }}>
               <Plus size={14} /> Post a new role
             </button>
-            <button onClick={() => onNavigate('candidates')} style={{ ...btnGhost(), justifyContent: 'flex-start', padding: '12px 14px', textAlign: 'left' }}>
+            <button onClick={() => onNavigate('hiring')} style={{ ...btnGhost(), justifyContent: 'flex-start', padding: '12px 14px', textAlign: 'left' }}>
               <UserCheck size={14} /> Browse all candidates
             </button>
-            <button onClick={() => onNavigate('pipeline')} style={{ ...btnGhost(), justifyContent: 'flex-start', padding: '12px 14px' }}>
+            <button onClick={() => onNavigate('hiring')} style={{ ...btnGhost(), justifyContent: 'flex-start', padding: '12px 14px' }}>
               <GitBranch size={14} /> View pipeline
             </button>
             <button onClick={() => onNavigate('roles')} style={{ ...btnGhost(), justifyContent: 'flex-start', padding: '12px 14px' }}>
@@ -1204,9 +1211,11 @@ function HomeTab({ recruiter, jobs, allApps, onNavigate, onSelectApp }) {
 }
 
 // ═══════════════════════════════════════════════════════════════════════════
-// 12. TAB: ROLES
+// 11. TAB: ROLES
+//     Subtabs: Live | Paused | Closed
+//     Header action: "Post a role" button (triggers drawer via onPostRole)
 // ═══════════════════════════════════════════════════════════════════════════
-function RolesTab({ jobs, onCopyLink, onTogglePause, onDelete }) {
+function RolesTab({ jobs, onCopyLink, onTogglePause, onDelete, onPostRole }) {
   const [subTab, setSubTab] = useState('live');
   const [openJob, setOpenJob] = useState(null);
 
@@ -1216,37 +1225,41 @@ function RolesTab({ jobs, onCopyLink, onTogglePause, onDelete }) {
     closed: jobs.filter(j => j.status === 'closed'),
   };
 
+  const SUBTABS = [
+    { id: 'live',   label: `Live (${grouped.live.length})` },
+    { id: 'paused', label: `Paused (${grouped.paused.length})` },
+    { id: 'closed', label: `Closed (${grouped.closed.length})` },
+  ];
+
   if (openJob) {
     return <RoleDetailView job={openJob} onBack={() => setOpenJob(null)} onCopyLink={onCopyLink} />;
   }
 
   return (
     <div>
-      <PageHeader eyebrow="Roles" title={<>Manage your <em>roles.</em></>} />
+      <PageHeader
+        eyebrow="Roles"
+        title={<>Manage your <em>roles.</em></>}
+        action={
+          <button onClick={onPostRole} style={{ ...btnPrimary(false), padding: '10px 16px' }}>
+            <Plus size={13} /> Post a role
+          </button>
+        }
+      />
 
-      {/* Tab strip — black underline like student dashboard */}
-      <div style={{ display: 'flex', gap: 4, marginBottom: 22, borderBottom: '1px solid var(--border)' }}>
-        {[
-          { id: 'live',   label: `Live (${grouped.live.length})` },
-          { id: 'paused', label: `Paused (${grouped.paused.length})` },
-          { id: 'closed', label: `Closed (${grouped.closed.length})` },
-        ].map(t => (
-          <button key={t.id} onClick={() => setSubTab(t.id)} style={{
-            padding: '10px 16px', fontSize: 13, fontFamily: 'inherit', cursor: 'pointer',
-            background: 'transparent', border: 'none',
-            borderBottom: `2px solid ${subTab === t.id ? 'var(--text)' : 'transparent'}`,
-            color: subTab === t.id ? 'var(--text)' : 'var(--text-dim)',
-            fontWeight: subTab === t.id ? 600 : 400, marginBottom: -1,
-            transition: 'color 0.15s, border-color 0.15s',
-          }}>{t.label}</button>
-        ))}
-      </div>
+      {/* Subtabs: Live | Paused | Closed */}
+      <SubTabStrip tabs={SUBTABS} active={subTab} onChange={setSubTab} />
 
       {grouped[subTab].length === 0 ? (
         <EmptyState
           icon={subTab === 'live' ? '📋' : subTab === 'paused' ? '⏸' : '✕'}
           title={`No ${subTab} roles.`}
           message={subTab === 'live' ? 'Post your first role to start receiving matched candidates.' : `Roles you ${subTab === 'paused' ? 'pause' : 'close'} will appear here.`}
+          cta={subTab === 'live' && (
+            <button onClick={onPostRole} style={{ ...btnPrimary(false), margin: '0 auto' }}>
+              <Plus size={13} /> Post a role
+            </button>
+          )}
         />
       ) : (
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))', gap: 14 }}>
@@ -1264,18 +1277,49 @@ function RolesTab({ jobs, onCopyLink, onTogglePause, onDelete }) {
 }
 
 // ═══════════════════════════════════════════════════════════════════════════
-// 13. TAB: CANDIDATES
+// 12. TAB: HIRING
+//     Subtabs: Top Picks | Pipeline
+//     (Merges old Candidates tab + Pipeline tab into one logical home)
 // ═══════════════════════════════════════════════════════════════════════════
-function CandidatesTab({ allApps, onStatusChange }) {
+function HiringTab({ allApps, onStatusChange }) {
+  const [subTab, setSubTab] = useState('top-picks');
+
+  const SUBTABS = [
+    { id: 'top-picks', label: 'Top Picks' },
+    { id: 'pipeline',  label: 'Pipeline' },
+  ];
+
+  return (
+    <div>
+      <PageHeader
+        eyebrow="Hiring"
+        title={<>Your <em>hiring</em> centre.</>}
+        subtitle="Review top candidates and move them through your pipeline."
+      />
+
+      <SubTabStrip tabs={SUBTABS} active={subTab} onChange={setSubTab} />
+
+      {subTab === 'top-picks' && (
+        <TopPicksView allApps={allApps} onStatusChange={onStatusChange} />
+      )}
+      {subTab === 'pipeline' && (
+        <PipelineView allApps={allApps} onStatusChange={onStatusChange} />
+      )}
+    </div>
+  );
+}
+
+// ── Top Picks view (was CandidatesTab) ─────────────────────────────────────
+function TopPicksView({ allApps, onStatusChange }) {
   const [cap, setCap] = useState(6);
   const [filter, setFilter] = useState('all');
   const [selectedApp, setSelectedApp] = useState(null);
 
   const filtered = useMemo(() => {
     let list = [...allApps].sort((a, b) => (b.match_score || 0) - (a.match_score || 0));
-    if (filter === 'unreviewed')   list = list.filter(a => !a.status || a.status === 'pending');
-    if (filter === 'shortlisted')  list = list.filter(a => a.status === 'shortlisted');
-    if (filter === 'high-match')   list = list.filter(a => (a.match_score || 0) >= 80);
+    if (filter === 'unreviewed')  list = list.filter(a => !a.status || a.status === 'pending');
+    if (filter === 'shortlisted') list = list.filter(a => a.status === 'shortlisted');
+    if (filter === 'high-match')  list = list.filter(a => (a.match_score || 0) >= 80);
     return list.slice(0, Math.min(cap, list.length));
   }, [allApps, filter, cap]);
 
@@ -1283,13 +1327,8 @@ function CandidatesTab({ allApps, onStatusChange }) {
 
   return (
     <div>
-      <PageHeader
-        eyebrow="Candidates"
-        title={<>Hunt's <em>top picks.</em></>}
-        subtitle={`Ranked by match score across all your live roles. ${totalAvailable} total applicant${totalAvailable === 1 ? '' : 's'}.`}
-      />
-
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 18, flexWrap: 'wrap', gap: 12 }}>
+        {/* Filter chips */}
         <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
           {[
             { id: 'all',         label: 'All' },
@@ -1306,6 +1345,7 @@ function CandidatesTab({ allApps, onStatusChange }) {
             }}>{t.label}</button>
           ))}
         </div>
+        {/* Show top N */}
         <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
           <span style={{ fontSize: 11, color: 'var(--text-dim)' }}>Show top</span>
           {[6, 10, 15].map(n => (
@@ -1345,10 +1385,8 @@ function CandidatesTab({ allApps, onStatusChange }) {
   );
 }
 
-// ═══════════════════════════════════════════════════════════════════════════
-// 14. TAB: PIPELINE
-// ═══════════════════════════════════════════════════════════════════════════
-function PipelineTab({ allApps, onStatusChange }) {
+// ── Pipeline view (was PipelineTab) ────────────────────────────────────────
+function PipelineView({ allApps, onStatusChange }) {
   const [selectedApp, setSelectedApp] = useState(null);
 
   const stages = [
@@ -1359,12 +1397,6 @@ function PipelineTab({ allApps, onStatusChange }) {
 
   return (
     <div>
-      <PageHeader
-        eyebrow="Pipeline"
-        title={<>Hiring <em>pipeline.</em></>}
-        subtitle="Move candidates through the stages. Status updates notify the student."
-      />
-
       <div style={{ display: 'grid', gridTemplateColumns: selectedApp ? '1fr 1fr 1fr 380px' : 'repeat(3, 1fr)', gap: 12 }}>
         {stages.map(stage => {
           const candidates = allApps.filter(a => a.status === stage.id);
@@ -1419,70 +1451,28 @@ function PipelineTab({ allApps, onStatusChange }) {
 }
 
 // ═══════════════════════════════════════════════════════════════════════════
-// 15. TAB: POST A ROLE
-// ═══════════════════════════════════════════════════════════════════════════
-function PostTab({ recruiter, onPosted, showToast }) {
-  return (
-    <div>
-      <PageHeader
-        eyebrow="Post a role"
-        title={<>Hire your next <em>intern.</em></>}
-        subtitle="Fill in the role details and publish."
-      />
-
-      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 18 }}>
-        <div style={{ background: 'var(--bg-card)', border: '1px solid var(--border)', borderRadius: 14, padding: 18, display: 'flex', flexDirection: 'column' }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 12 }}>
-            <Sparkles size={14} style={{ color: 'var(--text-dim)' }} />
-            <span style={{ fontSize: 10, fontWeight: 600, color: 'var(--text-dim)', textTransform: 'uppercase', letterSpacing: '0.1em' }}>AI Assistant</span>
-          </div>
-          <PostRoleAI />
-        </div>
-
-        <div style={{ background: 'var(--bg-card)', border: '1px solid var(--border)', borderRadius: 14, padding: 18 }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 16 }}>
-            <Edit3 size={14} style={{ color: 'var(--text-mid)' }} />
-            <span style={{ fontSize: 10, fontWeight: 600, color: 'var(--text-mid)', textTransform: 'uppercase', letterSpacing: '0.1em' }}>Role details</span>
-          </div>
-          <PostRoleManual recruiter={recruiter} prefill={null}
-            onSuccess={() => onPosted()}
-            onError={msg => showToast(msg, 'error')} />
-        </div>
-      </div>
-    </div>
-  );
-}
-
-// ═══════════════════════════════════════════════════════════════════════════
-// 16. TAB: PROFILE
+// 13. TAB: PROFILE
+//     Subtabs: Startup | You
 // ═══════════════════════════════════════════════════════════════════════════
 function ProfileTab({ recruiter, onUpdate, showToast }) {
   const [subTab, setSubTab] = useState('startup');
   const isFounder = recruiter.role_in_company === 'founder';
   const startup = recruiter.startups || {};
 
+  const SUBTABS = [
+    { id: 'startup',   label: 'Startup' },
+    { id: 'recruiter', label: 'You' },
+  ];
+
   return (
     <div>
       <PageHeader eyebrow="Profile" title={<>Your <em>profile.</em></>} />
+      <SubTabStrip tabs={SUBTABS} active={subTab} onChange={setSubTab} />
 
-      <div style={{ display: 'flex', gap: 4, marginBottom: 22, borderBottom: '1px solid var(--border)' }}>
-        {[
-          { id: 'startup',   label: 'Startup' },
-          { id: 'recruiter', label: 'You' },
-        ].map(t => (
-          <button key={t.id} onClick={() => setSubTab(t.id)} style={{
-            padding: '10px 16px', fontSize: 13, fontFamily: 'inherit', cursor: 'pointer',
-            background: 'transparent', border: 'none',
-            borderBottom: `2px solid ${subTab === t.id ? 'var(--text)' : 'transparent'}`,
-            color: subTab === t.id ? 'var(--text)' : 'var(--text-dim)',
-            fontWeight: subTab === t.id ? 600 : 400, marginBottom: -1,
-          }}>{t.label}</button>
-        ))}
-      </div>
-
-      {subTab === 'startup' ? (
+      {subTab === 'startup' && (
         <StartupProfileForm startup={startup} canEdit={isFounder} onUpdate={onUpdate} showToast={showToast} />
-      ) : (
+      )}
+      {subTab === 'recruiter' && (
         <RecruiterProfileForm recruiter={recruiter} onUpdate={onUpdate} showToast={showToast} />
       )}
     </div>
@@ -1491,35 +1481,24 @@ function ProfileTab({ recruiter, onUpdate, showToast }) {
 
 function StartupProfileForm({ startup, canEdit, onUpdate, showToast }) {
   const [form, setForm] = useState({
-    name: startup.name || '',
-    logo_emoji: startup.logo_emoji || '🚀',
-    tagline: startup.tagline || '',
-    about: startup.about || '',
-    website: startup.website || '',
-    industry: startup.industry || '',
-    stage: startup.stage || '',
-    team_size: startup.team_size || '',
-    founded_year: startup.founded_year || '',
-    hq_location: startup.hq_location || '',
+    name: startup.name || '', logo_emoji: startup.logo_emoji || '🚀',
+    tagline: startup.tagline || '', about: startup.about || '',
+    website: startup.website || '', industry: startup.industry || '',
+    stage: startup.stage || '', team_size: startup.team_size || '',
+    founded_year: startup.founded_year || '', hq_location: startup.hq_location || '',
   });
   const [saving, setSaving] = useState(false);
   const set = k => v => setForm(f => ({ ...f, [k]: v }));
 
   const save = async () => {
-    if (!startup.id) {
-      showToast('No startup linked to this account yet.', 'error');
-      return;
-    }
+    if (!startup.id) { showToast('No startup linked to this account yet.', 'error'); return; }
     setSaving(true);
     try {
       await updateStartupProfile(startup.id, form);
       showToast('Startup profile updated');
       onUpdate();
-    } catch (e) {
-      showToast(e.message || 'Failed to update', 'error');
-    } finally {
-      setSaving(false);
-    }
+    } catch (e) { showToast(e.message || 'Failed to update', 'error'); }
+    finally { setSaving(false); }
   };
 
   return (
@@ -1530,7 +1509,6 @@ function StartupProfileForm({ startup, canEdit, onUpdate, showToast }) {
           <p style={{ fontSize: 11, color: 'var(--amber)', margin: 0 }}>Read-only. Only founders can edit the startup profile.</p>
         </div>
       )}
-
       <div style={{ display: 'flex', gap: 16, alignItems: 'center', marginBottom: 22 }}>
         <div>
           <Label>Logo</Label>
@@ -1538,9 +1516,7 @@ function StartupProfileForm({ startup, canEdit, onUpdate, showToast }) {
             {LOGO_EMOJIS.slice(0, 8).map(e => (
               <button key={e} disabled={!canEdit} onClick={() => set('logo_emoji')(e)} style={{
                 width: 34, height: 34, borderRadius: 6, fontSize: 17, cursor: canEdit ? 'pointer' : 'not-allowed',
-                opacity: canEdit ? 1 : 0.5,
-                border: `1.5px solid ${form.logo_emoji === e ? 'var(--text)' : 'var(--border)'}`,
-                background: 'var(--bg-subtle)',
+                opacity: canEdit ? 1 : 0.5, border: `1.5px solid ${form.logo_emoji === e ? 'var(--text)' : 'var(--border)'}`, background: 'var(--bg-subtle)',
               }}>{e}</button>
             ))}
           </div>
@@ -1553,12 +1529,9 @@ function StartupProfileForm({ startup, canEdit, onUpdate, showToast }) {
           <FocusInput value={form.tagline} disabled={!canEdit} onChange={e => set('tagline')(e.target.value)} placeholder="Skill-first internships" />
         </div>
       </div>
-
       <Label>About</Label>
-      <FocusTextarea value={form.about} disabled={!canEdit} onChange={e => set('about')(e.target.value)} rows={4}
-        placeholder="What does your startup do? What's the mission?" />
+      <FocusTextarea value={form.about} disabled={!canEdit} onChange={e => set('about')(e.target.value)} rows={4} placeholder="What does your startup do? What's the mission?" />
       <div style={{ height: 16 }} />
-
       <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
         <div><Label>Website</Label><FocusInput value={form.website} disabled={!canEdit} onChange={e => set('website')(e.target.value)} placeholder="https://…" /></div>
         <div><Label>HQ location</Label><FocusInput value={form.hq_location} disabled={!canEdit} onChange={e => set('hq_location')(e.target.value)} placeholder="Bangalore, India" /></div>
@@ -1572,13 +1545,11 @@ function StartupProfileForm({ startup, canEdit, onUpdate, showToast }) {
         </div>
         <div><Label>Team size</Label>
           <FocusSelect value={form.team_size} disabled={!canEdit} onChange={e => set('team_size')(e.target.value)}>
-            <option value="">—</option>
-            <option>1-10</option><option>11-50</option><option>51-200</option><option>200+</option>
+            <option value="">—</option><option>1-10</option><option>11-50</option><option>51-200</option><option>200+</option>
           </FocusSelect>
         </div>
         <div><Label>Founded</Label><FocusInput type="number" value={form.founded_year} disabled={!canEdit} onChange={e => set('founded_year')(e.target.value)} placeholder="2024" /></div>
       </div>
-
       {canEdit && (
         <div style={{ marginTop: 22 }}>
           <button onClick={save} disabled={saving} style={btnPrimary(saving)}>
@@ -1592,12 +1563,9 @@ function StartupProfileForm({ startup, canEdit, onUpdate, showToast }) {
 
 function RecruiterProfileForm({ recruiter, onUpdate, showToast }) {
   const [form, setForm] = useState({
-    contact_name: recruiter.contact_name || '',
-    email: recruiter.email || '',
-    phone: recruiter.phone || '',
-    title: recruiter.title || '',
-    linkedin_url: recruiter.linkedin_url || '',
-    bio: recruiter.bio || '',
+    contact_name: recruiter.contact_name || '', email: recruiter.email || '',
+    phone: recruiter.phone || '', title: recruiter.title || '',
+    linkedin_url: recruiter.linkedin_url || '', bio: recruiter.bio || '',
     role_in_company: recruiter.role_in_company || 'recruiter',
   });
   const [saving, setSaving] = useState(false);
@@ -1609,11 +1577,8 @@ function RecruiterProfileForm({ recruiter, onUpdate, showToast }) {
       await updateRecruiterProfile(recruiter.id, form);
       showToast('Profile updated');
       onUpdate();
-    } catch (e) {
-      showToast(e.message || 'Failed to update', 'error');
-    } finally {
-      setSaving(false);
-    }
+    } catch (e) { showToast(e.message || 'Failed to update', 'error'); }
+    finally { setSaving(false); }
   };
 
   return (
@@ -1625,7 +1590,6 @@ function RecruiterProfileForm({ recruiter, onUpdate, showToast }) {
           <p style={{ fontSize: 12, color: 'var(--text-dim)', margin: '3px 0 0' }}>{form.title || 'Your role'} at {recruiter.startups?.name || 'your startup'}</p>
         </div>
       </div>
-
       <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
         <div><Label required>Full name</Label><FocusInput value={form.contact_name} onChange={e => set('contact_name')(e.target.value)} /></div>
         <div><Label>Title</Label><FocusInput value={form.title} onChange={e => set('title')(e.target.value)} placeholder="Head of Talent" /></div>
@@ -1641,11 +1605,9 @@ function RecruiterProfileForm({ recruiter, onUpdate, showToast }) {
           </FocusSelect>
         </div>
       </div>
-
       <div style={{ height: 16 }} />
       <Label>Bio</Label>
       <FocusTextarea value={form.bio} onChange={e => set('bio')(e.target.value)} rows={3} placeholder="Short intro that candidates will see when you reach out." />
-
       <div style={{ marginTop: 22 }}>
         <button onClick={save} disabled={saving} style={btnPrimary(saving)}>
           {saving ? 'Saving…' : 'Save changes'}
@@ -1656,7 +1618,7 @@ function RecruiterProfileForm({ recruiter, onUpdate, showToast }) {
 }
 
 // ═══════════════════════════════════════════════════════════════════════════
-// 17. TAB: NETWORK (stub)
+// 14. TAB: NETWORK (stub — mirrors StudentDashboard)
 // ═══════════════════════════════════════════════════════════════════════════
 function NetworkTab() {
   return (
@@ -1669,7 +1631,7 @@ function NetworkTab() {
 }
 
 // ═══════════════════════════════════════════════════════════════════════════
-// 18. SETTINGS MODAL (lifted-pattern, opened from sidebar)
+// 15. SETTINGS MODAL
 // ═══════════════════════════════════════════════════════════════════════════
 function SettingsModal({ theme, setTheme, onClose, onSignOut }) {
   return (
@@ -1686,7 +1648,6 @@ function SettingsModal({ theme, setTheme, onClose, onSignOut }) {
           <h2 style={{ fontFamily: "'Editorial New', Georgia, serif", fontSize: 22, color: 'var(--text)', margin: 0, fontWeight: 400 }}>Settings</h2>
           <button onClick={onClose} style={{ background: 'transparent', border: 'none', cursor: 'pointer', color: 'var(--text-dim)' }}><X size={18} /></button>
         </div>
-
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', paddingBottom: 16, borderBottom: '1px solid var(--border)' }}>
           <div>
             <p style={{ fontSize: 13, fontWeight: 500, color: 'var(--text)', margin: 0 }}>Appearance</p>
@@ -1699,15 +1660,13 @@ function SettingsModal({ theme, setTheme, onClose, onSignOut }) {
                 display: 'flex', alignItems: 'center', gap: 6,
                 background: theme === t ? 'var(--bg-subtle)' : 'transparent',
                 border: `1.5px solid ${theme === t ? 'var(--text)' : 'var(--border)'}`,
-                color: 'var(--text)',
-                fontWeight: theme === t ? 600 : 400,
+                color: 'var(--text)', fontWeight: theme === t ? 600 : 400,
               }}>
                 {t === 'light' ? <><Sun size={12} /> Light</> : <><Moon size={12} /> Dark</>}
               </button>
             ))}
           </div>
         </div>
-
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', paddingTop: 16 }}>
           <div>
             <p style={{ fontSize: 13, fontWeight: 500, color: 'var(--text)', margin: 0 }}>Sign out</p>
@@ -1723,7 +1682,7 @@ function SettingsModal({ theme, setTheme, onClose, onSignOut }) {
 }
 
 // ═══════════════════════════════════════════════════════════════════════════
-// 19. MAIN SHELL
+// 16. MAIN SHELL
 // ═══════════════════════════════════════════════════════════════════════════
 export default function RecruiterDashboard() {
   const navigate = useNavigate();
@@ -1736,6 +1695,8 @@ export default function RecruiterDashboard() {
   const [toast, setToast] = useState(null);
   const [showAccountMenu, setShowAccountMenu] = useState(false);
   const [showSettings, setShowSettings] = useState(false);
+  // ── "Post a role" drawer — accessible from Home + Roles tab ──
+  const [showPostDrawer, setShowPostDrawer] = useState(false);
 
   useEffect(() => { applyTokens(theme); localStorage.setItem('hunt-theme', theme); }, [theme]);
 
@@ -1744,36 +1705,30 @@ export default function RecruiterDashboard() {
     setTimeout(() => setToast(null), 3500);
   };
 
-  useEffect(() => { (async () => {
-    try {
-      const r = await getRecruiterProfile();
-      if (!r) { navigate('/recruiter/onboarding'); return; }
-      setRecruiter(r);
-      const [j, a] = await Promise.all([
-        getRecruiterJobs(r.id),
-        getAllApplicationsForRecruiter(r.id),
-      ]);
-      setJobs(j); setAllApps(a);
-    } catch (e) {
-      console.error('Dashboard load failed:', e);
-      showToast(e.message || 'Failed to load dashboard', 'error');
-    } finally {
-      setLoading(false);
-    }
-  })(); }, []);
+  useEffect(() => {
+    (async () => {
+      try {
+        const r = await getRecruiterProfile();
+        if (!r) { navigate('/recruiter/onboarding'); return; }
+        setRecruiter(r);
+        const [j, a] = await Promise.all([
+          getRecruiterJobs(r.id),
+          getAllApplicationsForRecruiter(r.id),
+        ]);
+        setJobs(j); setAllApps(a);
+      } catch (e) {
+        console.error('Dashboard load failed:', e);
+        showToast(e.message || 'Failed to load dashboard', 'error');
+      } finally { setLoading(false); }
+    })();
+  }, []);
 
-  const refreshJobs = async () => {
+  const refreshAll = async () => {
     if (!recruiter) return;
-    const [j, a] = await Promise.all([
-      getRecruiterJobs(recruiter.id),
-      getAllApplicationsForRecruiter(recruiter.id),
-    ]);
+    const [j, a] = await Promise.all([getRecruiterJobs(recruiter.id), getAllApplicationsForRecruiter(recruiter.id)]);
     setJobs(j); setAllApps(a);
   };
-  const refreshRecruiter = async () => {
-    const r = await getRecruiterProfile();
-    setRecruiter(r);
-  };
+  const refreshRecruiter = async () => { const r = await getRecruiterProfile(); setRecruiter(r); };
 
   const handleTogglePause = async (job) => {
     const status = job.status || (job.is_active ? 'live' : 'paused');
@@ -1782,9 +1737,7 @@ export default function RecruiterDashboard() {
       await updateJob(job.id, { status: next, is_active: next === 'live' });
       setJobs(j => j.map(x => x.id === job.id ? { ...x, status: next, is_active: next === 'live' } : x));
       showToast(next === 'live' ? 'Role resumed' : 'Role paused');
-    } catch (e) {
-      showToast(e.message || 'Update failed', 'error');
-    }
+    } catch (e) { showToast(e.message || 'Update failed', 'error'); }
   };
 
   const handleCopyLink = (job) => {
@@ -1798,9 +1751,7 @@ export default function RecruiterDashboard() {
       await deleteJob(job.id);
       setJobs(j => j.filter(x => x.id !== job.id));
       showToast('Role deleted');
-    } catch (e) {
-      showToast(e.message || 'Delete failed', 'error');
-    }
+    } catch (e) { showToast(e.message || 'Delete failed', 'error'); }
   };
 
   const handleStatusChange = async (appId, status) => {
@@ -1809,9 +1760,7 @@ export default function RecruiterDashboard() {
       setAllApps(a => a.map(x => x.id === appId ? { ...x, status } : x));
       const labels = { shortlisted: 'Shortlisted', interview: 'Moved to interview', hired: 'Hired! 🎉', rejected: 'Passed' };
       showToast(labels[status] || 'Updated');
-    } catch (e) {
-      showToast(e.message || 'Update failed', 'error');
-    }
+    } catch (e) { showToast(e.message || 'Update failed', 'error'); }
   };
 
   const handleSignOut = async () => {
@@ -1842,10 +1791,7 @@ export default function RecruiterDashboard() {
   return (
     <div style={{ minHeight: '100vh', background: 'var(--bg)', color: 'var(--text)', fontFamily: "'DM Sans', system-ui, sans-serif", display: 'flex', WebkitFontSmoothing: 'antialiased' }}>
       <style>{`
-        @keyframes fadeDown {
-          from { opacity:0; transform: translateX(-50%) translateY(-6px); }
-          to   { opacity:1; transform: translateX(-50%) translateY(0); }
-        }
+        @keyframes fadeDown { from { opacity:0; transform: translateX(-50%) translateY(-6px); } to { opacity:1; transform: translateX(-50%) translateY(0); } }
         @keyframes hunt-fade-in { from { opacity: 0; transform: translateY(5px); } to { opacity: 1; transform: translateY(0); } }
         * { box-sizing: border-box; }
         button:disabled { opacity: 0.5; }
@@ -1860,7 +1806,22 @@ export default function RecruiterDashboard() {
       {toast && <Toast msg={toast.msg} type={toast.type} />}
       {showSettings && <SettingsModal theme={theme} setTheme={setTheme} onClose={() => setShowSettings(false)} onSignOut={handleSignOut} />}
 
-      {/* ── SIDEBAR — matches student dashboard pattern exactly ── */}
+      {/* ── Post a role drawer — portal-style, z-index above everything ── */}
+      {recruiter && (
+        <PostRoleDrawer
+          recruiter={recruiter}
+          open={showPostDrawer}
+          onClose={() => setShowPostDrawer(false)}
+          showToast={showToast}
+          onSuccess={async () => {
+            await refreshAll();
+            showToast('Role posted! 🚀');
+            setActiveTab('roles');
+          }}
+        />
+      )}
+
+      {/* ── SIDEBAR ── */}
       <aside style={{
         width: 210, flexShrink: 0, height: '100vh', position: 'sticky', top: 0,
         borderRight: '1px solid var(--border)', background: 'var(--bg-card)',
@@ -1870,6 +1831,7 @@ export default function RecruiterDashboard() {
           <span style={{ fontSize: 15, fontWeight: 700, letterSpacing: '0.16em', color: 'var(--text)' }}>HUNT</span>
         </div>
 
+        {/* 5 nav items — no "Post a role" clutter */}
         <nav style={{ padding: '10px 8px', flex: 1 }}>
           {NAV_ITEMS.map(({ id, label, icon: Icon }) => {
             const active = activeTab === id;
@@ -1892,8 +1854,8 @@ export default function RecruiterDashboard() {
           })}
         </nav>
 
+        {/* Bottom: company tag + bell/theme + account pill */}
         <div style={{ padding: '10px 8px', borderTop: '1px solid var(--border)', position: 'relative' }}>
-          {/* Company tag */}
           <div style={{ padding: '9px 11px', borderRadius: 7, background: 'var(--bg-subtle)', marginBottom: 8 }}>
             <p style={{ fontSize: 9, color: 'var(--text-dim)', marginBottom: 2, textTransform: 'uppercase', letterSpacing: '0.08em', fontWeight: 600 }}>Company</p>
             <p style={{ fontSize: 11, fontWeight: 600, color: 'var(--text)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', margin: 0 }}>
@@ -1901,12 +1863,11 @@ export default function RecruiterDashboard() {
             </p>
           </div>
 
-          {/* Bell + Theme toggle */}
           <div style={{ display: 'flex', gap: 4, padding: '0 2px', marginBottom: 6 }}>
-            <button style={{ flex: 1, position: 'relative', display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'none', border: 'none', cursor: 'pointer', padding: 7, borderRadius: 6, color: 'var(--text-dim)' }} className="hn-item">
+            <button className="hn-item" style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'none', border: 'none', cursor: 'pointer', padding: 7, borderRadius: 6, color: 'var(--text-dim)' }}>
               <Bell size={13} />
             </button>
-            <button onClick={() => setTheme(t => t === 'light' ? 'dark' : 'light')} style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'none', border: 'none', cursor: 'pointer', padding: 7, borderRadius: 6, color: 'var(--text-dim)' }} className="hn-item">
+            <button onClick={() => setTheme(t => t === 'light' ? 'dark' : 'light')} className="hn-item" style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'none', border: 'none', cursor: 'pointer', padding: 7, borderRadius: 6, color: 'var(--text-dim)' }}>
               {theme === 'light' ? <Moon size={13} /> : <Sun size={13} />}
             </button>
           </div>
@@ -1931,9 +1892,9 @@ export default function RecruiterDashboard() {
                 <p style={{ fontSize: 11, fontWeight: 600, color: 'var(--green)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', margin: 0 }}>{recruiter.email || recruiter.contact_name}</p>
               </div>
               {[
-                { label: 'Profile', action: () => { setActiveTab('profile'); setShowAccountMenu(false); } },
-                { label: 'Settings', action: () => { setShowSettings(true); setShowAccountMenu(false); } },
-                { label: 'Support', action: () => { window.open('mailto:support@hunt.so'); setShowAccountMenu(false); } },
+                { label: 'Profile',  action: () => { setActiveTab('profile');  setShowAccountMenu(false); } },
+                { label: 'Settings', action: () => { setShowSettings(true);    setShowAccountMenu(false); } },
+                { label: 'Support',  action: () => { window.open('mailto:support@hunt.so'); setShowAccountMenu(false); } },
               ].map(item => (
                 <button key={item.label} onClick={item.action} className="hn-item" style={{ display: 'block', width: '100%', textAlign: 'left', padding: '9px 12px', fontSize: 12, color: 'var(--text-mid)', background: 'none', border: 'none', cursor: 'pointer', fontFamily: 'inherit' }}>
                   {item.label}
@@ -1949,34 +1910,47 @@ export default function RecruiterDashboard() {
         </div>
       </aside>
 
-      {/* ── MAIN ── */}
+      {/* ── MAIN CONTENT ── */}
       <main style={{ flex: 1, minWidth: 0, overflowY: 'auto', maxHeight: '100vh' }}>
         <div style={{ padding: '32px 40px 80px', maxWidth: 1280, margin: '0 auto', animation: 'hunt-fade-in 0.3s ease' }}>
+
           {activeTab === 'home' && (
-            <HomeTab recruiter={recruiter} jobs={jobs} allApps={allApps}
+            <HomeTab
+              recruiter={recruiter}
+              jobs={jobs}
+              allApps={allApps}
               onNavigate={setActiveTab}
-              onSelectApp={() => setActiveTab('candidates')} />
+              onPostRole={() => setShowPostDrawer(true)}
+            />
           )}
+
           {activeTab === 'roles' && (
-            <RolesTab jobs={jobs}
+            <RolesTab
+              jobs={jobs}
               onCopyLink={handleCopyLink}
               onTogglePause={handleTogglePause}
-              onDelete={handleDelete} />
+              onDelete={handleDelete}
+              onPostRole={() => setShowPostDrawer(true)}
+            />
           )}
-          {activeTab === 'candidates' && (
-            <CandidatesTab allApps={allApps} onStatusChange={handleStatusChange} />
+
+          {activeTab === 'hiring' && (
+            <HiringTab
+              allApps={allApps}
+              onStatusChange={handleStatusChange}
+            />
           )}
-          {activeTab === 'pipeline' && (
-            <PipelineTab allApps={allApps} onStatusChange={handleStatusChange} />
-          )}
-          {activeTab === 'post' && (
-            <PostTab recruiter={recruiter} showToast={showToast}
-              onPosted={async () => { await refreshJobs(); showToast('Role posted!'); setActiveTab('roles'); }} />
-          )}
+
           {activeTab === 'profile' && (
-            <ProfileTab recruiter={recruiter} onUpdate={refreshRecruiter} showToast={showToast} />
+            <ProfileTab
+              recruiter={recruiter}
+              onUpdate={refreshRecruiter}
+              showToast={showToast}
+            />
           )}
+
           {activeTab === 'network' && <NetworkTab />}
+
         </div>
       </main>
     </div>
