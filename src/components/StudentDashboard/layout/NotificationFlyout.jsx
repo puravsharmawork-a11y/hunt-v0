@@ -7,7 +7,7 @@
 
 import React, { useState, useEffect, useCallback } from 'react';
 import { Bell, X, Info, CheckCircle2, AlertCircle, Star } from 'lucide-react';
-import { supabase } from '../../services/supabase';
+import { supabase } from '../../../services/supabase';
 
 const TYPE_META = {
   info:    { icon: Info,         color: 'var(--blue)'  },
