@@ -6,7 +6,7 @@ import { useNavigate } from 'react-router-dom';
 
 import {
   getStudentProfile, getActiveJobs, createApplication,
-  getWeeklyApplicationCount, signOut,
+  getWeeklyApplicationCount, signOut, supabase,
 } from '../../services/supabase';
 import { calculateMatchScore } from '../../services/matching';
 import { sendToAirtable, prepareApplicationData } from '../../services/airtable';
@@ -89,6 +89,27 @@ export default function StudentDashboard() {
 
   useEffect(() => { applyTokens(theme); localStorage.setItem('hunt-theme', theme); }, [theme]);
   useEffect(() => { loadData(); }, []);
+
+  // ── Fetch unread count on mount so bell dot shows immediately ─────────────
+  useEffect(() => {
+    if (!studentProfile?.id) return;
+    const fetchUnread = async () => {
+      const { data } = await supabase.from('notifications').select('id, read_by');
+      if (data) {
+        const count = data.filter(n => !(n.read_by || []).includes(studentProfile.id)).length;
+        setUnreadCount(count);
+      }
+    };
+    fetchUnread();
+    // Realtime subscription so dot updates instantly when admin pushes
+    const channel = supabase
+      .channel('notif_badge')
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'notifications' }, () => {
+        fetchUnread();
+      })
+      .subscribe();
+    return () => { supabase.removeChannel(channel); };
+  }, [studentProfile?.id]);
 
   const loadData = async () => {
     try {
