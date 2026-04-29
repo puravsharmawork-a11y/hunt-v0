@@ -1401,7 +1401,7 @@ export default function StudentOnboarding() {
           <div style={{ position: 'absolute', inset: 0, width: `${completeness}%`, background: 'var(--blue)', transition: 'width 0.5s' }} />
         </div>
         <p style={{ fontSize: 12, color: 'var(--text-mid)' }}>
-          {completeness >= 80 ? 'Strong profile — ready to start hunting.' : 'Add more info to boost your match score.'}
+          {completeness >= 80 ? 'Strong profile — ready to start swiping.' : 'Add more info to boost your match score.'}
         </p>
       </div>
     </div>
@@ -1698,7 +1698,7 @@ function SubmittedView({ formData, completeness, onStartSwiping, onEditProfile }
           marginBottom: 28, lineHeight: 1.55,
         }}>
           Your profile is live. Recruiters see {completeness}% signal strength.
-          Start hunting on roles that match your evidence.
+          Start hunting roles that match your evidence.
         </p>
 
         <div style={{ display: 'flex', gap: 10, justifyContent: 'center', marginBottom: 24, flexWrap: 'wrap' }}>
