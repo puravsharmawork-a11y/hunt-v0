@@ -79,8 +79,8 @@ export default function StudentDashboard() {
   const [showAccountMenu, setShowAccountMenu] = useState(false);
   const [showSettings, setShowSettings] = useState(false);
   const [settingsTab, setSettingsTab] = useState('account');
-  // Mock notifications — empty initially, shows dot when populated
-  const notifications = [];
+  // Realtime unread count — drives the red dot on the bell
+  const [unreadCount, setUnreadCount] = useState(0);
 
   const WEEKLY_LIMIT = 5;
   const remainingApplications = WEEKLY_LIMIT - weeklyApplications;
@@ -197,7 +197,7 @@ export default function StudentDashboard() {
         activeTab={activeTab}
         setActiveTab={setActiveTab}
         remainingApplications={remainingApplications}
-        notifications={notifications}
+        notifications={[...Array(unreadCount)]}
         showNotifications={showNotifications}
         setShowNotifications={setShowNotifications}
         theme={theme}
@@ -277,8 +277,9 @@ export default function StudentDashboard() {
       {/* ── NOTIFICATION FLYOUT ── */}
       {showNotifications && (
         <NotificationFlyout
-          notifications={notifications}
+          studentId={studentProfile?.id}
           onClose={() => setShowNotifications(false)}
+          onUnreadChange={setUnreadCount}
         />
       )}
 
