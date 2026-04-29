@@ -1698,12 +1698,12 @@ function SubmittedView({ formData, completeness, onStartSwiping, onEditProfile }
           marginBottom: 28, lineHeight: 1.55,
         }}>
           Your profile is live. Recruiters see {completeness}% signal strength.
-          Start swiping on roles that match your evidence.
+          Start hunting on roles that match your evidence.
         </p>
 
         <div style={{ display: 'flex', gap: 10, justifyContent: 'center', marginBottom: 24, flexWrap: 'wrap' }}>
           <button onClick={onStartSwiping} className="hunt-btn hunt-btn-primary">
-            Start swiping <ArrowRight style={{ width: 13, height: 13 }} />
+            Start hunting <ArrowRight style={{ width: 13, height: 13 }} />
           </button>
           <button onClick={onEditProfile} className="hunt-btn hunt-btn-ghost">
             Edit profile
