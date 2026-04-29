@@ -78,7 +78,7 @@ export function ExploreTab({
         {!(selectedJob && isPanelMaximized) && (
           <div
             style={{
-              flex: selectedJob && !isPanelMaximized ? '0 0 42%' : 1,
+              flex: selectedJob && !isPanelMaximized ? '0 0 48%' : 1,
               display: 'flex',
               flexDirection: 'column',
               overflow: 'hidden',
@@ -284,24 +284,22 @@ export function ExploreTab({
             )}
 
             {/* Content */}
-            <div style={{ flex: 1, overflowY: 'auto', padding: '0 28px 24px' }}>
+            <div style={{ flex: 1, overflowY: 'auto', padding: viewMode === 'list' ? '0' : '0 28px 24px' }}>
               {allJobs.length === 0 ? (
                 <EmptyTargeted notified={notified} setNotified={setNotified} />
               ) : viewMode === 'list' ? (
-                <div style={{ marginTop: 8 }}>
-                  <SwipeView
-                    jobs={displayedJobs}
-                    studentProfile={studentProfile}
-                    weeklyApplications={weeklyApplications}
-                    onApply={handleApply}
-                    applying={applying}
-                    canApply={canApply}
-                    selectedJob={selectedJob}
-                    onJobClick={handleJobClick}
-                    isJobSaved={isJobSaved}
-                    onSave={handleSaveToggle}
-                  />
-                </div>
+                <SwipeView
+                  jobs={displayedJobs}
+                  studentProfile={studentProfile}
+                  weeklyApplications={weeklyApplications}
+                  onApply={handleApply}
+                  applying={applying}
+                  canApply={canApply}
+                  selectedJob={selectedJob}
+                  onJobClick={handleJobClick}
+                  isJobSaved={isJobSaved}
+                  onSave={handleSaveToggle}
+                />
               ) : displayedJobs.length === 0 ? (
                 <div
                   style={{
