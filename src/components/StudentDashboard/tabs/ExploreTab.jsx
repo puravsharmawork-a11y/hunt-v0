@@ -298,7 +298,7 @@ export function ExploreTab({
                     canApply={canApply}
                     selectedJob={selectedJob}
                     onJobClick={handleJobClick}
-                    savedJobs={savedJobs}
+                    isJobSaved={isJobSaved}
                     onSave={handleSaveToggle}
                   />
                 </div>
