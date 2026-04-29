@@ -367,31 +367,23 @@ export function Sidebar({
             onClick={() => setShowNotifications(p => !p)}
             title={collapsed ? 'Notifications' : undefined}
             aria-label="Notifications"
-            style={{
-              flex: 1,
-              padding: '14px 0',
-              display: 'grid',
-              placeItems: 'center',
-              background: showNotifications ? 'var(--bg-subtle)' : 'transparent',
-              border: 'none',
-              borderRight: '1px solid var(--border-mid)',
-              cursor: 'pointer',
-              color: notifications.length > 0 ? 'var(--text)' : 'var(--text-dim)',
-              position: 'relative',
-            }}
-          >
+            style={{flex: 1,padding: '14px 0',display: 'grid',placeItems: 'center',background: showNotifications ? 'var(--bg-subtle)' : 'transparent',border: 'none',
+                    borderRight: '1px solid var(--border-mid)',cursor: 'pointer',color: notifications.length > 0 ? 'var(--text)' : 'var(--text-dim)',position: 'relative',
+                   }}
+            >
             <Bell size={14} />
             {notifications.length > 0 && (
               <span
                 style={{
                   position: 'absolute',
-                  top: 10,
-                  right: collapsed ? 18 : '38%',
-                  width: 6,
-                  height: 6,
+                  top: 9,
+                  right: collapsed ? 16 : '32%',
+                  width: 7,
+                  height: 7,
                   background: 'var(--red)',
-                }}
-              />
+                  // square — no border-radius
+                  }}
+                />
             )}
           </button>
           <button
