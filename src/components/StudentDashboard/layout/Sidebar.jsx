@@ -367,25 +367,38 @@ export function Sidebar({
             onClick={() => setShowNotifications(p => !p)}
             title={collapsed ? 'Notifications' : undefined}
             aria-label="Notifications"
-            style={{flex: 1,padding: '14px 0',display: 'grid',placeItems: 'center',background: showNotifications ? 'var(--bg-subtle)' : 'transparent',border: 'none',
-                    borderRight: '1px solid var(--border-mid)',cursor: 'pointer',color: notifications.length > 0 ? 'var(--text)' : 'var(--text-dim)',position: 'relative',
-                   }}
-            >
+            style={{
+              flex: 1, padding: '14px 0', display: 'grid', placeItems: 'center',
+              background: notifications.length > 0 && !showNotifications
+                ? 'rgba(192,57,43,0.07)'
+                : showNotifications ? 'var(--bg-subtle)' : 'transparent',
+              border: 'none',
+              borderRight: '1px solid var(--border-mid)',
+              cursor: 'pointer',
+              color: notifications.length > 0 ? 'var(--red)' : 'var(--text-dim)',
+              position: 'relative',
+              transition: 'background 0.2s, color 0.2s',
+            }}
+          >
             <Bell size={14} />
             {notifications.length > 0 && (
-              <span
-                style={{
-                  position: 'absolute',
-                  top: 9,
-                  right: collapsed ? 16 : '32%',
-                  width: 7,
-                  height: 7,
-                  background: 'var(--red)',
-                  // square — no border-radius
-                  }}
-                />
+              <span style={{
+                position: 'absolute',
+                top: 9,
+                right: collapsed ? 16 : '32%',
+                width: 7,
+                height: 7,
+                background: 'var(--red)',
+                animation: 'hunt-notif-pulse 1.4s ease-in-out infinite',
+              }} />
             )}
           </button>
+          <style>{`
+            @keyframes hunt-notif-pulse {
+              0%, 100% { opacity: 1; transform: scale(1); }
+              50%       { opacity: 0.35; transform: scale(0.55); }
+            }
+          `}</style>
           <button
             onClick={() => setTheme(t => (t === 'light' ? 'dark' : 'light'))}
             title={collapsed ? (theme === 'light' ? 'Dark mode' : 'Light mode') : undefined}
