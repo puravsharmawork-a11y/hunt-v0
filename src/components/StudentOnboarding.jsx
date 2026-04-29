@@ -588,6 +588,10 @@ export default function StudentOnboarding() {
   const [workAuthError, setWorkAuthError] = useState(false);
   const [dragOver, setDragOver] = useState(false);
   const [showSubmitted, setShowSubmitted] = useState(false);
+  // Tracks if the profile has already been created in Supabase. Once true,
+  // pressing "Complete profile" again (after Edit profile) just navigates,
+  // it does NOT re-insert (which would fail with a duplicate-email error).
+  const [hasSubmitted, setHasSubmitted] = useState(false);
   const fileInputRef = useRef(null);
 
   const [formData, setFormData] = useState({
@@ -692,6 +696,14 @@ export default function StudentOnboarding() {
   };
 
   const handleSubmit = async () => {
+    // If the profile was already created (user clicked Edit profile then came
+    // back), don't try to insert again — Supabase has a unique constraint on
+    // email and would reject it with "duplicate key value violates unique
+    // constraint students_email_key". Just show the completion screen again.
+    if (hasSubmitted) {
+      setShowSubmitted(true);
+      return;
+    }
     setIsSubmitting(true);
     try {
       let resumeUrl = null;
@@ -705,8 +717,20 @@ export default function StudentOnboarding() {
         work_auth: { dob: formData.dob, state: formData.state, city: formData.city, pincode: formData.pincode, confirmed: formData.confirmWorkAuth },
         resume_url: resumeUrl, profile_completeness: calculateCompleteness(),
       });
+      setHasSubmitted(true);
       setShowSubmitted(true);
-    } catch (e) { alert('Failed: ' + e.message); }
+    } catch (e) {
+      // If the error indicates a duplicate (email already exists in DB) we
+      // treat it as success — the profile is already there from a previous
+      // run. This handles edge cases like a refresh after a successful submit.
+      const msg = (e && e.message) || '';
+      if (/duplicate key|unique constraint|students_email_key|already exists/i.test(msg)) {
+        setHasSubmitted(true);
+        setShowSubmitted(true);
+      } else {
+        alert('Failed: ' + msg);
+      }
+    }
     finally { setIsSubmitting(false); }
   };
   const handleStartSwiping = () => {
@@ -1383,8 +1407,13 @@ export default function StudentOnboarding() {
     </div>
   );
 
-  const stepComponents = [Step1, Step2, Step3, Step4, Step5, Step6];
-  const CurrentStepComponent = stepComponents[currentStep - 1];
+  // Call the step renderer as a plain function, NOT as a component (`<Step1/>`).
+  // Defining the steps inside the parent then mounting them via JSX makes React
+  // treat each keystroke's re-render as a brand-new component → unmounts the
+  // input → focus is lost after every character. Calling as a function returns
+  // the same JSX inline, so React reconciles normally and inputs keep focus.
+  const stepRenderers = [Step1, Step2, Step3, Step4, Step5, Step6];
+  const renderCurrentStep = stepRenderers[currentStep - 1];
 
   // ── Once submitted, show the brutalist completion screen ──
   if (showSubmitted) {
@@ -1477,7 +1506,7 @@ export default function StudentOnboarding() {
           <div className="hunt-card hunt-corner-tick" style={{ padding: '36px 40px' }}>
             <span className="hunt-tick-tr" />
             <span className="hunt-tick-bl" />
-            <CurrentStepComponent />
+            {renderCurrentStep()}
           </div>
           {/* Nav controls */}
           <div style={{
