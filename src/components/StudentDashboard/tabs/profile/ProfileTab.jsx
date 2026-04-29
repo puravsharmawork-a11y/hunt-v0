@@ -117,6 +117,19 @@ export function ProfileTab({ studentProfile, setStudentProfile, theme, setTheme 
 
   const showToast = (msg, type = 'ok') => { setToast({ msg, type }); setTimeout(() => setToast(null), 2200); };
 
+  // ── Sync draft whenever the parent pushes a new studentProfile ─────────────
+  // This fixes the stale-draft bug: useState(() => ...) only runs once at mount.
+  // If studentProfile was null/empty during that first render (because the async
+  // loadData() in the dashboard hadn't finished yet), draft would be {} forever.
+  // We skip the sync if the user is actively editing something to avoid stomping
+  // on in-progress changes.
+  React.useEffect(() => {
+    if (!studentProfile) return;
+    if (editingSection) return;          // don't interrupt an active edit
+    setDraft(JSON.parse(JSON.stringify(studentProfile)));
+    setOtherLinks(studentProfile.other_links || []);
+  }, [studentProfile]); // eslint-disable-line react-hooks/exhaustive-deps
+
   const requestEdit = (sectionKey) => setPendingEdit(sectionKey);
   const confirmEdit = () => { setEditingSection(pendingEdit); setPendingEdit(null); };
   const cancelEdit = () => {
