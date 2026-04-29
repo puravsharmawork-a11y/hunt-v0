@@ -75,7 +75,7 @@ export function ExploreTab({
 
       <div style={{ flex: 1, display: 'flex', overflow: 'hidden' }}>
         {/* ── Left: list/grid panel ── */}
-        {!(selectedJob && isPanelMaximized && viewMode === 'grid') && (
+        {!(selectedJob && isPanelMaximized) && (
           <div
             style={{
               flex: selectedJob && !isPanelMaximized ? '0 0 42%' : 1,
@@ -395,7 +395,7 @@ export function ExploreTab({
         )}
 
         {/* ── Right: detail panel ── */}
-        {selectedJob && viewMode === 'grid' && (
+        {selectedJob && (
           <div
             style={{
               flex: isPanelMaximized ? 1 : '0 0 58%',
