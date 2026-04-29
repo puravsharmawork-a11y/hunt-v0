@@ -24,7 +24,7 @@ export function HomeTab({
       title: 'Complete your profile',
       desc: `You're ${p?.profile_completeness || 0}% done — finish to improve match scores.`,
       cta: 'Complete now',
-      action: () => navigate('/onboarding'),
+      action: () => navigate('profile'),
       pct: p?.profile_completeness || 0,
     });
   if (!p?.linkedin_url)
