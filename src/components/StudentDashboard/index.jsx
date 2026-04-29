@@ -21,6 +21,35 @@ import { ExploreTab } from './tabs/ExploreTab';
 import { NetworkTab } from './tabs/NetworkTab';
 import { ProfileTab } from './tabs/profile/ProfileTab';
 
+// ─── Profile normalisation ─────────────────────────────────────────────────────
+// StudentOnboarding saves coding-platform usernames as top-level DB columns
+// (leetcodeUsername, codechefUsername, …).  ProfileTab reads them from the
+// nested shape  coding_profiles.{ leetcode, codechef, … }.
+// This bridge runs once after every getStudentProfile() call so the two halves
+// of the app always speak the same language.
+function normalizeProfile(raw) {
+  if (!raw) return raw;
+  const p = { ...raw };
+
+  if (!p.coding_profiles) {
+    const platforms = {
+      leetcode:     p.leetcodeUsername    || null,
+      codechef:     p.codechefUsername    || null,
+      codeforces:   p.codeforcesUsername  || null,
+      kaggle:       p.kaggleUsername      || null,
+      hackerrank:   p.hackerrankUsername  || null,
+      codingninjas: p.codingninjaUsername || null,
+      gfg:          p.gfgUsername         || null,
+      codestudio:   p.codestudioUsername  || null,
+    };
+    if (Object.values(platforms).some(Boolean)) {
+      p.coding_profiles = platforms;
+    }
+  }
+
+  return p;
+}
+
 // ─── Main Dashboard ────────────────────────────────────────────────────────────
 export default function StudentDashboard() {
   const navigate = useNavigate();
@@ -64,8 +93,9 @@ export default function StudentDashboard() {
   const loadData = async () => {
     try {
       setLoading(true);
-      const profile = await getStudentProfile();
-      if (!profile) { navigate('/onboarding'); return; }
+      const raw = await getStudentProfile();
+      if (!raw) { navigate('/onboarding'); return; }
+      const profile = normalizeProfile(raw);   // ← bridge onboarding field names → ProfileTab shape
       setStudentProfile(profile);
       const welcomed = localStorage.getItem(`hunt-welcomed-${profile.id}`);
       if (welcomed) { setShowWelcome(false); setShowGuide(false); }
