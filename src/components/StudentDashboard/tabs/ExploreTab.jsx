@@ -1,7 +1,7 @@
 // src/components/StudentDashboard/tabs/ExploreTab.jsx
 import React from 'react';
 import {
-  Sparkles, LayoutGrid, Heart, SlidersHorizontal, Search,
+  Sparkles, LayoutGrid, List, SlidersHorizontal, Search,
   BellRing, CheckCircle2, X as XIcon,
 } from 'lucide-react';
 import { FilterPanel } from '../explore/FilterPanel';
@@ -134,8 +134,8 @@ export function ExploreTab({
                   {/* View toggle */}
                   <div style={{ display: 'flex', border: '1px solid var(--border-mid)' }}>
                     {[
-                      { mode: 'grid',  Icon: LayoutGrid },
-                      { mode: 'swipe', Icon: Heart },
+                      { mode: 'grid', Icon: LayoutGrid },
+                      { mode: 'list', Icon: List },
                     ].map(({ mode, Icon }, idx) => {
                       const active = viewMode === mode;
                       return (
@@ -287,7 +287,7 @@ export function ExploreTab({
             <div style={{ flex: 1, overflowY: 'auto', padding: '0 28px 24px' }}>
               {allJobs.length === 0 ? (
                 <EmptyTargeted notified={notified} setNotified={setNotified} />
-              ) : viewMode === 'swipe' ? (
+              ) : viewMode === 'list' ? (
                 <div style={{ marginTop: 8 }}>
                   <SwipeView
                     jobs={displayedJobs}
@@ -296,6 +296,10 @@ export function ExploreTab({
                     onApply={handleApply}
                     applying={applying}
                     canApply={canApply}
+                    selectedJob={selectedJob}
+                    onJobClick={handleJobClick}
+                    savedJobs={savedJobs}
+                    onSave={handleSaveToggle}
                   />
                 </div>
               ) : displayedJobs.length === 0 ? (
