@@ -1,16 +1,15 @@
 // AdminDashboard.jsx — HUNT Admin Dashboard (Real Supabase Data)
-// Tables: students, recruiters, jobs, applications, recruiter_waitlist
-// Full admin controls: approve/reject/edit students, approve recruiters,
-// toggle jobs, post new jobs, manage waitlist — all writes go to Supabase.
+// Tables: students, recruiters, jobs, applications, recruiter_waitlist, notifications
+// Full admin controls + push notifications to all students
 
 import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import {
   Users, Building2, Briefcase, Search, X, Github, ExternalLink,
   CheckCircle2, Star, BarChart2, Activity, Target, Calendar,
-  Mail, MapPin, Globe, ArrowUpRight, ArrowDownRight, Minus,
+  Mail, MapPin, Globe, ArrowUpRight, ArrowDownRight,
   Sun, Moon, Eye, EyeOff, RefreshCw, Plus, Trash2, Link2,
   Copy, Check, Phone, FileText, Clock, AlertCircle, ArrowLeft,
-  ChevronRight,
+  ChevronRight, Bell, Send, Info,
 } from 'lucide-react';
 import { supabase } from '../services/supabase';
 
@@ -65,18 +64,21 @@ const THEMES = {
 const font  = "'DM Sans', system-ui, sans-serif";
 const serif = "Georgia, 'Times New Roman', serif";
 
-// ─── HELPERS ──────────────────────────────────────────────────────────────────
-const ini         = (n) => (n||'?').split(' ').map(c=>c[0]).join('').slice(0,2).toUpperCase();
-const sc          = (v,T) => v>=75?T.green:v>=50?T.amber:T.red;
-const sb          = (v,T) => v>=75?T.greenSoft:v>=50?T.amberSoft:T.redSoft;
-const sbd         = (v,T) => v>=75?T.greenBorder:v>=50?T.amberBorder:T.redBorder;
-const fmt         = (d) => d ? new Date(d).toLocaleDateString('en-IN',{day:'numeric',month:'short',year:'numeric'}) : '—';
-
-// Derive a student "status" from their profile data
-const studentStatus = (s) => {
-  if (s.profile_completeness >= 70 && (s.skills||[]).length > 0) return 'active';
-  return 'incomplete';
+// ─── NOTIFICATION TYPE META ───────────────────────────────────────────────────
+const NOTIF_TYPE_META = {
+  info:    { icon: Info,         color: '#2563EB', label: 'Info'    },
+  success: { icon: CheckCircle2, color: '#1A7A4A', label: 'Success' },
+  warning: { icon: AlertCircle,  color: '#92600A', label: 'Warning' },
+  alert:   { icon: Star,         color: '#C0392B', label: 'Alert'   },
 };
+
+// ─── HELPERS ──────────────────────────────────────────────────────────────────
+const ini  = (n) => (n||'?').split(' ').map(c=>c[0]).join('').slice(0,2).toUpperCase();
+const sc   = (v,T) => v>=75?T.green:v>=50?T.amber:T.red;
+const sb   = (v,T) => v>=75?T.greenSoft:v>=50?T.amberSoft:T.redSoft;
+const sbd  = (v,T) => v>=75?T.greenBorder:v>=50?T.amberBorder:T.redBorder;
+const fmt  = (d) => d ? new Date(d).toLocaleDateString('en-IN',{day:'numeric',month:'short',year:'numeric'}) : '—';
+const studentStatus = (s) => (s.profile_completeness >= 70 && (s.skills||[]).length > 0) ? 'active' : 'incomplete';
 
 // ─── SHARED COMPONENTS ────────────────────────────────────────────────────────
 const SL = ({children,T}) => <p style={{fontSize:10,fontWeight:500,letterSpacing:'0.1em',textTransform:'uppercase',color:T.muted,margin:'0 0 10px'}}>{children}</p>;
@@ -147,7 +149,6 @@ function PasswordGate({onUnlock}) {
 function StudentDetail({student:s,onClose,onUpdate,T}) {
   const [saving,setSaving]=useState(null);
   const status = studentStatus(s);
-
   const update = async (field, value) => {
     setSaving(field);
     try {
@@ -157,14 +158,12 @@ function StudentDetail({student:s,onClose,onUpdate,T}) {
     } catch(e){ alert('Failed: '+e.message); }
     finally{ setSaving(null); }
   };
-
   const deleteStudent = async () => {
     if(!window.confirm(`Delete ${s.full_name}? This cannot be undone.`)) return;
     await supabase.from('applications').delete().eq('student_id',s.id);
     await supabase.from('students').delete().eq('id',s.id);
-    onUpdate(null); // signal deletion
+    onUpdate(null);
   };
-
   return (
     <div style={{background:T.surface,border:`1px solid ${T.border}`,borderRadius:12,overflow:'hidden',position:'sticky',top:76}}>
       <div style={{padding:'12px 16px',borderBottom:`1px solid ${T.border}`,background:T.surfaceAlt,display:'flex',alignItems:'center',justifyContent:'space-between'}}>
@@ -175,7 +174,6 @@ function StudentDetail({student:s,onClose,onUpdate,T}) {
         </div>
       </div>
       <div style={{padding:18,overflowY:'auto',maxHeight:'calc(100vh - 160px)'}}>
-        {/* Identity */}
         <div style={{display:'flex',alignItems:'flex-start',gap:12,marginBottom:16}}>
           <Avatar name={s.full_name} size={44} T={T}/>
           <div style={{flex:1}}>
@@ -193,15 +191,11 @@ function StudentDetail({student:s,onClose,onUpdate,T}) {
             <p style={{fontSize:9,color:T.muted,margin:'2px 0 0'}}>profile</p>
           </div>
         </div>
-
-        {/* Profile bar */}
         <div style={{marginBottom:16}}>
           <div style={{height:3,background:T.surfaceAlt,borderRadius:2,overflow:'hidden'}}>
             <div style={{height:'100%',width:`${s.profile_completeness||0}%`,background:sc(s.profile_completeness||0,T),borderRadius:2}}/>
           </div>
         </div>
-
-        {/* Skills */}
         {(s.skills||[]).length>0 && (
           <div style={{marginBottom:14}}>
             <SL T={T}>Skills ({(s.skills||[]).length})</SL>
@@ -214,8 +208,6 @@ function StudentDetail({student:s,onClose,onUpdate,T}) {
             </div>
           </div>
         )}
-
-        {/* Preferred roles */}
         {(s.preferred_roles||[]).length>0 && (
           <div style={{marginBottom:14}}>
             <SL T={T}>Preferred roles</SL>
@@ -224,8 +216,6 @@ function StudentDetail({student:s,onClose,onUpdate,T}) {
             </div>
           </div>
         )}
-
-        {/* Tools */}
         {(s.tools||[]).length>0 && (
           <div style={{marginBottom:14}}>
             <SL T={T}>Tools</SL>
@@ -234,8 +224,6 @@ function StudentDetail({student:s,onClose,onUpdate,T}) {
             </div>
           </div>
         )}
-
-        {/* Projects */}
         {(s.projects||[]).length>0 && (
           <div style={{marginBottom:14}}>
             <SL T={T}>Projects ({(s.projects||[]).length})</SL>
@@ -254,8 +242,6 @@ function StudentDetail({student:s,onClose,onUpdate,T}) {
             ))}
           </div>
         )}
-
-        {/* Contact */}
         <div style={{borderTop:`1px solid ${T.border}`,paddingTop:12,marginBottom:14}}>
           <SL T={T}>Contact</SL>
           <div style={{display:'flex',flexDirection:'column',gap:6}}>
@@ -269,15 +255,11 @@ function StudentDetail({student:s,onClose,onUpdate,T}) {
             {s.resume_url    && <a href={s.resume_url}    target="_blank" rel="noopener noreferrer" style={{display:'flex',alignItems:'center',gap:4,fontSize:11,color:T.accent,padding:'4px 9px',borderRadius:20,border:`1px solid ${T.accent}30`,textDecoration:'none'}}><FileText size={11}/> Resume</a>}
           </div>
         </div>
-
-        {/* Availability */}
         <div style={{display:'flex',alignItems:'center',gap:6,padding:'8px 10px',borderRadius:8,background:T.surfaceAlt,border:`1px solid ${T.border}`,marginBottom:14}}>
           <Calendar size={11} color={T.muted}/>
           <span style={{fontSize:11,color:T.muted}}>Availability:</span>
           <span style={{fontSize:11,color:T.text,fontWeight:500}}>{s.availability||'—'}</span>
         </div>
-
-        {/* Admin actions */}
         <div style={{borderTop:`1px solid ${T.border}`,paddingTop:12}}>
           <SL T={T}>Admin actions</SL>
           <div style={{display:'flex',flexDirection:'column',gap:6}}>
@@ -311,7 +293,6 @@ function StudentDetail({student:s,onClose,onUpdate,T}) {
 // ─── RECRUITER DETAIL ─────────────────────────────────────────────────────────
 function RecruiterDetail({recruiter:r,onClose,onUpdate,T}) {
   const [saving,setSaving]=useState(null);
-
   const update = async (field,value) => {
     setSaving(field);
     try {
@@ -321,11 +302,9 @@ function RecruiterDetail({recruiter:r,onClose,onUpdate,T}) {
     } catch(e){ alert('Failed: '+e.message); }
     finally{ setSaving(null); }
   };
-
   const logo = r.logo_emoji || r.logo || '🚀';
   const name = r.company_name || r.company || '—';
   const desc = r.what_you_build || r.about || '—';
-
   return (
     <div style={{background:T.surface,border:`1px solid ${T.border}`,borderRadius:12,overflow:'hidden',position:'sticky',top:76}}>
       <div style={{padding:'12px 16px',borderBottom:`1px solid ${T.border}`,background:T.surfaceAlt,display:'flex',alignItems:'center',justifyContent:'space-between'}}>
@@ -333,7 +312,6 @@ function RecruiterDetail({recruiter:r,onClose,onUpdate,T}) {
         <button onClick={onClose} style={{background:'transparent',border:'none',cursor:'pointer',color:T.muted,display:'flex'}}><X size={14}/></button>
       </div>
       <div style={{padding:18,overflowY:'auto',maxHeight:'calc(100vh - 160px)'}}>
-        {/* Identity */}
         <div style={{display:'flex',alignItems:'flex-start',gap:12,marginBottom:16}}>
           <div style={{width:44,height:44,borderRadius:10,background:T.surfaceAlt,border:`1px solid ${T.border}`,display:'flex',alignItems:'center',justifyContent:'center',fontSize:22,flexShrink:0}}>{logo}</div>
           <div style={{flex:1}}>
@@ -351,8 +329,6 @@ function RecruiterDetail({recruiter:r,onClose,onUpdate,T}) {
             </div>
           </div>
         </div>
-
-        {/* Role categories / hiring for */}
         {(r.role_categories||r.hiring_for||[]).length>0 && (
           <div style={{marginBottom:14}}>
             <SL T={T}>Hiring for</SL>
@@ -361,8 +337,6 @@ function RecruiterDetail({recruiter:r,onClose,onUpdate,T}) {
             </div>
           </div>
         )}
-
-        {/* Contact */}
         <div style={{borderTop:`1px solid ${T.border}`,paddingTop:12,marginBottom:14}}>
           <SL T={T}>Contact</SL>
           <div style={{display:'flex',flexDirection:'column',gap:6}}>
@@ -374,23 +348,18 @@ function RecruiterDetail({recruiter:r,onClose,onUpdate,T}) {
             {r.linkedin && <a href={r.linkedin} target="_blank" rel="noopener noreferrer" style={{display:'flex',alignItems:'center',gap:6,fontSize:11,color:T.muted,textDecoration:'none'}}><ExternalLink size={11}/> LinkedIn</a>}
           </div>
         </div>
-
-        {/* Extra info */}
         {(r.industry||r.founded_year) && (
           <div style={{marginBottom:14}}>
             {r.industry && <div style={{display:'flex',gap:6,marginBottom:4}}><span style={{fontSize:10,color:T.muted,width:80}}>Industry</span><span style={{fontSize:11,color:T.text}}>{r.industry}</span></div>}
             {r.founded_year && <div style={{display:'flex',gap:6}}><span style={{fontSize:10,color:T.muted,width:80}}>Founded</span><span style={{fontSize:11,color:T.text}}>{r.founded_year}</span></div>}
           </div>
         )}
-
         {r.notes && (
           <div style={{padding:'8px 10px',borderRadius:8,background:T.surfaceAlt,border:`1px solid ${T.border}`,marginBottom:14}}>
             <p style={{fontSize:9,color:T.muted,margin:'0 0 4px',letterSpacing:'0.08em',textTransform:'uppercase'}}>Notes</p>
             <p style={{fontSize:11,color:T.text,margin:0}}>{r.notes}</p>
           </div>
         )}
-
-        {/* Admin actions */}
         <div style={{borderTop:`1px solid ${T.border}`,paddingTop:12}}>
           <SL T={T}>Admin actions</SL>
           <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:6}}>
@@ -411,16 +380,16 @@ function RecruiterDetail({recruiter:r,onClose,onUpdate,T}) {
 
 // ─── OVERVIEW TAB ─────────────────────────────────────────────────────────────
 function OverviewTab({students,recruiters,jobs,applications,T}) {
-  const total     = students.length;
-  const active    = students.filter(s=>studentStatus(s)==='active').length;
-  const incomplete= students.filter(s=>studentStatus(s)==='incomplete').length;
-  const rTotal    = recruiters.length;
-  const rApproved = recruiters.filter(r=>r.is_approved).length;
-  const totalJobs = jobs.length;
-  const activeJobs= jobs.filter(j=>j.is_active).length;
-  const totalApps = applications.length;
-  const shortlisted=applications.filter(a=>a.status==='shortlisted').length;
-  const avgComp   = total>0?Math.round(students.reduce((s,st)=>s+(st.profile_completeness||0),0)/total):0;
+  const total      = students.length;
+  const active     = students.filter(s=>studentStatus(s)==='active').length;
+  const incomplete = students.filter(s=>studentStatus(s)==='incomplete').length;
+  const rTotal     = recruiters.length;
+  const rApproved  = recruiters.filter(r=>r.is_approved).length;
+  const totalJobs  = jobs.length;
+  const activeJobs = jobs.filter(j=>j.is_active).length;
+  const totalApps  = applications.length;
+  const shortlisted= applications.filter(a=>a.status==='shortlisted').length;
+  const avgComp    = total>0?Math.round(students.reduce((s,st)=>s+(st.profile_completeness||0),0)/total):0;
 
   const skillCounts={};
   students.forEach(s=>(s.skills||[]).forEach(sk=>{skillCounts[sk.name]=(skillCounts[sk.name]||0)+1;}));
@@ -431,7 +400,6 @@ function OverviewTab({students,recruiters,jobs,applications,T}) {
   const topColleges=Object.entries(collegeCounts).sort((a,b)=>b[1]-a[1]).slice(0,5);
 
   const card=p=><StatCard {...p} T={T}/>;
-
   return (
     <div style={{display:'flex',flexDirection:'column',gap:24}}>
       <div>
@@ -449,9 +417,7 @@ function OverviewTab({students,recruiters,jobs,applications,T}) {
         {card({label:'Pending approval',value:recruiters.filter(r=>!r.is_approved).length,icon:AlertCircle,color:T.amber})}
         {card({label:'Conversion rate',value:totalApps>0?`${Math.round((shortlisted/totalApps)*100)}%`:'—',icon:Target,color:T.green})}
       </div>
-
       <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:16}}>
-        {/* Top skills */}
         <div style={{background:T.surface,border:`1px solid ${T.border}`,borderRadius:12,padding:18}}>
           <SL T={T}>Top skills on platform</SL>
           {topSkills.length===0 ? <p style={{fontSize:12,color:T.muted}}>No skill data yet.</p> :
@@ -469,9 +435,7 @@ function OverviewTab({students,recruiters,jobs,applications,T}) {
             })
           }
         </div>
-
         <div style={{display:'flex',flexDirection:'column',gap:12}}>
-          {/* Top colleges */}
           <div style={{background:T.surface,border:`1px solid ${T.border}`,borderRadius:12,padding:18}}>
             <SL T={T}>Students by college</SL>
             {topColleges.length===0 ? <p style={{fontSize:12,color:T.muted}}>No data yet.</p> :
@@ -488,8 +452,6 @@ function OverviewTab({students,recruiters,jobs,applications,T}) {
               ))
             }
           </div>
-
-          {/* Application status breakdown */}
           <div style={{background:T.surface,border:`1px solid ${T.border}`,borderRadius:12,padding:18}}>
             <SL T={T}>Application statuses</SL>
             {[
@@ -507,8 +469,6 @@ function OverviewTab({students,recruiters,jobs,applications,T}) {
           </div>
         </div>
       </div>
-
-      {/* Recent students */}
       <div style={{background:T.surface,border:`1px solid ${T.border}`,borderRadius:12,padding:18}}>
         <SL T={T}>Recently joined students</SL>
         <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:8}}>
@@ -535,17 +495,10 @@ function StudentsTab({students:init,T,showToast}) {
   const [filter,setFilter]=useState('all');
   const [sortBy,setSortBy]=useState('recent');
   const [selected,setSelected]=useState(null);
-
   useEffect(()=>setStudents(init),[init]);
-
   const filtered=useMemo(()=>{
     let arr=[...students];
-    if(search) arr=arr.filter(s=>
-      s.full_name?.toLowerCase().includes(search.toLowerCase())||
-      s.college?.toLowerCase().includes(search.toLowerCase())||
-      s.email?.toLowerCase().includes(search.toLowerCase())||
-      (s.skills||[]).some(sk=>sk.name?.toLowerCase().includes(search.toLowerCase()))
-    );
+    if(search) arr=arr.filter(s=>s.full_name?.toLowerCase().includes(search.toLowerCase())||s.college?.toLowerCase().includes(search.toLowerCase())||s.email?.toLowerCase().includes(search.toLowerCase())||(s.skills||[]).some(sk=>sk.name?.toLowerCase().includes(search.toLowerCase())));
     if(filter==='active')     arr=arr.filter(s=>studentStatus(s)==='active');
     if(filter==='incomplete') arr=arr.filter(s=>studentStatus(s)==='incomplete');
     if(filter==='no_skills')  arr=arr.filter(s=>(s.skills||[]).length===0);
@@ -557,28 +510,17 @@ function StudentsTab({students:init,T,showToast}) {
     });
     return arr;
   },[students,search,filter,sortBy]);
-
   const handleUpdate=(updated)=>{
-    if(updated===null){
-      setStudents(p=>p.filter(x=>x.id!==selected.id));
-      setSelected(null);
-      showToast('Student deleted');
-    } else {
-      setStudents(p=>p.map(x=>x.id===updated.id?updated:x));
-      setSelected(updated);
-      showToast('Updated');
-    }
+    if(updated===null){setStudents(p=>p.filter(x=>x.id!==selected.id));setSelected(null);showToast('Student deleted');}
+    else{setStudents(p=>p.map(x=>x.id===updated.id?updated:x));setSelected(updated);showToast('Updated');}
   };
-
   const counts={all:students.length,active:students.filter(s=>studentStatus(s)==='active').length,incomplete:students.filter(s=>studentStatus(s)==='incomplete').length,no_skills:students.filter(s=>(s.skills||[]).length===0).length};
-
   return (
     <div style={{display:'grid',gridTemplateColumns:selected?'1fr 320px':'1fr',gap:16}}>
       <div>
         <div style={{display:'flex',gap:8,marginBottom:12,alignItems:'center',flexWrap:'wrap'}}>
           <SBar value={search} onChange={setSearch} placeholder="Search name, college, email, skill…" T={T}/>
-          <select value={sortBy} onChange={e=>setSortBy(e.target.value)}
-            style={{padding:'8px 10px',borderRadius:8,border:`1px solid ${T.border}`,background:T.inputBg,color:T.text,fontSize:12,fontFamily:font,outline:'none',cursor:'pointer'}}>
+          <select value={sortBy} onChange={e=>setSortBy(e.target.value)} style={{padding:'8px 10px',borderRadius:8,border:`1px solid ${T.border}`,background:T.inputBg,color:T.text,fontSize:12,fontFamily:font,outline:'none',cursor:'pointer'}}>
             <option value="recent">Newest first</option>
             <option value="completeness">Profile % ↓</option>
             <option value="name">Name A–Z</option>
@@ -589,17 +531,14 @@ function StudentsTab({students:init,T,showToast}) {
             <Pill key={v} active={filter===v} onClick={()=>setFilter(v)} T={T}>{l}</Pill>
           ))}
         </div>
-
         <div style={{display:'grid',gridTemplateColumns:'2fr 1.5fr 1fr 70px 64px 88px',gap:10,padding:'5px 14px',marginBottom:4}}>
           {['Student','College','Skills','Profile','Joined','Status'].map(h=>(
             <span key={h} style={{fontSize:9,color:T.muted,letterSpacing:'0.08em',textTransform:'uppercase',fontWeight:500}}>{h}</span>
           ))}
         </div>
-
         <div style={{display:'flex',flexDirection:'column',gap:4}}>
           {filtered.map(s=>{
-            const isSel=selected?.id===s.id;
-            const status=studentStatus(s);
+            const isSel=selected?.id===s.id;const status=studentStatus(s);
             return (
               <div key={s.id} onClick={()=>setSelected(isSel?null:s)}
                 style={{display:'grid',gridTemplateColumns:'2fr 1.5fr 1fr 70px 64px 88px',gap:10,alignItems:'center',padding:'10px 14px',background:isSel?T.accentSoft:T.surface,border:`1px solid ${isSel?T.accent+'60':T.border}`,borderRadius:10,cursor:'pointer',transition:'all 0.15s'}}
@@ -614,9 +553,7 @@ function StudentsTab({students:init,T,showToast}) {
                 </div>
                 <p style={{fontSize:11,color:T.muted,margin:0,overflow:'hidden',textOverflow:'ellipsis',whiteSpace:'nowrap'}}>{s.college||'—'}</p>
                 <div style={{display:'flex',gap:3,overflow:'hidden'}}>
-                  {(s.skills||[]).slice(0,2).map((sk,i)=>(
-                    <span key={i} style={{fontSize:9,padding:'2px 5px',borderRadius:4,background:T.blueSoft,border:`1px solid ${T.blueBorder}`,color:T.blue,whiteSpace:'nowrap'}}>{sk.name}</span>
-                  ))}
+                  {(s.skills||[]).slice(0,2).map((sk,i)=>(<span key={i} style={{fontSize:9,padding:'2px 5px',borderRadius:4,background:T.blueSoft,border:`1px solid ${T.blueBorder}`,color:T.blue,whiteSpace:'nowrap'}}>{sk.name}</span>))}
                   {(s.skills||[]).length===0 && <span style={{fontSize:9,color:T.muted}}>none</span>}
                 </div>
                 <div>
@@ -626,9 +563,7 @@ function StudentsTab({students:init,T,showToast}) {
                   <span style={{fontSize:9,color:T.muted}}>{s.profile_completeness||0}%</span>
                 </div>
                 <span style={{fontSize:10,color:T.muted}}>{fmt(s.created_at)}</span>
-                <Badge color={status==='active'?T.blue:T.amber} bg={status==='active'?T.blueSoft:T.amberSoft} border={status==='active'?T.blueBorder:T.amberBorder}>
-                  {status==='active'?'Active':'Incomplete'}
-                </Badge>
+                <Badge color={status==='active'?T.blue:T.amber} bg={status==='active'?T.blueSoft:T.amberSoft} border={status==='active'?T.blueBorder:T.amberBorder}>{status==='active'?'Active':'Incomplete'}</Badge>
               </div>
             );
           })}
@@ -646,40 +581,25 @@ function RecruitersTab({recruiters:init,T,showToast}) {
   const [search,setSearch]=useState('');
   const [filter,setFilter]=useState('all');
   const [selected,setSelected]=useState(null);
-
   useEffect(()=>setRecruiters(init),[init]);
-
   const filtered=useMemo(()=>{
     let arr=[...recruiters];
     if(search) arr=arr.filter(r=>(r.company_name||r.company||'').toLowerCase().includes(search.toLowerCase())||(r.contact_name||'').toLowerCase().includes(search.toLowerCase())||(r.email||'').toLowerCase().includes(search.toLowerCase()));
-    if(filter==='approved')   arr=arr.filter(r=>r.is_approved);
-    if(filter==='pending')    arr=arr.filter(r=>!r.is_approved);
+    if(filter==='approved') arr=arr.filter(r=>r.is_approved);
+    if(filter==='pending')  arr=arr.filter(r=>!r.is_approved);
     return arr.sort((a,b)=>new Date(b.created_at)-new Date(a.created_at));
   },[recruiters,search,filter]);
-
-  const handleUpdate=(updated)=>{
-    setRecruiters(p=>p.map(x=>x.id===updated.id?updated:x));
-    setSelected(updated);
-    showToast('Recruiter updated');
-  };
-
+  const handleUpdate=(updated)=>{setRecruiters(p=>p.map(x=>x.id===updated.id?updated:x));setSelected(updated);showToast('Recruiter updated');};
   return (
     <div style={{display:'grid',gridTemplateColumns:selected?'1fr 320px':'1fr',gap:16}}>
       <div>
-        <div style={{display:'flex',gap:8,marginBottom:12}}>
-          <SBar value={search} onChange={setSearch} placeholder="Search company, contact, email…" T={T}/>
-        </div>
+        <div style={{display:'flex',gap:8,marginBottom:12}}><SBar value={search} onChange={setSearch} placeholder="Search company, contact, email…" T={T}/></div>
         <div style={{display:'flex',gap:6,marginBottom:16}}>
-          {[['all','All'],['approved','Approved ✓'],['pending','Pending approval']].map(([v,l])=>(
-            <Pill key={v} active={filter===v} onClick={()=>setFilter(v)} T={T}>{l}</Pill>
-          ))}
+          {[['all','All'],['approved','Approved ✓'],['pending','Pending approval']].map(([v,l])=>(<Pill key={v} active={filter===v} onClick={()=>setFilter(v)} T={T}>{l}</Pill>))}
         </div>
         <div style={{display:'grid',gridTemplateColumns:selected?'1fr':'repeat(2,1fr)',gap:10}}>
           {filtered.map(r=>{
-            const isSel=selected?.id===r.id;
-            const logo=r.logo_emoji||r.logo||'🚀';
-            const name=r.company_name||r.company||'—';
-            const desc=r.what_you_build||r.about||'—';
+            const isSel=selected?.id===r.id;const logo=r.logo_emoji||r.logo||'🚀';const name=r.company_name||r.company||'—';const desc=r.what_you_build||r.about||'—';
             return (
               <div key={r.id} onClick={()=>setSelected(isSel?null:r)}
                 style={{background:isSel?T.accentSoft:T.surface,border:`1px solid ${isSel?T.accent+'60':T.border}`,borderRadius:12,padding:16,cursor:'pointer',transition:'all 0.15s'}}
@@ -694,9 +614,7 @@ function RecruitersTab({recruiters:init,T,showToast}) {
                     </div>
                     <p style={{fontSize:10,color:T.muted,margin:'2px 0',overflow:'hidden',textOverflow:'ellipsis',whiteSpace:'nowrap'}}>{desc}</p>
                   </div>
-                  <Badge color={r.is_approved?T.green:T.amber} bg={r.is_approved?T.greenSoft:T.amberSoft} border={r.is_approved?T.greenBorder:T.amberBorder}>
-                    {r.is_approved?'Approved':'Pending'}
-                  </Badge>
+                  <Badge color={r.is_approved?T.green:T.amber} bg={r.is_approved?T.greenSoft:T.amberSoft} border={r.is_approved?T.greenBorder:T.amberBorder}>{r.is_approved?'Approved':'Pending'}</Badge>
                 </div>
                 <div style={{display:'flex',gap:5,flexWrap:'wrap',marginBottom:8}}>
                   {r.stage && <Badge color={T.muted} border={T.border}>{r.stage}</Badge>}
@@ -734,75 +652,39 @@ function CopyLink({url,T}) {
 }
 
 // ─── JOB CANDIDATES VIEW ──────────────────────────────────────────────────────
-function JobCandidatesView({job, onBack, T, showToast}) {
-  const [apps, setApps]           = useState([]);
-  const [loading, setLoading]     = useState(true);
-  const [selected, setSelected]   = useState(null);
-  const [statusFilter, setSFilter]= useState('all');
-
+function JobCandidatesView({job,onBack,T,showToast}) {
+  const [apps,setApps]=useState([]);
+  const [loading,setLoading]=useState(true);
+  const [selected,setSelected]=useState(null);
+  const [statusFilter,setSFilter]=useState('all');
   useEffect(()=>{
     (async()=>{
       setLoading(true);
       try {
-        // Fetch applications for this job
-        const {data:appData, error:appErr} = await supabase
-          .from('applications')
-          .select('*')
-          .eq('job_id', job.id)
-          .order('match_score', {ascending:false});
+        const {data:appData,error:appErr}=await supabase.from('applications').select('*').eq('job_id',job.id).order('match_score',{ascending:false});
         if(appErr) throw appErr;
-
-        // Fetch student profiles for all applicants
-        const studentIds = (appData||[]).map(a=>a.student_id).filter(Boolean);
-        let studentsMap = {};
-        if(studentIds.length > 0) {
-          const {data:sData} = await supabase
-            .from('students')
-            .select('*')
-            .in('id', studentIds);
-          (sData||[]).forEach(s=>{ studentsMap[s.id]=s; });
-        }
-
-        setApps((appData||[]).map(a=>({...a, student: studentsMap[a.student_id]||null})));
-      } catch(e){ showToast('Failed to load applicants','error'); }
-      finally{ setLoading(false); }
+        const studentIds=(appData||[]).map(a=>a.student_id).filter(Boolean);
+        let studentsMap={};
+        if(studentIds.length>0){const {data:sData}=await supabase.from('students').select('*').in('id',studentIds);(sData||[]).forEach(s=>{studentsMap[s.id]=s;});}
+        setApps((appData||[]).map(a=>({...a,student:studentsMap[a.student_id]||null})));
+      } catch(e){showToast('Failed to load applicants','error');}
+      finally{setLoading(false);}
     })();
   },[job.id]);
-
-  const updateStatus = async(appId, status) => {
+  const updateStatus=async(appId,status)=>{
     try {
-      const {error} = await supabase.from('applications').update({status}).eq('id',appId);
+      const {error}=await supabase.from('applications').update({status}).eq('id',appId);
       if(error) throw error;
       setApps(p=>p.map(a=>a.id===appId?{...a,status}:a));
       if(selected?.id===appId) setSelected(p=>({...p,status}));
-      const labels = {shortlisted:'✓ Shortlisted',interview:'Interview scheduled',rejected:'Passed'};
-      showToast(labels[status]||'Updated');
-    } catch(e){ showToast('Failed','error'); }
+      showToast({shortlisted:'✓ Shortlisted',interview:'Interview scheduled',rejected:'Passed'}[status]||'Updated');
+    } catch(e){showToast('Failed','error');}
   };
-
-  const filtered = useMemo(()=>{
-    if(statusFilter==='all') return apps;
-    return apps.filter(a=>(a.status||'pending')===statusFilter);
-  },[apps,statusFilter]);
-
-  const counts = {
-    all: apps.length,
-    pending: apps.filter(a=>!a.status||a.status==='pending').length,
-    shortlisted: apps.filter(a=>a.status==='shortlisted').length,
-    interview: apps.filter(a=>a.status==='interview').length,
-    rejected: apps.filter(a=>a.status==='rejected').length,
-  };
-
-  const statusStyle = (status) => ({
-    shortlisted: {color:T.green,  bg:T.greenSoft,  border:T.greenBorder},
-    interview:   {color:T.blue,   bg:T.blueSoft,   border:T.blueBorder},
-    rejected:    {color:T.red,    bg:T.redSoft,    border:T.redBorder},
-    pending:     {color:T.muted,  bg:'transparent', border:T.border},
-  })[status||'pending'] || {color:T.muted,bg:'transparent',border:T.border};
-
+  const filtered=useMemo(()=>statusFilter==='all'?apps:apps.filter(a=>(a.status||'pending')===statusFilter),[apps,statusFilter]);
+  const counts={all:apps.length,pending:apps.filter(a=>!a.status||a.status==='pending').length,shortlisted:apps.filter(a=>a.status==='shortlisted').length,interview:apps.filter(a=>a.status==='interview').length,rejected:apps.filter(a=>a.status==='rejected').length};
+  const statusStyle=(status)=>({shortlisted:{color:T.green,bg:T.greenSoft,border:T.greenBorder},interview:{color:T.blue,bg:T.blueSoft,border:T.blueBorder},rejected:{color:T.red,bg:T.redSoft,border:T.redBorder},pending:{color:T.muted,bg:'transparent',border:T.border}})[status||'pending']||{color:T.muted,bg:'transparent',border:T.border};
   return (
     <div>
-      {/* Sub-header */}
       <div style={{display:'flex',alignItems:'center',justifyContent:'space-between',marginBottom:20,flexWrap:'wrap',gap:10}}>
         <div style={{display:'flex',alignItems:'center',gap:12}}>
           <button onClick={onBack} style={{display:'flex',alignItems:'center',gap:5,padding:'6px 10px',borderRadius:6,border:`1px solid ${T.border}`,background:'transparent',color:T.muted,fontSize:12,cursor:'pointer',fontFamily:font}}
@@ -819,55 +701,35 @@ function JobCandidatesView({job, onBack, T, showToast}) {
           </div>
         </div>
         <div style={{display:'flex',alignItems:'center',gap:8}}>
-          <Badge color={job.is_active?T.green:T.muted} bg={job.is_active?T.greenSoft:'transparent'} border={job.is_active?T.greenBorder:T.border}>
-            {job.is_active?'Active':'Paused'}
-          </Badge>
+          <Badge color={job.is_active?T.green:T.muted} bg={job.is_active?T.greenSoft:'transparent'} border={job.is_active?T.greenBorder:T.border}>{job.is_active?'Active':'Paused'}</Badge>
           <span style={{fontSize:12,color:T.muted}}>{loading?'…':apps.length} applicant{apps.length!==1?'s':''}</span>
         </div>
       </div>
-
-      {/* Stats row */}
       <div style={{display:'grid',gridTemplateColumns:'repeat(4,1fr)',gap:10,marginBottom:20}}>
-        <StatCard label="Total applied"  value={apps.length}           icon={Users}        color={T.blue}   T={T}/>
-        <StatCard label="Shortlisted"    value={counts.shortlisted}    icon={CheckCircle2} color={T.green}  T={T}/>
-        <StatCard label="Interview"      value={counts.interview}      icon={Calendar}     color={T.blue}   T={T}/>
-        <StatCard label="Avg match score"
-          value={apps.length>0?`${Math.round(apps.reduce((s,a)=>s+(a.match_score||0),0)/apps.length)}%`:'—'}
-          icon={Target} color={T.accent} T={T}/>
+        <StatCard label="Total applied"   value={apps.length}           icon={Users}        color={T.blue}   T={T}/>
+        <StatCard label="Shortlisted"     value={counts.shortlisted}    icon={CheckCircle2} color={T.green}  T={T}/>
+        <StatCard label="Interview"       value={counts.interview}      icon={Calendar}     color={T.blue}   T={T}/>
+        <StatCard label="Avg match score" value={apps.length>0?`${Math.round(apps.reduce((s,a)=>s+(a.match_score||0),0)/apps.length)}%`:'—'} icon={Target} color={T.accent} T={T}/>
       </div>
-
-      {/* Filter pills */}
       <div style={{display:'flex',gap:6,marginBottom:14,flexWrap:'wrap'}}>
-        {[['all',`All ${counts.all}`],['pending',`New ${counts.pending}`],['shortlisted',`Shortlisted ${counts.shortlisted}`],['interview',`Interview ${counts.interview}`],['rejected',`Passed ${counts.rejected}`]].map(([v,l])=>(
-          <Pill key={v} active={statusFilter===v} onClick={()=>setSFilter(v)} T={T}>{l}</Pill>
-        ))}
+        {[['all',`All ${counts.all}`],['pending',`New ${counts.pending}`],['shortlisted',`Shortlisted ${counts.shortlisted}`],['interview',`Interview ${counts.interview}`],['rejected',`Passed ${counts.rejected}`]].map(([v,l])=>(<Pill key={v} active={statusFilter===v} onClick={()=>setSFilter(v)} T={T}>{l}</Pill>))}
       </div>
-
       {loading ? (
         <div style={{textAlign:'center',padding:'48px',color:T.muted,fontSize:13,background:T.surface,border:`1px solid ${T.border}`,borderRadius:12}}>Loading applicants…</div>
       ) : filtered.length===0 ? (
         <div style={{textAlign:'center',padding:'52px 20px',background:T.surface,border:`1px solid ${T.border}`,borderRadius:12}}>
           <div style={{fontSize:36,marginBottom:10}}>🎯</div>
           <p style={{fontFamily:serif,fontSize:18,color:T.text,marginBottom:6}}>{apps.length===0?'No applicants yet.':'No applicants in this status.'}</p>
-          <p style={{fontSize:13,color:T.muted}}>{apps.length===0?'Share the job link to start getting applications.':'Try a different filter.'}</p>
+          <p style={{fontSize:13,color:T.muted}}>{apps.length===0?'Share the job link to get applications.':'Try a different filter.'}</p>
         </div>
       ) : (
         <div style={{display:'grid',gridTemplateColumns:selected?'1fr 340px':'1fr',gap:16}}>
-          {/* List */}
           <div style={{display:'flex',flexDirection:'column',gap:6}}>
-            {/* Column headers */}
             <div style={{display:'grid',gridTemplateColumns:'24px 2fr 1.5fr 1fr 70px 100px',gap:10,padding:'4px 14px',marginBottom:2}}>
-              {['#','Applicant','College','Skills','Score','Status'].map(h=>(
-                <span key={h} style={{fontSize:9,color:T.muted,letterSpacing:'0.08em',textTransform:'uppercase',fontWeight:500}}>{h}</span>
-              ))}
+              {['#','Applicant','College','Skills','Score','Status'].map(h=>(<span key={h} style={{fontSize:9,color:T.muted,letterSpacing:'0.08em',textTransform:'uppercase',fontWeight:500}}>{h}</span>))}
             </div>
-
-            {filtered.map((app, idx)=>{
-              const s = app.student;
-              const isSel = selected?.id===app.id;
-              const score = app.match_score||0;
-              const scoreC = score>=75?T.green:score>=50?T.amber:T.red;
-              const ss = statusStyle(app.status);
+            {filtered.map((app,idx)=>{
+              const s=app.student;const isSel=selected?.id===app.id;const score=app.match_score||0;const scoreC=score>=75?T.green:score>=50?T.amber:T.red;const ss=statusStyle(app.status);
               return (
                 <div key={app.id} onClick={()=>setSelected(isSel?null:app)}
                   style={{display:'grid',gridTemplateColumns:'24px 2fr 1.5fr 1fr 70px 100px',gap:10,alignItems:'center',padding:'10px 14px',background:isSel?T.accentSoft:T.surface,border:`1px solid ${isSel?T.accent+'60':T.border}`,borderRadius:10,cursor:'pointer',transition:'all 0.15s'}}
@@ -883,39 +745,28 @@ function JobCandidatesView({job, onBack, T, showToast}) {
                   </div>
                   <p style={{fontSize:11,color:T.muted,margin:0,overflow:'hidden',textOverflow:'ellipsis',whiteSpace:'nowrap'}}>{s?.college||'—'}</p>
                   <div style={{display:'flex',gap:3,overflow:'hidden'}}>
-                    {(s?.skills||[]).slice(0,2).map((sk,i)=>(
-                      <span key={i} style={{fontSize:9,padding:'2px 5px',borderRadius:4,background:T.blueSoft,border:`1px solid ${T.blueBorder}`,color:T.blue,whiteSpace:'nowrap'}}>{sk.name}</span>
-                    ))}
+                    {(s?.skills||[]).slice(0,2).map((sk,i)=>(<span key={i} style={{fontSize:9,padding:'2px 5px',borderRadius:4,background:T.blueSoft,border:`1px solid ${T.blueBorder}`,color:T.blue,whiteSpace:'nowrap'}}>{sk.name}</span>))}
                     {(s?.skills||[]).length===0 && <span style={{fontSize:9,color:T.muted}}>—</span>}
                   </div>
                   <span style={{fontFamily:serif,fontSize:15,color:scoreC,fontWeight:400}}>{score}%</span>
-                  <Badge color={ss.color} bg={ss.bg} border={ss.border}>
-                    {app.status||'New'}
-                  </Badge>
+                  <Badge color={ss.color} bg={ss.bg} border={ss.border}>{app.status||'New'}</Badge>
                 </div>
               );
             })}
           </div>
-
-          {/* Candidate detail panel */}
-          {selected && (
-            <CandidatePanel app={selected} onClose={()=>setSelected(null)} onStatusChange={updateStatus} T={T}/>
-          )}
+          {selected && <CandidatePanel app={selected} onClose={()=>setSelected(null)} onStatusChange={updateStatus} T={T}/>}
         </div>
       )}
     </div>
   );
 }
 
-// ─── CANDIDATE PANEL (inside job view) ───────────────────────────────────────
-function CandidatePanel({app, onClose, onStatusChange, T}) {
-  const s = app.student;
-  const score = app.match_score||0;
-  const breakdown = app.match_breakdown||{};
-  const scoreC = score>=75?T.green:score>=50?T.amber:T.red;
-  const scoreBg_ = score>=75?T.greenSoft:score>=50?T.amberSoft:T.redSoft;
-  const scoreBd = score>=75?T.greenBorder:score>=50?T.amberBorder:T.redBorder;
-
+// ─── CANDIDATE PANEL ──────────────────────────────────────────────────────────
+function CandidatePanel({app,onClose,onStatusChange,T}) {
+  const s=app.student;const score=app.match_score||0;const breakdown=app.match_breakdown||{};
+  const scoreC=score>=75?T.green:score>=50?T.amber:T.red;
+  const scoreBg=score>=75?T.greenSoft:score>=50?T.amberSoft:T.redSoft;
+  const scoreBd=score>=75?T.greenBorder:score>=50?T.amberBorder:T.redBorder;
   return (
     <div style={{background:T.surface,border:`1px solid ${T.border}`,borderRadius:12,overflow:'hidden',position:'sticky',top:76}}>
       <div style={{padding:'12px 16px',borderBottom:`1px solid ${T.border}`,background:T.surfaceAlt,display:'flex',alignItems:'center',justifyContent:'space-between'}}>
@@ -923,7 +774,6 @@ function CandidatePanel({app, onClose, onStatusChange, T}) {
         <button onClick={onClose} style={{background:'transparent',border:'none',cursor:'pointer',color:T.muted,display:'flex'}}><X size={14}/></button>
       </div>
       <div style={{padding:18,overflowY:'auto',maxHeight:'calc(100vh - 160px)'}}>
-        {/* Identity */}
         <div style={{display:'flex',alignItems:'flex-start',gap:12,marginBottom:16}}>
           <Avatar name={s?.full_name||'?'} size={44} T={T}/>
           <div style={{flex:1}}>
@@ -934,43 +784,31 @@ function CandidatePanel({app, onClose, onStatusChange, T}) {
               {s?.work_preference && <Badge color={T.muted} border={T.border}>{s.work_preference}</Badge>}
             </div>
           </div>
-          <div style={{padding:'6px 12px',borderRadius:10,background:scoreBg_,border:`1.5px solid ${scoreBd}`,textAlign:'center',flexShrink:0}}>
+          <div style={{padding:'6px 12px',borderRadius:10,background:scoreBg,border:`1.5px solid ${scoreBd}`,textAlign:'center',flexShrink:0}}>
             <p style={{fontFamily:serif,fontSize:22,color:scoreC,margin:0,lineHeight:1}}>{score}%</p>
             <p style={{fontSize:9,color:T.muted,margin:'2px 0 0'}}>match</p>
           </div>
         </div>
-
-        {/* Score breakdown */}
         {Object.keys(breakdown).length>0 && (
           <div style={{background:T.surfaceAlt,border:`1px solid ${T.border}`,borderRadius:10,padding:'12px 14px',marginBottom:14}}>
             <SL T={T}>Score breakdown</SL>
             {Object.entries(breakdown).map(([k,v])=>(
               <div key={k} style={{display:'flex',alignItems:'center',gap:8,marginBottom:5}}>
                 <span style={{fontSize:10,color:T.sub,width:120,flexShrink:0,textTransform:'capitalize'}}>{k.replace(/([A-Z])/g,' $1').trim()}</span>
-                <div style={{flex:1,height:3,background:T.border,borderRadius:2,overflow:'hidden'}}>
-                  <div style={{height:'100%',width:`${Math.min(v*2.5,100)}%`,background:T.green,borderRadius:2}}/>
-                </div>
+                <div style={{flex:1,height:3,background:T.border,borderRadius:2,overflow:'hidden'}}><div style={{height:'100%',width:`${Math.min(v*2.5,100)}%`,background:T.green,borderRadius:2}}/></div>
                 <span style={{fontSize:10,fontWeight:500,color:T.text,width:28,textAlign:'right'}}>{v}%</span>
               </div>
             ))}
           </div>
         )}
-
-        {/* Skills */}
         {(s?.skills||[]).length>0 && (
           <div style={{marginBottom:14}}>
             <SL T={T}>Skills ({(s.skills||[]).length})</SL>
             <div style={{display:'flex',flexWrap:'wrap',gap:5}}>
-              {(s.skills||[]).map((sk,i)=>(
-                <span key={i} style={{fontSize:10,padding:'3px 8px',borderRadius:6,background:T.blueSoft,border:`1px solid ${T.blueBorder}`,color:T.blue}}>
-                  {sk.name} <span style={{opacity:0.6}}>L{sk.level}</span>
-                </span>
-              ))}
+              {(s.skills||[]).map((sk,i)=>(<span key={i} style={{fontSize:10,padding:'3px 8px',borderRadius:6,background:T.blueSoft,border:`1px solid ${T.blueBorder}`,color:T.blue}}>{sk.name} <span style={{opacity:0.6}}>L{sk.level}</span></span>))}
             </div>
           </div>
         )}
-
-        {/* Projects */}
         {(s?.projects||[]).length>0 && (
           <div style={{marginBottom:14}}>
             <SL T={T}>Projects ({(s.projects||[]).length})</SL>
@@ -981,16 +819,12 @@ function CandidatePanel({app, onClose, onStatusChange, T}) {
                   {p.link && <a href={p.link} target="_blank" rel="noopener noreferrer" style={{color:T.muted,display:'flex'}}><ExternalLink size={11}/></a>}
                 </div>
                 <div style={{display:'flex',flexWrap:'wrap',gap:3}}>
-                  {(Array.isArray(p.techStack)?p.techStack:[]).map((t,j)=>(
-                    <span key={j} style={{fontSize:9,padding:'1px 5px',borderRadius:4,border:`1px solid ${T.border}`,color:T.muted}}>{t}</span>
-                  ))}
+                  {(Array.isArray(p.techStack)?p.techStack:[]).map((t,j)=>(<span key={j} style={{fontSize:9,padding:'1px 5px',borderRadius:4,border:`1px solid ${T.border}`,color:T.muted}}>{t}</span>))}
                 </div>
               </div>
             ))}
           </div>
         )}
-
-        {/* Contact links */}
         <div style={{borderTop:`1px solid ${T.border}`,paddingTop:12,marginBottom:14}}>
           <SL T={T}>Contact</SL>
           {s?.email && <a href={`mailto:${s.email}`} style={{display:'flex',alignItems:'center',gap:6,fontSize:11,color:T.muted,textDecoration:'none',marginBottom:6}}><Mail size={11}/>{s.email}</a>}
@@ -1002,34 +836,18 @@ function CandidatePanel({app, onClose, onStatusChange, T}) {
             {s?.resume_url    && <a href={s.resume_url}    target="_blank" rel="noopener noreferrer" style={{display:'flex',alignItems:'center',gap:4,fontSize:11,color:T.accent,padding:'4px 9px',borderRadius:20,border:`1px solid ${T.accent}30`,textDecoration:'none'}}><FileText size={11}/> Resume</a>}
           </div>
         </div>
-
-        {/* Application info */}
         <div style={{padding:'8px 10px',borderRadius:8,background:T.surfaceAlt,border:`1px solid ${T.border}`,marginBottom:14}}>
           <div style={{display:'flex',justifyContent:'space-between'}}>
             <span style={{fontSize:10,color:T.muted}}>Applied</span>
             <span style={{fontSize:11,color:T.text}}>{app.applied_at?new Date(app.applied_at).toLocaleDateString('en-IN',{day:'numeric',month:'short',year:'numeric',hour:'2-digit',minute:'2-digit'}):'—'}</span>
           </div>
         </div>
-
-        {/* Status action buttons */}
         <div style={{borderTop:`1px solid ${T.border}`,paddingTop:12}}>
           <SL T={T}>Update status</SL>
           <div style={{display:'grid',gridTemplateColumns:'1fr 1fr 1fr',gap:6}}>
-            {[
-              {key:'shortlisted', label:'✓ Shortlist', activeC:T.green,  activeBg:T.greenSoft,  activeBd:T.greenBorder},
-              {key:'interview',   label:'📅 Interview', activeC:T.blue,   activeBg:T.blueSoft,   activeBd:T.blueBorder},
-              {key:'rejected',    label:'✕ Pass',       activeC:T.red,    activeBg:T.redSoft,    activeBd:T.redBorder},
-            ].map(opt=>{
-              const isActive = app.status===opt.key;
-              return (
-                <button key={opt.key} onClick={()=>onStatusChange(app.id,opt.key)}
-                  style={{padding:'9px 6px',borderRadius:8,fontSize:11,fontWeight:500,cursor:'pointer',fontFamily:font,transition:'all 0.15s',
-                    border:`1px solid ${isActive?opt.activeBd:opt.activeC+'40'}`,
-                    background:isActive?opt.activeBg:'transparent',
-                    color:isActive?opt.activeC:opt.activeC}}>
-                  {opt.label}
-                </button>
-              );
+            {[{key:'shortlisted',label:'✓ Shortlist',activeC:T.green,activeBg:T.greenSoft,activeBd:T.greenBorder},{key:'interview',label:'📅 Interview',activeC:T.blue,activeBg:T.blueSoft,activeBd:T.blueBorder},{key:'rejected',label:'✕ Pass',activeC:T.red,activeBg:T.redSoft,activeBd:T.redBorder}].map(opt=>{
+              const isActive=app.status===opt.key;
+              return (<button key={opt.key} onClick={()=>onStatusChange(app.id,opt.key)} style={{padding:'9px 6px',borderRadius:8,fontSize:11,fontWeight:500,cursor:'pointer',fontFamily:font,transition:'all 0.15s',border:`1px solid ${isActive?opt.activeBd:opt.activeC+'40'}`,background:isActive?opt.activeBg:'transparent',color:isActive?opt.activeC:opt.activeC}}>{opt.label}</button>);
             })}
           </div>
           {app.status && app.status!=='pending' && (
@@ -1046,63 +864,39 @@ function CandidatePanel({app, onClose, onStatusChange, T}) {
 
 // ─── JOBS TAB ─────────────────────────────────────────────────────────────────
 function JobsTab({jobs:init,T,showToast}) {
-  const [jobs,setJobs]       = useState(init);
-  const [showForm,setShowForm] = useState(false);
-  const [search,setSearch]   = useState('');
-  const [viewingJob,setViewingJob] = useState(null); // null = list, job = candidates view
-
+  const [jobs,setJobs]=useState(init);
+  const [showForm,setShowForm]=useState(false);
+  const [search,setSearch]=useState('');
+  const [viewingJob,setViewingJob]=useState(null);
   useEffect(()=>setJobs(init),[init]);
-
-  const filtered=useMemo(()=>{
-    if(!search) return jobs;
-    return jobs.filter(j=>j.role?.toLowerCase().includes(search.toLowerCase())||j.company?.toLowerCase().includes(search.toLowerCase()));
-  },[jobs,search]);
-
-  // Early return AFTER all hooks — fixes React error #300
-  if(viewingJob) {
-    return <JobCandidatesView job={viewingJob} onBack={()=>setViewingJob(null)} T={T} showToast={showToast}/>;
-  }
-
+  const filtered=useMemo(()=>!search?jobs:jobs.filter(j=>j.role?.toLowerCase().includes(search.toLowerCase())||j.company?.toLowerCase().includes(search.toLowerCase())),[jobs,search]);
+  if(viewingJob) return <JobCandidatesView job={viewingJob} onBack={()=>setViewingJob(null)} T={T} showToast={showToast}/>;
   const toggleJob=async(job)=>{
-    try {
-      const {data,error}=await supabase.from('jobs').update({is_active:!job.is_active}).eq('id',job.id).select().single();
-      if(error) throw error;
-      setJobs(p=>p.map(x=>x.id===job.id?data:x));
-      showToast(data.is_active?'Job activated':'Job paused');
-    } catch(e){ showToast('Failed','error'); }
+    try {const {data,error}=await supabase.from('jobs').update({is_active:!job.is_active}).eq('id',job.id).select().single();if(error)throw error;setJobs(p=>p.map(x=>x.id===job.id?data:x));showToast(data.is_active?'Job activated':'Job paused');}
+    catch(e){showToast('Failed','error');}
   };
-
   const deleteJob=async(job)=>{
     if(!window.confirm(`Delete "${job.role}"?`)) return;
-    try {
-      await supabase.from('applications').delete().eq('job_id',job.id);
-      await supabase.from('jobs').delete().eq('id',job.id);
-      setJobs(p=>p.filter(x=>x.id!==job.id));
-      showToast('Job deleted');
-    } catch(e){ showToast('Failed','error'); }
+    try {await supabase.from('applications').delete().eq('job_id',job.id);await supabase.from('jobs').delete().eq('id',job.id);setJobs(p=>p.filter(x=>x.id!==job.id));showToast('Job deleted');}
+    catch(e){showToast('Failed','error');}
   };
-
   return (
     <div>
       <div style={{display:'grid',gridTemplateColumns:'repeat(3,1fr)',gap:10,marginBottom:20}}>
-        <StatCard label="Total jobs"      value={jobs.length}                                  icon={Briefcase} color={T.accent} T={T}/>
-        <StatCard label="Active"          value={jobs.filter(j=>j.is_active).length}           icon={Activity}  color={T.green}  T={T}/>
-        <StatCard label="Total applicants"value={jobs.reduce((s,j)=>s+(j.current_applicants||0),0)} icon={Users} color={T.blue} T={T}/>
+        <StatCard label="Total jobs"       value={jobs.length}                                   icon={Briefcase} color={T.accent} T={T}/>
+        <StatCard label="Active"           value={jobs.filter(j=>j.is_active).length}            icon={Activity}  color={T.green}  T={T}/>
+        <StatCard label="Total applicants" value={jobs.reduce((s,j)=>s+(j.current_applicants||0),0)} icon={Users} color={T.blue}  T={T}/>
       </div>
-
       <div style={{display:'flex',gap:8,marginBottom:14,alignItems:'center'}}>
         <SBar value={search} onChange={setSearch} placeholder="Search jobs…" T={T}/>
         <button onClick={()=>setShowForm(true)} style={{display:'flex',alignItems:'center',gap:6,padding:'8px 14px',borderRadius:8,border:'none',background:T.accent,color:'#fff',fontSize:12,fontWeight:500,cursor:'pointer',fontFamily:font,whiteSpace:'nowrap'}}>
           <Plus size={13}/> New internship
         </button>
       </div>
-
       {showForm && <PostJobForm onSuccess={j=>{setJobs(p=>[j,...p]);setShowForm(false);showToast('Job posted!');}} onCancel={()=>setShowForm(false)} T={T}/>}
-
       <div style={{display:'grid',gridTemplateColumns:'repeat(2,1fr)',gap:10}}>
         {filtered.map(j=>{
-          const fill=j.max_applicants>0?(j.current_applicants||0)/j.max_applicants:0;
-          const fc=fill>0.8?T.red:fill>0.5?T.amber:T.green;
+          const fill=j.max_applicants>0?(j.current_applicants||0)/j.max_applicants:0;const fc=fill>0.8?T.red:fill>0.5?T.amber:T.green;
           const url=`${window.location.origin}/apply/${j.share_slug}`;
           return (
             <div key={j.id} style={{background:T.surface,border:`1px solid ${T.border}`,borderRadius:12,padding:16}}>
@@ -1114,26 +908,16 @@ function JobsTab({jobs:init,T,showToast}) {
                   <div style={{display:'flex',gap:4,flexWrap:'wrap'}}>
                     <Badge color={T.muted} border={T.border}>{j.location}</Badge>
                     {j.duration && <Badge color={T.muted} border={T.border}>{j.duration}</Badge>}
-                    <Badge color={j.visibility==='public'?T.green:T.blue} bg={j.visibility==='public'?T.greenSoft:T.blueSoft} border={j.visibility==='public'?T.greenBorder:T.blueBorder}>
-                      {j.visibility==='public'?'🌐 Public':'🔗 Private'}
-                    </Badge>
+                    <Badge color={j.visibility==='public'?T.green:T.blue} bg={j.visibility==='public'?T.greenSoft:T.blueSoft} border={j.visibility==='public'?T.greenBorder:T.blueBorder}>{j.visibility==='public'?'🌐 Public':'🔗 Private'}</Badge>
                   </div>
                 </div>
                 <div style={{display:'flex',alignItems:'center',gap:6,flexShrink:0}}>
-                  <Badge color={j.is_active?T.green:T.muted} bg={j.is_active?T.greenSoft:'transparent'} border={j.is_active?T.greenBorder:T.border}>
-                    {j.is_active?'Active':'Paused'}
-                  </Badge>
-                  <button onClick={e=>{e.stopPropagation();toggleJob(j);}} style={{background:'transparent',border:`1px solid ${T.border}`,borderRadius:6,padding:'4px 6px',cursor:'pointer',color:T.muted,display:'flex'}} title={j.is_active?'Pause':'Activate'}>
-                    {j.is_active?<EyeOff size={12}/>:<Eye size={12}/>}
-                  </button>
-                  <button onClick={e=>{e.stopPropagation();deleteJob(j);}} style={{background:'transparent',border:`1px solid ${T.border}`,borderRadius:6,padding:'4px 6px',cursor:'pointer',color:T.muted,display:'flex'}} title="Delete"
-                    onMouseEnter={e=>e.currentTarget.style.color=T.red} onMouseLeave={e=>e.currentTarget.style.color=T.muted}>
-                    <Trash2 size={12}/>
-                  </button>
+                  <Badge color={j.is_active?T.green:T.muted} bg={j.is_active?T.greenSoft:'transparent'} border={j.is_active?T.greenBorder:T.border}>{j.is_active?'Active':'Paused'}</Badge>
+                  <button onClick={e=>{e.stopPropagation();toggleJob(j);}} style={{background:'transparent',border:`1px solid ${T.border}`,borderRadius:6,padding:'4px 6px',cursor:'pointer',color:T.muted,display:'flex'}}>{j.is_active?<EyeOff size={12}/>:<Eye size={12}/>}</button>
+                  <button onClick={e=>{e.stopPropagation();deleteJob(j);}} style={{background:'transparent',border:`1px solid ${T.border}`,borderRadius:6,padding:'4px 6px',cursor:'pointer',color:T.muted,display:'flex'}}
+                    onMouseEnter={e=>e.currentTarget.style.color=T.red} onMouseLeave={e=>e.currentTarget.style.color=T.muted}><Trash2 size={12}/></button>
                 </div>
               </div>
-
-              {/* Applicant fill bar */}
               <div style={{display:'flex',justifyContent:'space-between',marginBottom:5}}>
                 <span style={{fontSize:10,color:T.muted}}>Applicants</span>
                 <span style={{fontSize:10,fontWeight:500,color:fc}}>{j.current_applicants||0}/{j.max_applicants||50}</span>
@@ -1141,15 +925,11 @@ function JobsTab({jobs:init,T,showToast}) {
               <div style={{height:4,background:T.surfaceAlt,borderRadius:2,overflow:'hidden',marginBottom:10}}>
                 <div style={{height:'100%',width:`${Math.min(fill*100,100)}%`,background:fc,borderRadius:2}}/>
               </div>
-
-              {/* View candidates button */}
-              <button onClick={()=>setViewingJob(j)}
-                style={{width:'100%',display:'flex',alignItems:'center',justifyContent:'center',gap:6,padding:'8px',borderRadius:8,border:`1px solid ${T.border}`,background:T.surfaceAlt,color:T.sub,fontSize:12,fontWeight:500,cursor:'pointer',fontFamily:font,marginBottom:8,transition:'all 0.15s'}}
+              <button onClick={()=>setViewingJob(j)} style={{width:'100%',display:'flex',alignItems:'center',justifyContent:'center',gap:6,padding:'8px',borderRadius:8,border:`1px solid ${T.border}`,background:T.surfaceAlt,color:T.sub,fontSize:12,fontWeight:500,cursor:'pointer',fontFamily:font,marginBottom:8,transition:'all 0.15s'}}
                 onMouseEnter={e=>{e.currentTarget.style.background=T.accent;e.currentTarget.style.color='#fff';e.currentTarget.style.borderColor=T.accent;}}
                 onMouseLeave={e=>{e.currentTarget.style.background=T.surfaceAlt;e.currentTarget.style.color=T.sub;e.currentTarget.style.borderColor=T.border;}}>
                 <Users size={12}/> View {j.current_applicants||0} candidates <ChevronRight size={11}/>
               </button>
-
               {j.share_slug && <CopyLink url={url} T={T}/>}
             </div>
           );
@@ -1159,9 +939,7 @@ function JobsTab({jobs:init,T,showToast}) {
             <div style={{fontSize:36,marginBottom:10}}>📋</div>
             <p style={{fontFamily:serif,fontSize:18,color:T.text,marginBottom:6}}>No jobs yet.</p>
             <p style={{marginBottom:16}}>Post your first internship to get started.</p>
-            <button onClick={()=>setShowForm(true)} style={{display:'inline-flex',alignItems:'center',gap:6,padding:'9px 18px',borderRadius:8,border:'none',background:T.accent,color:'#fff',fontSize:13,fontWeight:500,cursor:'pointer',fontFamily:font}}>
-              <Plus size={13}/> Post first internship
-            </button>
+            <button onClick={()=>setShowForm(true)} style={{display:'inline-flex',alignItems:'center',gap:6,padding:'9px 18px',borderRadius:8,border:'none',background:T.accent,color:'#fff',fontSize:13,fontWeight:500,cursor:'pointer',fontFamily:font}}><Plus size={13}/> Post first internship</button>
           </div>
         )}
       </div>
@@ -1171,25 +949,13 @@ function JobsTab({jobs:init,T,showToast}) {
 
 // ─── POST JOB FORM ────────────────────────────────────────────────────────────
 const LOGO_EMOJIS=['🚀','⚡','🎯','💡','🔥','🌊','🛠️','📊','🎨','🌱','⭐','🦾'];
-
 function PostJobForm({onSuccess,onCancel,T}) {
-  const [saving,setSaving]=useState(false);
-  const [error,setError]=useState('');
-  const [skillInput,setSkillInput]=useState('');
-  const [niceInput,setNiceInput]=useState('');
-  const [form,setForm]=useState({
-    logo:'🚀',company:'',role:'',description:'',
-    stipend:'',duration:'',location:'',
-    type:'Paid Internship',visibility:'private',
-    required_skills:[],nice_to_have:[],max_applicants:50,
-  });
-
+  const [saving,setSaving]=useState(false);const [error,setError]=useState('');const [skillInput,setSkillInput]=useState('');const [niceInput,setNiceInput]=useState('');
+  const [form,setForm]=useState({logo:'🚀',company:'',role:'',description:'',stipend:'',duration:'',location:'',type:'Paid Internship',visibility:'private',required_skills:[],nice_to_have:[],max_applicants:50});
   const set=k=>v=>setForm(f=>({...f,[k]:v}));
   const addSkill=()=>{const n=skillInput.trim();if(!n||form.required_skills.find(s=>s.name.toLowerCase()===n.toLowerCase()))return;setForm(f=>({...f,required_skills:[...f.required_skills,{name:n,weight:0.25,level:3}]}));setSkillInput('');};
   const addNice=()=>{const n=niceInput.trim();if(!n||form.nice_to_have.includes(n))return;setForm(f=>({...f,nice_to_have:[...f.nice_to_have,n]}));setNiceInput('');};
-
   const inp={width:'100%',padding:'9px 12px',borderRadius:8,border:`1px solid ${T.border}`,background:T.inputBg,color:T.text,fontSize:13,fontFamily:font,outline:'none',boxSizing:'border-box'};
-
   const submit=async()=>{
     if(!form.company.trim()||!form.role.trim()||!form.stipend.trim()||!form.location.trim()){setError('Fill in company, role, stipend and location.');return;}
     if(form.required_skills.length===0){setError('Add at least one required skill.');return;}
@@ -1198,34 +964,20 @@ function PostJobForm({onSuccess,onCancel,T}) {
       const total=form.required_skills.reduce((s,sk)=>s+sk.weight,0);
       const normSkills=form.required_skills.map(sk=>({...sk,weight:parseFloat((sk.weight/total).toFixed(3))}));
       const slug=`${form.company.toLowerCase().replace(/[^a-z0-9]+/g,'-')}-${form.role.toLowerCase().replace(/[^a-z0-9]+/g,'-')}-${Date.now()}`;
-      const {data,error:err}=await supabase.from('jobs').insert([{
-        recruiter_id:ADMIN_RECRUITER_ID,company:form.company.trim(),logo:form.logo,
-        role:form.role.trim(),description:form.description.trim(),
-        stipend:form.stipend.trim(),duration:form.duration.trim(),location:form.location.trim(),
-        type:form.type,visibility:form.visibility,share_slug:slug,
-        required_skills:normSkills,nice_to_have:form.nice_to_have,
-        max_applicants:form.max_applicants,current_applicants:0,is_active:true,
-      }]).select().single();
+      const {data,error:err}=await supabase.from('jobs').insert([{recruiter_id:ADMIN_RECRUITER_ID,company:form.company.trim(),logo:form.logo,role:form.role.trim(),description:form.description.trim(),stipend:form.stipend.trim(),duration:form.duration.trim(),location:form.location.trim(),type:form.type,visibility:form.visibility,share_slug:slug,required_skills:normSkills,nice_to_have:form.nice_to_have,max_applicants:form.max_applicants,current_applicants:0,is_active:true}]).select().single();
       if(err) throw err;
       onSuccess(data);
     } catch(e){setError('Failed: '+e.message);}
     finally{setSaving(false);}
   };
-
   return (
     <div style={{background:T.surface,border:`1px solid ${T.border}`,borderRadius:12,overflow:'hidden',marginBottom:16}}>
       <div style={{padding:'12px 18px',borderBottom:`1px solid ${T.border}`,background:T.surfaceAlt,display:'flex',alignItems:'center',justifyContent:'space-between'}}>
-        <div>
-          <p style={{fontSize:10,color:T.accent,letterSpacing:'0.1em',textTransform:'uppercase',margin:0,fontWeight:500}}>New internship</p>
-          <p style={{fontSize:13,fontWeight:600,color:T.text,margin:'2px 0 0'}}>Post & get shareable link</p>
-        </div>
+        <div><p style={{fontSize:10,color:T.accent,letterSpacing:'0.1em',textTransform:'uppercase',margin:0,fontWeight:500}}>New internship</p><p style={{fontSize:13,fontWeight:600,color:T.text,margin:'2px 0 0'}}>Post & get shareable link</p></div>
         <button onClick={onCancel} style={{background:'transparent',border:'none',cursor:'pointer',color:T.muted}}><X size={16}/></button>
       </div>
       <div style={{padding:20,display:'flex',flexDirection:'column',gap:14}}>
-        <div>
-          <p style={{fontSize:10,color:T.muted,letterSpacing:'0.08em',textTransform:'uppercase',marginBottom:6}}>Logo</p>
-          <div style={{display:'flex',flexWrap:'wrap',gap:6}}>{LOGO_EMOJIS.map(e=>(<button key={e} onClick={()=>set('logo')(e)} style={{width:34,height:34,borderRadius:6,fontSize:17,border:`1.5px solid ${form.logo===e?T.accent:T.border}`,background:form.logo===e?T.accentSoft:T.surfaceAlt,cursor:'pointer'}}>{e}</button>))}</div>
-        </div>
+        <div><p style={{fontSize:10,color:T.muted,letterSpacing:'0.08em',textTransform:'uppercase',marginBottom:6}}>Logo</p><div style={{display:'flex',flexWrap:'wrap',gap:6}}>{LOGO_EMOJIS.map(e=>(<button key={e} onClick={()=>set('logo')(e)} style={{width:34,height:34,borderRadius:6,fontSize:17,border:`1.5px solid ${form.logo===e?T.accent:T.border}`,background:form.logo===e?T.accentSoft:T.surfaceAlt,cursor:'pointer'}}>{e}</button>))}</div></div>
         <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:12}}>
           <div><p style={{fontSize:10,color:T.muted,letterSpacing:'0.08em',textTransform:'uppercase',marginBottom:5}}>Company *</p><input style={inp} value={form.company} onChange={e=>set('company')(e.target.value)} placeholder="Company name" onFocus={e=>e.target.style.borderColor=T.accent} onBlur={e=>e.target.style.borderColor=T.border}/></div>
           <div><p style={{fontSize:10,color:T.muted,letterSpacing:'0.08em',textTransform:'uppercase',marginBottom:5}}>Role *</p><input style={inp} value={form.role} onChange={e=>set('role')(e.target.value)} placeholder="e.g. Backend Intern" onFocus={e=>e.target.style.borderColor=T.accent} onBlur={e=>e.target.style.borderColor=T.border}/></div>
@@ -1247,10 +999,7 @@ function PostJobForm({onSuccess,onCancel,T}) {
             <div key={skill.name} style={{display:'flex',alignItems:'center',gap:8,padding:'7px 10px',borderRadius:7,border:`1px solid ${T.border}`,background:T.surfaceAlt,marginBottom:5}}>
               <span style={{fontSize:12,color:T.text,flex:1}}>{skill.name}</span>
               <span style={{fontSize:10,color:T.muted}}>L</span>
-              {[1,2,3,4,5].map(lv=>(
-                <button key={lv} onClick={()=>setForm(f=>({...f,required_skills:f.required_skills.map(s=>s.name===skill.name?{...s,level:lv}:s)}))}
-                  style={{width:22,height:22,borderRadius:4,fontSize:10,fontWeight:500,cursor:'pointer',border:'none',background:skill.level>=lv?T.accent:T.surfaceAlt,color:skill.level>=lv?'#fff':T.muted,outline:skill.level>=lv?'none':`1px solid ${T.border}`}}>{lv}</button>
-              ))}
+              {[1,2,3,4,5].map(lv=>(<button key={lv} onClick={()=>setForm(f=>({...f,required_skills:f.required_skills.map(s=>s.name===skill.name?{...s,level:lv}:s)}))} style={{width:22,height:22,borderRadius:4,fontSize:10,fontWeight:500,cursor:'pointer',border:'none',background:skill.level>=lv?T.accent:T.surfaceAlt,color:skill.level>=lv?'#fff':T.muted,outline:skill.level>=lv?'none':`1px solid ${T.border}`}}>{lv}</button>))}
               <button onClick={()=>setForm(f=>({...f,required_skills:f.required_skills.filter(s=>s.name!==skill.name)}))} style={{background:'transparent',border:'none',cursor:'pointer',color:T.muted,display:'flex'}}><X size={13}/></button>
             </div>
           ))}
@@ -1262,30 +1011,20 @@ function PostJobForm({onSuccess,onCancel,T}) {
             <button onClick={addNice} style={{padding:'9px 14px',borderRadius:8,border:`1px solid ${T.border}`,background:'transparent',color:T.sub,fontSize:12,cursor:'pointer',fontFamily:font}}>Add</button>
           </div>
           <div style={{display:'flex',flexWrap:'wrap',gap:5}}>
-            {form.nice_to_have.map(s=>(
-              <span key={s} style={{display:'flex',alignItems:'center',gap:4,fontSize:11,padding:'3px 8px',borderRadius:20,border:`1px solid ${T.border}`,color:T.sub}}>
-                {s}<button onClick={()=>setForm(f=>({...f,nice_to_have:f.nice_to_have.filter(x=>x!==s)}))} style={{background:'transparent',border:'none',cursor:'pointer',color:T.muted,display:'flex',padding:0}}><X size={10}/></button>
-              </span>
-            ))}
+            {form.nice_to_have.map(s=>(<span key={s} style={{display:'flex',alignItems:'center',gap:4,fontSize:11,padding:'3px 8px',borderRadius:20,border:`1px solid ${T.border}`,color:T.sub}}>{s}<button onClick={()=>setForm(f=>({...f,nice_to_have:f.nice_to_have.filter(x=>x!==s)}))} style={{background:'transparent',border:'none',cursor:'pointer',color:T.muted,display:'flex',padding:0}}><X size={10}/></button></span>))}
           </div>
         </div>
         <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:12}}>
           <div>
             <p style={{fontSize:10,color:T.muted,letterSpacing:'0.08em',textTransform:'uppercase',marginBottom:5}}>Visibility</p>
             <div style={{display:'flex',gap:6}}>
-              {['public','private'].map(v=>(
-                <button key={v} onClick={()=>set('visibility')(v)} style={{flex:1,padding:'8px',borderRadius:8,fontSize:12,fontFamily:font,cursor:'pointer',background:form.visibility===v?T.accentSoft:T.surfaceAlt,border:`1px solid ${form.visibility===v?T.accent:T.border}`,color:form.visibility===v?T.accent:T.sub,fontWeight:form.visibility===v?500:400}}>
-                  {v==='public'?'🌐 Public':'🔗 Private'}
-                </button>
-              ))}
+              {['public','private'].map(v=>(<button key={v} onClick={()=>set('visibility')(v)} style={{flex:1,padding:'8px',borderRadius:8,fontSize:12,fontFamily:font,cursor:'pointer',background:form.visibility===v?T.accentSoft:T.surfaceAlt,border:`1px solid ${form.visibility===v?T.accent:T.border}`,color:form.visibility===v?T.accent:T.sub,fontWeight:form.visibility===v?500:400}}>{v==='public'?'🌐 Public':'🔗 Private'}</button>))}
             </div>
           </div>
           <div>
             <p style={{fontSize:10,color:T.muted,letterSpacing:'0.08em',textTransform:'uppercase',marginBottom:5}}>Max applicants</p>
             <div style={{display:'flex',gap:5}}>
-              {[10,25,50,100].map(n=>(
-                <button key={n} onClick={()=>set('max_applicants')(n)} style={{flex:1,padding:'8px',borderRadius:8,fontSize:11,fontFamily:font,cursor:'pointer',background:form.max_applicants===n?T.accentSoft:T.surfaceAlt,border:`1px solid ${form.max_applicants===n?T.accent:T.border}`,color:form.max_applicants===n?T.accent:T.muted,fontWeight:form.max_applicants===n?500:400}}>{n}</button>
-              ))}
+              {[10,25,50,100].map(n=>(<button key={n} onClick={()=>set('max_applicants')(n)} style={{flex:1,padding:'8px',borderRadius:8,fontSize:11,fontFamily:font,cursor:'pointer',background:form.max_applicants===n?T.accentSoft:T.surfaceAlt,border:`1px solid ${form.max_applicants===n?T.accent:T.border}`,color:form.max_applicants===n?T.accent:T.muted,fontWeight:form.max_applicants===n?500:400}}>{n}</button>))}
             </div>
           </div>
         </div>
@@ -1301,31 +1040,19 @@ function PostJobForm({onSuccess,onCancel,T}) {
 
 // ─── WAITLIST TAB ─────────────────────────────────────────────────────────────
 function WaitlistTab({T,showToast}) {
-  const [list,setList]=useState([]);
-  const [loading,setLoading]=useState(true);
-
-  useEffect(()=>{
-    supabase.from('recruiter_waitlist').select('*').order('submitted_at',{ascending:false})
-      .then(({data})=>{ setList(data||[]); setLoading(false); });
-  },[]);
-
+  const [list,setList]=useState([]);const [loading,setLoading]=useState(true);
+  useEffect(()=>{supabase.from('recruiter_waitlist').select('*').order('submitted_at',{ascending:false}).then(({data})=>{setList(data||[]);setLoading(false);});}, []);
   const update=async(id,field,value)=>{
-    try {
-      const {error}=await supabase.from('recruiter_waitlist').update({[field]:value}).eq('id',id);
-      if(error) throw error;
-      setList(p=>p.map(x=>x.id===id?{...x,[field]:value}:x));
-      showToast('Updated');
-    } catch(e){ showToast('Failed','error'); }
+    try {const {error}=await supabase.from('recruiter_waitlist').update({[field]:value}).eq('id',id);if(error) throw error;setList(p=>p.map(x=>x.id===id?{...x,[field]:value}:x));showToast('Updated');}
+    catch(e){showToast('Failed','error');}
   };
-
   if(loading) return <div style={{textAlign:'center',padding:'48px',color:T.muted,fontSize:13}}>Loading waitlist…</div>;
-
   return (
     <div>
       <div style={{display:'grid',gridTemplateColumns:'repeat(3,1fr)',gap:10,marginBottom:20}}>
-        <StatCard label="Total waitlist" value={list.length} icon={Clock} color={T.accent} T={T}/>
-        <StatCard label="Approved" value={list.filter(x=>x.approved).length} icon={CheckCircle2} color={T.green} T={T}/>
-        <StatCard label="Contacted" value={list.filter(x=>x.contacted).length} icon={Mail} color={T.blue} T={T}/>
+        <StatCard label="Total waitlist" value={list.length}                          icon={Clock}        color={T.accent} T={T}/>
+        <StatCard label="Approved"       value={list.filter(x=>x.approved).length}   icon={CheckCircle2} color={T.green}  T={T}/>
+        <StatCard label="Contacted"      value={list.filter(x=>x.contacted).length}  icon={Mail}         color={T.blue}   T={T}/>
       </div>
       <div style={{display:'flex',flexDirection:'column',gap:8}}>
         {list.map(item=>(
@@ -1346,19 +1073,182 @@ function WaitlistTab({T,showToast}) {
                 <p style={{fontSize:10,color:T.muted,margin:'4px 0 0'}}>{fmt(item.submitted_at)} · via {item.source||'—'}</p>
               </div>
               <div style={{display:'flex',flexDirection:'column',gap:6,flexShrink:0}}>
-                <button onClick={()=>update(item.id,'approved',!item.approved)}
-                  style={{padding:'6px 12px',borderRadius:8,border:`1px solid ${item.approved?T.redBorder:T.greenBorder}`,background:item.approved?T.redSoft:T.greenSoft,color:item.approved?T.red:T.green,fontSize:11,fontWeight:500,cursor:'pointer',fontFamily:font,whiteSpace:'nowrap'}}>
-                  {item.approved?'Revoke':'✓ Approve'}
-                </button>
-                <button onClick={()=>update(item.id,'contacted',!item.contacted)}
-                  style={{padding:'6px 12px',borderRadius:8,border:`1px solid ${T.border}`,background:item.contacted?T.blueSoft:'transparent',color:item.contacted?T.blue:T.muted,fontSize:11,cursor:'pointer',fontFamily:font,whiteSpace:'nowrap'}}>
-                  {item.contacted?'✓ Contacted':'Mark contacted'}
-                </button>
+                <button onClick={()=>update(item.id,'approved',!item.approved)} style={{padding:'6px 12px',borderRadius:8,border:`1px solid ${item.approved?T.redBorder:T.greenBorder}`,background:item.approved?T.redSoft:T.greenSoft,color:item.approved?T.red:T.green,fontSize:11,fontWeight:500,cursor:'pointer',fontFamily:font,whiteSpace:'nowrap'}}>{item.approved?'Revoke':'✓ Approve'}</button>
+                <button onClick={()=>update(item.id,'contacted',!item.contacted)} style={{padding:'6px 12px',borderRadius:8,border:`1px solid ${T.border}`,background:item.contacted?T.blueSoft:'transparent',color:item.contacted?T.blue:T.muted,fontSize:11,cursor:'pointer',fontFamily:font,whiteSpace:'nowrap'}}>{item.contacted?'✓ Contacted':'Mark contacted'}</button>
               </div>
             </div>
           </div>
         ))}
         {list.length===0 && <div style={{textAlign:'center',padding:'48px',color:T.muted,fontSize:13,background:T.surface,border:`1px solid ${T.border}`,borderRadius:12}}>No waitlist entries yet.</div>}
+      </div>
+    </div>
+  );
+}
+
+// ─── NOTIFICATIONS TAB ────────────────────────────────────────────────────────
+function NotificationsTab({T, showToast}) {
+  const [notifications, setNotifications] = useState([]);
+  const [loading, setLoading]             = useState(true);
+  const [sending, setSending]             = useState(false);
+  const [deletingId, setDeletingId]       = useState(null);
+  const [form, setForm] = useState({ title: '', body: '', type: 'info' });
+
+  const fetchNotifications = useCallback(async () => {
+    const { data, error } = await supabase
+      .from('notifications')
+      .select('*')
+      .order('created_at', { ascending: false });
+    if (!error) setNotifications(data || []);
+    setLoading(false);
+  }, []);
+
+  useEffect(() => { fetchNotifications(); }, [fetchNotifications]);
+
+  const send = async () => {
+    if (!form.title.trim() || !form.body.trim()) { showToast('Title and message are required', 'error'); return; }
+    setSending(true);
+    try {
+      const { data, error } = await supabase.from('notifications')
+        .insert([{ title: form.title.trim(), body: form.body.trim(), type: form.type, sent_by: 'admin', target: 'all', read_by: [] }])
+        .select().single();
+      if (error) throw error;
+      setNotifications(prev => [data, ...prev]);
+      setForm({ title: '', body: '', type: 'info' });
+      showToast('Notification sent to all students ✓');
+    } catch (e) { showToast('Failed: ' + e.message, 'error'); }
+    finally { setSending(false); }
+  };
+
+  const deleteNotif = async (id) => {
+    if (!window.confirm('Delete this notification? Students will no longer see it.')) return;
+    setDeletingId(id);
+    try {
+      const { error } = await supabase.from('notifications').delete().eq('id', id);
+      if (error) throw error;
+      setNotifications(prev => prev.filter(n => n.id !== id));
+      showToast('Deleted');
+    } catch (e) { showToast('Failed to delete', 'error'); }
+    finally { setDeletingId(null); }
+  };
+
+  const inp = { width: '100%', padding: '9px 12px', borderRadius: 8, border: `1px solid ${T.border}`, background: T.inputBg, color: T.text, fontSize: 13, fontFamily: font, outline: 'none', boxSizing: 'border-box', resize: 'none' };
+  const fmtNotif = (d) => d ? new Date(d).toLocaleString('en-IN', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' }) : '—';
+
+  return (
+    <div style={{ display: 'grid', gridTemplateColumns: '380px 1fr', gap: 20, alignItems: 'start' }}>
+
+      {/* ── Compose panel ── */}
+      <div style={{ background: T.surface, border: `1px solid ${T.border}`, borderRadius: 12, overflow: 'hidden', position: 'sticky', top: 76 }}>
+        <div style={{ padding: '14px 18px 12px', borderBottom: `1px solid ${T.border}`, background: T.surfaceAlt }}>
+          <p style={{ fontSize: 10, color: T.accent, letterSpacing: '0.1em', textTransform: 'uppercase', margin: 0, fontWeight: 500, fontFamily: font }}>Compose</p>
+          <p style={{ fontSize: 13, fontWeight: 600, color: T.text, margin: '3px 0 0', fontFamily: font }}>Push to all students</p>
+        </div>
+        <div style={{ padding: 18, display: 'flex', flexDirection: 'column', gap: 14 }}>
+          {/* Type selector */}
+          <div>
+            <p style={{ fontSize: 10, color: T.muted, letterSpacing: '0.08em', textTransform: 'uppercase', marginBottom: 7, fontFamily: font }}>Type</p>
+            <div style={{ display: 'flex', gap: 6 }}>
+              {Object.entries(NOTIF_TYPE_META).map(([key, meta]) => {
+                const Icon = meta.icon; const active = form.type === key;
+                return (
+                  <button key={key} onClick={() => setForm(f => ({ ...f, type: key }))}
+                    style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 4, padding: '8px 4px', borderRadius: 8, cursor: 'pointer', fontFamily: font, border: `1.5px solid ${active ? meta.color : T.border}`, background: active ? meta.color + '15' : T.surfaceAlt, color: active ? meta.color : T.muted, transition: 'all 0.12s' }}>
+                    <Icon size={13} />
+                    <span style={{ fontSize: 9, fontWeight: 500, letterSpacing: '0.06em', textTransform: 'uppercase' }}>{meta.label}</span>
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+          {/* Title */}
+          <div>
+            <p style={{ fontSize: 10, color: T.muted, letterSpacing: '0.08em', textTransform: 'uppercase', marginBottom: 5, fontFamily: font }}>Title *</p>
+            <input style={inp} value={form.title} onChange={e => setForm(f => ({ ...f, title: e.target.value }))} placeholder="e.g. New internships dropped!" maxLength={80} onFocus={e => e.target.style.borderColor = T.accent} onBlur={e => e.target.style.borderColor = T.border}/>
+            <p style={{ fontSize: 9, color: T.muted, margin: '4px 0 0', fontFamily: font, textAlign: 'right' }}>{form.title.length}/80</p>
+          </div>
+          {/* Body */}
+          <div>
+            <p style={{ fontSize: 10, color: T.muted, letterSpacing: '0.08em', textTransform: 'uppercase', marginBottom: 5, fontFamily: font }}>Message *</p>
+            <textarea style={{ ...inp, minHeight: 90 }} value={form.body} onChange={e => setForm(f => ({ ...f, body: e.target.value }))} placeholder="What do you want students to know?" maxLength={280} onFocus={e => e.target.style.borderColor = T.accent} onBlur={e => e.target.style.borderColor = T.border}/>
+            <p style={{ fontSize: 9, color: T.muted, margin: '4px 0 0', fontFamily: font, textAlign: 'right' }}>{form.body.length}/280</p>
+          </div>
+          {/* Preview */}
+          {(form.title || form.body) && (
+            <div style={{ padding: '10px 12px', borderRadius: 8, background: T.surfaceAlt, border: `1px solid ${T.border}` }}>
+              <p style={{ fontSize: 9, color: T.muted, letterSpacing: '0.08em', textTransform: 'uppercase', margin: '0 0 6px', fontFamily: font }}>Preview</p>
+              <div style={{ display: 'flex', gap: 10, alignItems: 'flex-start' }}>
+                <div style={{ width: 7, height: 7, background: NOTIF_TYPE_META[form.type].color, flexShrink: 0, marginTop: 4 }} />
+                <div>
+                  <p style={{ fontSize: 12, fontWeight: 600, color: T.text, margin: '0 0 2px', fontFamily: font }}>{form.title || '(title)'}</p>
+                  <p style={{ fontSize: 11, color: T.sub, margin: 0, lineHeight: 1.45, fontFamily: font }}>{form.body || '(message)'}</p>
+                </div>
+              </div>
+            </div>
+          )}
+          {/* Send button */}
+          <button onClick={send} disabled={sending || !form.title.trim() || !form.body.trim()}
+            style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 7, padding: '11px', borderRadius: 8, border: 'none', fontFamily: font, fontSize: 13, fontWeight: 500, cursor: sending ? 'default' : 'pointer', background: sending || !form.title.trim() || !form.body.trim() ? T.muted : T.accent, color: '#fff', transition: 'background 0.15s' }}>
+            <Send size={13} />
+            {sending ? 'Sending…' : 'Send to all students'}
+          </button>
+          {/* Target note */}
+          <div style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '7px 10px', borderRadius: 7, background: T.blueSoft || T.surfaceAlt, border: `1px solid ${T.blueBorder || T.border}` }}>
+            <Users size={11} style={{ color: T.blue, flexShrink: 0 }} />
+            <p style={{ fontSize: 10, color: T.sub, margin: 0, fontFamily: font }}>
+              Sends to <strong style={{ color: T.text }}>all students</strong> — appears instantly in their notification panel.
+            </p>
+          </div>
+        </div>
+      </div>
+
+      {/* ── Sent history ── */}
+      <div>
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 14 }}>
+          <p style={{ fontSize: 10, color: T.muted, letterSpacing: '0.1em', textTransform: 'uppercase', margin: 0, fontWeight: 500, fontFamily: font }}>Sent ({notifications.length})</p>
+          <button onClick={fetchNotifications} style={{ fontSize: 11, color: T.muted, background: 'transparent', border: `1px solid ${T.border}`, borderRadius: 20, padding: '4px 10px', cursor: 'pointer', fontFamily: font }}>Refresh</button>
+        </div>
+        {loading ? (
+          <div style={{ textAlign: 'center', padding: '48px', color: T.muted, fontSize: 13, background: T.surface, border: `1px solid ${T.border}`, borderRadius: 12, fontFamily: font }}>Loading…</div>
+        ) : notifications.length === 0 ? (
+          <div style={{ textAlign: 'center', padding: '52px 20px', background: T.surface, border: `1px solid ${T.border}`, borderRadius: 12 }}>
+            <Bell size={28} style={{ color: T.muted, opacity: 0.4, display: 'block', margin: '0 auto 10px' }} />
+            <p style={{ fontFamily: serif, fontSize: 18, color: T.text, marginBottom: 6 }}>No notifications sent yet.</p>
+            <p style={{ fontSize: 13, color: T.muted, fontFamily: font }}>Compose your first one on the left.</p>
+          </div>
+        ) : (
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+            {notifications.map(n => {
+              const meta = NOTIF_TYPE_META[n.type] || NOTIF_TYPE_META.info;
+              const Icon = meta.icon;
+              const readCount = (n.read_by || []).length;
+              return (
+                <div key={n.id} style={{ background: T.surface, border: `1px solid ${T.border}`, borderRadius: 12, padding: '14px 16px', display: 'flex', gap: 12, alignItems: 'flex-start' }}>
+                  <div style={{ width: 32, height: 32, borderRadius: 8, flexShrink: 0, background: meta.color + '15', border: `1px solid ${meta.color}30`, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                    <Icon size={14} style={{ color: meta.color }} />
+                  </div>
+                  <div style={{ flex: 1, minWidth: 0 }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 3 }}>
+                      <p style={{ fontSize: 13, fontWeight: 600, color: T.text, margin: 0, fontFamily: font }}>{n.title}</p>
+                      <span style={{ fontSize: 9, padding: '1px 6px', borderRadius: 4, fontFamily: font, background: meta.color + '15', color: meta.color, border: `1px solid ${meta.color}30`, textTransform: 'uppercase', letterSpacing: '0.06em', fontWeight: 500 }}>{meta.label}</span>
+                    </div>
+                    <p style={{ fontSize: 12, color: T.sub, margin: '0 0 8px', lineHeight: 1.45, fontFamily: font }}>{n.body}</p>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+                      <span style={{ display: 'flex', alignItems: 'center', gap: 4, fontSize: 10, color: T.muted, fontFamily: font }}><Clock size={9}/>{fmtNotif(n.created_at)}</span>
+                      <span style={{ display: 'flex', alignItems: 'center', gap: 4, fontSize: 10, color: T.muted, fontFamily: font }}><Users size={9}/>All students</span>
+                      {readCount > 0 && <span style={{ fontSize: 10, color: T.green, fontFamily: font }}>✓ {readCount} read</span>}
+                    </div>
+                  </div>
+                  <button onClick={() => deleteNotif(n.id)} disabled={deletingId === n.id}
+                    style={{ background: 'transparent', border: 'none', cursor: 'pointer', color: T.muted, display: 'flex', flexShrink: 0, padding: 2 }}
+                    onMouseEnter={e => e.currentTarget.style.color = T.red}
+                    onMouseLeave={e => e.currentTarget.style.color = T.muted}>
+                    {deletingId === n.id ? <Clock size={13} /> : <Trash2 size={13} />}
+                  </button>
+                </div>
+              );
+            })}
+          </div>
+        )}
       </div>
     </div>
   );
@@ -1370,17 +1260,14 @@ export default function AdminDashboard() {
   const [isDark,setIsDark]      = useState(()=>sessionStorage.getItem('hunt_admin_theme')==='dark');
   const [activeTab,setActiveTab]= useState('overview');
   const [toast,setToast]        = useState(null);
-
-  // ── Real Supabase data ──────────────────────────────────────────────────────
-  const [students,setStudents]      = useState([]);
-  const [recruiters,setRecruiters]  = useState([]);
-  const [jobs,setJobs]              = useState([]);
-  const [applications,setApps]      = useState([]);
-  const [loading,setLoading]        = useState(true);
+  const [students,setStudents]  = useState([]);
+  const [recruiters,setRecruiters]=useState([]);
+  const [jobs,setJobs]          = useState([]);
+  const [applications,setApps]  = useState([]);
+  const [loading,setLoading]    = useState(true);
 
   const showToast = useCallback((msg,type='success')=>{
-    setToast({msg,type});
-    setTimeout(()=>setToast(null),2500);
+    setToast({msg,type}); setTimeout(()=>setToast(null),2500);
   },[]);
 
   const load = useCallback(async()=>{
@@ -1393,10 +1280,7 @@ export default function AdminDashboard() {
         supabase.from('jobs').select('*').order('created_at',{ascending:false}),
         supabase.from('applications').select('*').order('applied_at',{ascending:false}),
       ]);
-      setStudents(s.data||[]);
-      setRecruiters(r.data||[]);
-      setJobs(j.data||[]);
-      setApps(a.data||[]);
+      setStudents(s.data||[]); setRecruiters(r.data||[]); setJobs(j.data||[]); setApps(a.data||[]);
     } catch(e){ showToast('Failed to load data','error'); }
     finally{ setLoading(false); }
   },[unlocked,showToast]);
@@ -1410,20 +1294,20 @@ export default function AdminDashboard() {
   if(!unlocked) return <PasswordGate onUnlock={handleUnlock}/>;
 
   const tabs=[
-    {id:'overview', label:'Overview',                       icon:BarChart2 },
-    {id:'students', label:`Students (${students.length})`,  icon:Users     },
-    {id:'recruiters',label:`Recruiters (${recruiters.length})`,icon:Building2},
-    {id:'jobs',     label:`Jobs (${jobs.length})`,          icon:Briefcase },
-    {id:'waitlist', label:'Waitlist',                       icon:Clock     },
+    {id:'overview',       label:'Overview',                         icon:BarChart2  },
+    {id:'students',       label:`Students (${students.length})`,    icon:Users      },
+    {id:'recruiters',     label:`Recruiters (${recruiters.length})`,icon:Building2  },
+    {id:'jobs',           label:`Jobs (${jobs.length})`,            icon:Briefcase  },
+    {id:'waitlist',       label:'Waitlist',                         icon:Clock      },
+    {id:'notifications',  label:'Notifications',                    icon:Bell       },
   ];
 
-  const titles={overview:'Platform overview',students:'Students',recruiters:'Recruiters',jobs:'Job listings',waitlist:'Recruiter waitlist'};
-  const subs={overview:'Live data from Supabase.',students:'All students — click a row to view and edit.',recruiters:'All recruiters — approve or update directly.',jobs:'All internship listings — toggle, delete, or post new.',waitlist:'Pre-launch recruiter signups — approve and mark contacted.'};
+  const titles={overview:'Platform overview',students:'Students',recruiters:'Recruiters',jobs:'Job listings',waitlist:'Recruiter waitlist',notifications:'Push Notifications'};
+  const subs={overview:'Live data from Supabase.',students:'All students — click a row to view and edit.',recruiters:'All recruiters — approve or update directly.',jobs:'All internship listings — toggle, delete, or post new.',waitlist:'Pre-launch recruiter signups — approve and mark contacted.',notifications:'Compose and send notifications to all students in real time.'};
 
   return (
     <div style={{minHeight:'100vh',background:T.bg,fontFamily:font,WebkitFontSmoothing:'antialiased',color:T.text,transition:'background 0.2s,color 0.2s'}}>
       {toast && <Toast msg={toast.msg} type={toast.type}/>}
-
       <nav style={{display:'flex',alignItems:'center',justifyContent:'space-between',padding:'14px 32px',borderBottom:`1px solid ${T.border}`,background:T.navBg,position:'sticky',top:0,zIndex:100}}>
         <div style={{display:'flex',alignItems:'center',gap:10}}>
           <span style={{fontSize:15,fontWeight:500,letterSpacing:'0.12em',color:T.text}}>HUNT</span>
@@ -1442,7 +1326,7 @@ export default function AdminDashboard() {
           })}
         </div>
         <div style={{display:'flex',alignItems:'center',gap:8}}>
-          <button onClick={load} style={{display:'flex',alignItems:'center',gap:4,padding:'5px 10px',borderRadius:20,border:`1px solid ${T.border}`,background:T.surfaceAlt,color:T.muted,fontSize:11,cursor:'pointer',fontFamily:font}} title="Refresh data">
+          <button onClick={load} style={{display:'flex',alignItems:'center',gap:4,padding:'5px 10px',borderRadius:20,border:`1px solid ${T.border}`,background:T.surfaceAlt,color:T.muted,fontSize:11,cursor:'pointer',fontFamily:font}}>
             <RefreshCw size={11}/>{loading?'Loading…':'Refresh'}
           </button>
           <button onClick={toggleTheme} style={{display:'flex',alignItems:'center',gap:5,padding:'5px 11px',borderRadius:20,border:`1px solid ${T.border}`,background:T.surfaceAlt,color:T.muted,fontSize:11,cursor:'pointer',fontFamily:font}}>
@@ -1457,20 +1341,19 @@ export default function AdminDashboard() {
           <h1 style={{fontFamily:serif,fontSize:26,fontWeight:400,color:T.text,marginBottom:4,letterSpacing:'-0.01em'}}>{titles[activeTab]}</h1>
           <p style={{fontSize:12,color:T.muted,margin:0}}>{subs[activeTab]}</p>
         </div>
-
         {loading && activeTab==='overview' ? (
           <div style={{textAlign:'center',padding:'60px',color:T.muted,fontSize:13}}>Loading data from Supabase…</div>
         ) : (
           <>
-            {activeTab==='overview'   && <OverviewTab students={students} recruiters={recruiters} jobs={jobs} applications={applications} T={T}/>}
-            {activeTab==='students'   && <StudentsTab students={students} T={T} showToast={showToast}/>}
-            {activeTab==='recruiters' && <RecruitersTab recruiters={recruiters} T={T} showToast={showToast}/>}
-            {activeTab==='jobs'       && <JobsTab jobs={jobs} T={T} showToast={showToast}/>}
-            {activeTab==='waitlist'   && <WaitlistTab T={T} showToast={showToast}/>}
+            {activeTab==='overview'      && <OverviewTab students={students} recruiters={recruiters} jobs={jobs} applications={applications} T={T}/>}
+            {activeTab==='students'      && <StudentsTab students={students} T={T} showToast={showToast}/>}
+            {activeTab==='recruiters'    && <RecruitersTab recruiters={recruiters} T={T} showToast={showToast}/>}
+            {activeTab==='jobs'          && <JobsTab jobs={jobs} T={T} showToast={showToast}/>}
+            {activeTab==='waitlist'      && <WaitlistTab T={T} showToast={showToast}/>}
+            {activeTab==='notifications' && <NotificationsTab T={T} showToast={showToast}/>}
           </>
         )}
       </div>
-
       <style>{`* { box-sizing: border-box; } select option { background: ${T.inputBg}; color: ${T.text}; }`}</style>
     </div>
   );
