@@ -1,48 +1,151 @@
 // src/components/StudentOnboarding.jsx
+// ─── HUNT brutalist onboarding (cream/ink/electric-blue) ──────────────────────
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { User, Code, Rocket, CheckCircle2, ArrowRight, Plus, X, Github, Loader, Sun, Moon, Shield, GraduationCap, Link2, AlertCircle, Upload } from 'lucide-react';
 import { createStudentProfile, uploadResume } from '../services/supabase';
 import { importFromGitHub, isValidGitHubUsername } from '../services/github';
 import { useNavigate } from 'react-router-dom';
 
-// ─── Design tokens ─────────────────────────────────────────────────────────────
+// ─── Design tokens — brutalist cream / ink / electric-blue ────────────────────
+// Names kept as before so existing var() refs keep working. "green" now resolves
+// to electric blue (the brutalist accent).
 const tokens = {
   light: {
-    '--bg':         '#FAFAF8',
-    '--bg-card':    '#FFFFFF',
-    '--bg-subtle':  '#F5F5F2',
-    '--border':     '#EBEBEA',
-    '--border-mid': '#D6D6D3',
-    '--text':       '#0A0A0A',
-    '--text-mid':   '#5A5A56',
-    '--text-dim':   '#9B9B97',
-    '--green':      '#1A7A4A',
-    '--green-tint': '#E8F5EE',
-    '--green-text': '#1A7A4A',
-    '--focus':      '#1A7A4A',
+    '--bg':         '#F2F0E8',  // cream
+    '--bg-card':    '#FAF8F0',  // paper
+    '--bg-subtle':  '#E8E5DA',  // cream-2
+    '--border':     '#1413180E',
+    '--border-mid': '#14130E22',
+    '--text':       '#14130E',  // ink
+    '--text-mid':   '#3A362A',
+    '--text-dim':   '#6E6955',
+    '--green':      '#1A35E8',  // ← was green, now electric blue
+    '--green-tint': '#E3E7FB',
+    '--green-text': '#0B1BA0',
+    '--focus':      '#14130E',
+    /* Brutalist extras */
+    '--ink':        '#14130E',
+    '--cream':      '#F2F0E8',
+    '--paper':      '#FAF8F0',
+    '--blue':       '#1A35E8',
+    '--blue-tint':  '#E3E7FB',
+    '--blue-deep':  '#0B1BA0',
+    '--red':        '#B8281C',
+    '--red-tint':   '#F7D9D4',
+    '--amber':      '#B85C00',
+    '--amber-tint': '#F7E7D2',
   },
   dark: {
-    '--bg':         '#0A0A0A',
-    '--bg-card':    '#111110',
-    '--bg-subtle':  '#1A1A18',
-    '--border':     '#2A2A28',
-    '--border-mid': '#3A3A38',
-    '--text':       '#FAFAF8',
-    '--text-mid':   '#9B9B97',
-    '--text-dim':   '#5A5A56',
-    '--green':      '#2EAD6A',
-    '--green-tint': '#0D2B1A',
-    '--green-text': '#2EAD6A',
-    '--focus':      '#2EAD6A',
+    '--bg':         '#0E0E0C',
+    '--bg-card':    '#16150F',
+    '--bg-subtle':  '#1C1B15',
+    '--border':     '#ffffff12',
+    '--border-mid': '#ffffff22',
+    '--text':       '#F2F0E8',
+    '--text-mid':   '#C9C5B4',
+    '--text-dim':   '#8A8572',
+    '--green':      '#6B82F7',
+    '--green-tint': '#1E2448',
+    '--green-text': '#C0CAFB',
+    '--focus':      '#F2F0E8',
+    '--ink':        '#F2F0E8',
+    '--cream':      '#0E0E0C',
+    '--paper':      '#16150F',
+    '--blue':       '#6B82F7',
+    '--blue-tint':  '#1E2448',
+    '--blue-deep':  '#C0CAFB',
+    '--red':        '#E5726A',
+    '--red-tint':   '#301814',
+    '--amber':      '#E9B25A',
+    '--amber-tint': '#2E2413',
   }
 };
 
+// One-time global style injection — fonts + brutalist utility classes.
+// Idempotent: only runs once even if applyTokens is called repeatedly.
+let _globalsInjected = false;
+function injectGlobals() {
+  if (_globalsInjected || typeof document === 'undefined') return;
+  const tag = document.createElement('style');
+  tag.id = 'hunt-onb-globals';
+  tag.textContent = `
+    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Instrument+Serif:ital@0;1&family=JetBrains+Mono:wght@400;500;600&display=swap');
+
+    .hunt-mono { font-family: 'JetBrains Mono', ui-monospace, monospace; font-feature-settings: 'zero' 1; }
+    .hunt-serif { font-family: 'Instrument Serif', 'Times New Roman', Georgia, serif; font-weight: 400; letter-spacing: -0.01em; line-height: 1.05; }
+
+    .hunt-kicker {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 10px; font-weight: 500;
+      letter-spacing: 0.14em; text-transform: uppercase;
+      color: var(--text-dim);
+    }
+
+    .hunt-bitmap-bg {
+      background-image:
+        linear-gradient(to right, rgba(20,19,14,0.04) 1px, transparent 1px),
+        linear-gradient(to bottom, rgba(20,19,14,0.04) 1px, transparent 1px);
+      background-size: 28px 28px;
+    }
+    [data-theme="dark"] .hunt-bitmap-bg {
+      background-image:
+        linear-gradient(to right, rgba(242,240,232,0.04) 1px, transparent 1px),
+        linear-gradient(to bottom, rgba(242,240,232,0.04) 1px, transparent 1px);
+    }
+
+    /* Brutalist primary button: electric blue + 3px ink shadow that compresses on click */
+    .hunt-btn-primary {
+      box-shadow: 3px 3px 0 0 var(--ink);
+      transition: transform 0.08s ease, box-shadow 0.08s ease;
+    }
+    .hunt-btn-primary:hover:not(:disabled) {
+      transform: translate(-1px, -1px);
+      box-shadow: 4px 4px 0 0 var(--ink);
+    }
+    .hunt-btn-primary:active:not(:disabled) {
+      transform: translate(2px, 2px);
+      box-shadow: 1px 1px 0 0 var(--ink);
+    }
+
+    /* Brutalist input focus — solid ink border, no glow */
+    .hunt-input { border-radius: 0 !important; }
+    .hunt-input:focus { border-color: var(--ink) !important; outline: none !important; }
+
+    /* Square pixel pill */
+    .hunt-pixel { width: 5px; height: 5px; background: var(--blue); display: inline-block; }
+
+    @keyframes hunt-blink { 0%, 70% { opacity: 1; } 71%, 100% { opacity: 0.1; } }
+    .hunt-blink { animation: hunt-blink 1.2s steps(2, end) infinite; }
+  `;
+  document.head.appendChild(tag);
+  _globalsInjected = true;
+}
+
 function applyTokens(theme) {
+  injectGlobals();
   const root = document.documentElement;
+  root.dataset.theme = theme;
   Object.entries(tokens[theme]).forEach(([k, v]) => root.style.setProperty(k, v));
 }
 
-// ─── SVG Logos ─────────────────────────────────────────────────────────────────
+// ─── 5x5 Pixel HUNT mark (brand signature, used in nav) ───────────────────────
+const PixelMark = ({ size = 16, color = 'var(--blue)' }) => {
+  const on = [
+    1,0,0,0,1,
+    1,0,0,0,1,
+    1,1,1,1,1,
+    1,0,0,0,1,
+    1,0,0,0,1,
+  ];
+  const px = Math.max(2, Math.floor(size / 6));
+  return (
+    <div style={{ display: 'grid', gridTemplateColumns: `repeat(5, ${px}px)`, gridAutoRows: `${px}px`, gap: 1 }}>
+      {on.map((v, i) => <div key={i} style={{ background: v ? color : 'transparent' }} />)}
+    </div>
+  );
+};
+
+// ─── SVG Logos (unchanged) ────────────────────────────────────────────────────
 const LinkedInLogo = () => (
   <svg width="16" height="16" viewBox="0 0 24 24" fill="#0A66C2" style={{ flexShrink: 0 }}>
     <path d="M20.447 20.452h-3.554v-5.569c0-1.328-.027-3.037-1.852-3.037-1.853 0-2.136 1.445-2.136 2.939v5.667H9.351V9h3.414v1.561h.046c.477-.9 1.637-1.85 3.37-1.85 3.601 0 4.267 2.37 4.267 5.455v6.286zM5.337 7.433a2.062 2.062 0 0 1-2.063-2.065 2.064 2.064 0 1 1 2.063 2.065zm1.782 13.019H3.555V9h3.564v11.452zM22.225 0H1.771C.792 0 0 .774 0 1.729v20.542C0 23.227.792 24 1.771 24h20.451C23.2 24 24 23.227 24 22.271V1.729C24 .774 23.2 0 22.222 0h.003z"/>
@@ -103,7 +206,7 @@ const CodeStudioLogo = () => (
   </svg>
 );
 
-// ─── Data ──────────────────────────────────────────────────────────────────────
+// ─── Data (unchanged) ─────────────────────────────────────────────────────────
 const SKILL_OPTIONS = [
   { id: 'sk-001', name: 'JavaScript', category: 'Language' },
   { id: 'sk-002', name: 'Python', category: 'Language' },
@@ -206,56 +309,55 @@ const STEPS = [
   { num: 6, label: 'Finish',    },
 ];
 
-const inputCls = `w-full px-4 py-3 rounded-lg text-sm font-normal transition-colors duration-150 outline-none bg-[var(--bg-subtle)] border border-[var(--border)] text-[var(--text)] placeholder:text-[var(--text-dim)] focus:border-[var(--focus)]`;
-const labelCls = 'block text-xs font-medium tracking-widest uppercase text-[var(--text)] mb-2';
-// Section headings (Education, Work Experience, Skills, Projects, etc.) use this
-const sectionLabelCls = 'block text-xs font-semibold tracking-widest uppercase mb-2' ;
+// ─── Brutalist Tailwind class strings ─────────────────────────────────────────
+// Sharp 0-radius corners, ink borders, mono font for labels, no shadows on inputs.
+const inputCls = `hunt-input w-full px-4 py-3 text-sm font-normal transition-colors duration-150 outline-none bg-[var(--bg-card)] border border-[var(--border-mid)] text-[var(--text)] placeholder:text-[var(--text-dim)]`;
+const labelCls = 'hunt-kicker block mb-2';
+const sectionLabelCls = 'hunt-kicker block mb-2';
 
-// ─── Progress Bar Component ────────────────────────────────────────────────────
-// Design: full-width thin line with a floating pill showing current step
+// ─── Progress Bar — brutalist version ─────────────────────────────────────────
+// Flat 2px line, square pixel ticks, mono labels, ▲ glyph in top-row label.
 function StepProgress({ currentStep, totalSteps, steps }) {
   const pct = ((currentStep - 1) / (totalSteps - 1)) * 100;
   const currentLabel = steps[currentStep - 1]?.label;
 
   return (
-    <div style={{ padding: '0 0 0 0' }}>
-      {/* Top row: label left, fraction right */}
+    <div>
+      {/* Top row: kicker label + fraction */}
       <div style={{
         display: 'flex', alignItems: 'center', justifyContent: 'space-between',
         marginBottom: '10px',
       }}>
-        <span style={{
-          fontSize: '11px', fontWeight: 600, letterSpacing: '0.1em',
+        <span className="hunt-mono" style={{
+          fontSize: '11px', fontWeight: 600, letterSpacing: '0.14em',
           textTransform: 'uppercase', color: 'var(--text)',
         }}>
-          {currentLabel}
+          ▲ {currentLabel}
         </span>
-        <span style={{
-          fontSize: '11px', letterSpacing: '0.05em',
+        <span className="hunt-mono" style={{
+          fontSize: '10.5px', letterSpacing: '0.06em',
           color: 'var(--text-dim)', fontVariantNumeric: 'tabular-nums',
         }}>
           {currentStep} <span style={{ color: 'var(--border-mid)' }}>/</span> {totalSteps}
         </span>
       </div>
 
-      {/* Track */}
+      {/* Track — flat 2px, no rounding */}
       <div style={{
         position: 'relative',
         height: '2px',
-        background: 'var(--border)',
-        borderRadius: '999px',
+        background: 'var(--border-mid)',
       }}>
-        {/* Filled portion */}
+        {/* Filled portion — solid blue */}
         <div style={{
           position: 'absolute', top: 0, left: 0,
           height: '100%',
           width: `${pct}%`,
-          background: 'var(--green)',
-          borderRadius: '999px',
+          background: 'var(--blue)',
           transition: 'width 0.4s cubic-bezier(0.4, 0, 0.2, 1)',
         }} />
 
-        {/* Tick marks for each step */}
+        {/* Square pixel ticks */}
         {steps.map((s) => {
           const tickPct = ((s.num - 1) / (totalSteps - 1)) * 100;
           const done = currentStep > s.num;
@@ -266,12 +368,11 @@ function StepProgress({ currentStep, totalSteps, steps }) {
               top: '50%',
               left: `${tickPct}%`,
               transform: 'translate(-50%, -50%)',
-              width: active ? '8px' : done ? '6px' : '5px',
-              height: active ? '8px' : done ? '6px' : '5px',
-              borderRadius: '50%',
-              background: active ? 'var(--green)' : done ? 'var(--green)' : 'var(--border-mid)',
-              border: active ? '2px solid var(--bg)' : done ? '1.5px solid var(--bg)' : 'none',
-              boxShadow: active ? '0 0 0 2px var(--green)' : 'none',
+              width: active ? '10px' : done ? '6px' : '5px',
+              height: active ? '10px' : done ? '6px' : '5px',
+              background: active ? 'var(--blue)' : done ? 'var(--blue)' : 'var(--border-mid)',
+              border: active ? '2px solid var(--bg)' : 'none',
+              boxShadow: active ? '0 0 0 1px var(--ink)' : 'none',
               transition: 'all 0.3s ease',
               zIndex: 2,
             }} />
@@ -279,22 +380,21 @@ function StepProgress({ currentStep, totalSteps, steps }) {
         })}
       </div>
 
-      {/* Step labels below — only show immediate neighbors for minimal feel */}
+      {/* Step labels — mono, only show neighbors */}
       <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: '8px' }}>
         {steps.map((s) => {
           const done = currentStep > s.num;
           const active = currentStep === s.num;
-          // Only show label for done/active/next — hide distant future steps
           const show = done || active || s.num === currentStep + 1;
           return (
-            <span key={s.num} style={{
-              fontSize: '10px',
-              letterSpacing: '0.06em',
+            <span key={s.num} className="hunt-mono" style={{
+              fontSize: '9.5px',
+              letterSpacing: '0.1em',
               textTransform: 'uppercase',
-              color: active ? 'var(--green)' : done ? 'var(--text-dim)' : 'var(--border-mid)',
+              color: active ? 'var(--blue)' : done ? 'var(--text-dim)' : 'var(--border-mid)',
               opacity: show ? 1 : 0,
               transition: 'all 0.3s ease',
-              fontWeight: active ? 600 : 400,
+              fontWeight: active ? 600 : 500,
             }}>
               {s.label}
             </span>
@@ -305,7 +405,7 @@ function StepProgress({ currentStep, totalSteps, steps }) {
   );
 }
 
-// ─── Main Component ────────────────────────────────────────────────────────────
+// ─── Main Component ───────────────────────────────────────────────────────────
 export default function StudentOnboarding() {
   const navigate = useNavigate();
   const [theme, setTheme] = useState('light');
@@ -454,7 +554,7 @@ export default function StudentOnboarding() {
   const showLinkedinWarn = step2Attempted && !formData.linkedinUrl;
   const showGithubWarn = step2Attempted && !formData.githubUrl;
 
-  // ── Steps (unchanged) ────────────────────────────────────────────────────────
+  // ── Steps ───────────────────────────────────────────────────────────────────
 
   const Step1 = () => (
     <div>
@@ -462,15 +562,15 @@ export default function StudentOnboarding() {
         sub="We only show recruiters what matters — your work, not your college name." />
       <div className="grid md:grid-cols-2 gap-4">
         <div className="md:col-span-2">
-          <label className={labelCls}>Full Name <span className="text-[var(--green)]">*</span></label>
+          <label className={labelCls}>▲ Full Name <span style={{ color: 'var(--blue)' }}>*</span></label>
           <input type="text" value={formData.fullName} onChange={e => hi('fullName', e.target.value)} placeholder="Priya Sharma" className={inputCls} />
         </div>
         <div>
-          <label className={labelCls}>Email <span className="text-[var(--green)]">*</span></label>
+          <label className={labelCls}>▲ Email <span style={{ color: 'var(--blue)' }}>*</span></label>
           <input type="email" value={formData.email} onChange={e => hi('email', e.target.value)} placeholder="priya@email.com" className={inputCls} />
         </div>
         <div>
-          <label className={labelCls}>Phone</label>
+          <label className={labelCls}>▲ Phone</label>
           <input type="tel" value={formData.phone} onChange={e => hi('phone', e.target.value)} placeholder="+91 98765 43210" className={inputCls} />
         </div>
       </div>
@@ -485,15 +585,15 @@ export default function StudentOnboarding() {
         <div>
           <label className={labelCls}>
             <span className="flex items-center gap-2 flex-wrap">
-              <LinkedInLogo /> LinkedIn URL <span className="text-[var(--green)]">*</span>
-              {showLinkedinWarn && <span style={{ color: '#ef4444', fontWeight: 400, textTransform: 'none', letterSpacing: 'normal' }}>— important</span>}
+              <LinkedInLogo /> ▲ LinkedIn URL <span style={{ color: 'var(--blue)' }}>*</span>
+              {showLinkedinWarn && <span style={{ color: 'var(--red)', fontWeight: 400, textTransform: 'none', letterSpacing: 'normal' }}>— important</span>}
             </span>
           </label>
           <input type="url" value={formData.linkedinUrl} onChange={e => hi('linkedinUrl', e.target.value)}
             placeholder="https://www.linkedin.com/in/..." className={inputCls}
-            style={showLinkedinWarn ? { borderColor: '#ef4444' } : {}} />
+            style={showLinkedinWarn ? { borderColor: 'var(--red)' } : {}} />
           {showLinkedinWarn && (
-            <p className="mt-1.5 text-xs flex items-center gap-1" style={{ color: '#ef4444' }}>
+            <p className="mt-1.5 text-xs flex items-center gap-1" style={{ color: 'var(--red)' }}>
               <AlertCircle className="w-3.5 h-3.5" /> Recruiters look at this first. Add it to boost your match score.
             </p>
           )}
@@ -501,47 +601,48 @@ export default function StudentOnboarding() {
         <div>
           <label className={labelCls}>
             <span className="flex items-center gap-2 flex-wrap">
-              <GitHubLogo theme={theme} /> GitHub URL <span className="text-[var(--green)]">*</span>
-              {showGithubWarn && <span style={{ color: '#ef4444', fontWeight: 400, textTransform: 'none', letterSpacing: 'normal' }}>— important</span>}
+              <GitHubLogo theme={theme} /> ▲ GitHub URL <span style={{ color: 'var(--blue)' }}>*</span>
+              {showGithubWarn && <span style={{ color: 'var(--red)', fontWeight: 400, textTransform: 'none', letterSpacing: 'normal' }}>— important</span>}
             </span>
           </label>
           <input type="url" value={formData.githubUrl} onChange={e => hi('githubUrl', e.target.value)}
             placeholder="https://github.com/yourname" className={inputCls}
-            style={showGithubWarn ? { borderColor: '#ef4444' } : {}} />
+            style={showGithubWarn ? { borderColor: 'var(--red)' } : {}} />
           {showGithubWarn && (
-            <p className="mt-1.5 text-xs flex items-center gap-1" style={{ color: '#ef4444' }}>
+            <p className="mt-1.5 text-xs flex items-center gap-1" style={{ color: 'var(--red)' }}>
               <AlertCircle className="w-3.5 h-3.5" /> Your GitHub shows real proof of work. Don't skip this.
             </p>
           )}
         </div>
         <div>
-          <label className={labelCls}>Portfolio</label>
+          <label className={labelCls}>▲ Portfolio</label>
           <input type="url" value={formData.portfolioUrl} onChange={e => hi('portfolioUrl', e.target.value)}
             placeholder="https://yourportfolio.com" className={inputCls} />
         </div>
         <div>
-          <label className={labelCls}>Other Links</label>
+          <label className={labelCls}>▲ Other Links</label>
           <div className="space-y-2">
             {extraLinks.map((link, idx) => (
               <div key={idx} className="flex gap-2">
                 <input type="url" value={link} onChange={e => updateExtraLink(idx, e.target.value)}
                   placeholder="https://example.com" className={inputCls + ' flex-1'} />
                 {extraLinks.length > 1 && (
-                  <button onClick={() => removeExtraLink(idx)} className="px-3 rounded-lg border transition-colors"
-                    style={{ borderColor: 'var(--border)', color: 'var(--text-dim)' }}>
+                  <button onClick={() => removeExtraLink(idx)} className="px-3 border transition-colors"
+                    style={{ borderColor: 'var(--border-mid)', color: 'var(--text-dim)' }}>
                     <X className="w-4 h-4" />
                   </button>
                 )}
               </div>
             ))}
-            <button onClick={addExtraLink} className="flex items-center gap-1.5 text-sm transition-colors" style={{ color: 'var(--text-dim)' }}>
+            <button onClick={addExtraLink} className="hunt-mono flex items-center gap-1.5 transition-colors"
+              style={{ color: 'var(--text-dim)', fontSize: 11, letterSpacing: '0.08em', textTransform: 'uppercase' }}>
               <Plus className="w-4 h-4" /> Add more links
             </button>
           </div>
         </div>
       </div>
-      <div className="pt-5" style={{ borderTop: '1px solid var(--border)' }}>
-        <label className={sectionLabelCls} style={{ color: 'var(--text)' }}>Other Profiles</label>
+      <div className="pt-5" style={{ borderTop: '1px solid var(--border-mid)' }}>
+        <label className={sectionLabelCls} style={{ color: 'var(--text)' }}>▲ Other Profiles</label>
         <div className="space-y-2">
           {(() => {
             const PROFILE_META = {
@@ -557,8 +658,8 @@ export default function StudentOnboarding() {
             return visibleProfiles.map((field) => {
               const { placeholder, Logo } = PROFILE_META[field];
               return (
-                <div key={field} className="flex items-center gap-3 px-4 py-3 rounded-lg border"
-                  style={{ borderColor: 'var(--border)', background: 'var(--bg-subtle)' }}>
+                <div key={field} className="flex items-center gap-3 px-4 py-3 border"
+                  style={{ borderColor: 'var(--border-mid)', background: 'var(--bg-subtle)' }}>
                   <Logo theme={theme} />
                   <input type="text" value={formData[field]} onChange={e => hi(field, e.target.value)}
                     placeholder={placeholder}
@@ -589,9 +690,9 @@ export default function StudentOnboarding() {
       <StepHeader label="03 — Skills & Projects" title={<>What can you<br /><em>build & show?</em></>}
         sub="Add your skills and the projects that prove them. This is your signal." />
       {step2Attempted && (showLinkedinWarn || showGithubWarn) && (
-        <div className="mb-6 p-4 rounded-lg border flex items-start gap-3"
-          style={{ borderColor: 'rgba(239,68,68,0.4)', background: 'rgba(239,68,68,0.05)' }}>
-          <AlertCircle className="w-4 h-4 flex-shrink-0 mt-0.5" style={{ color: '#ef4444' }} />
+        <div className="mb-6 p-4 border flex items-start gap-3"
+          style={{ borderColor: 'var(--red)', background: 'var(--red-tint)' }}>
+          <AlertCircle className="w-4 h-4 flex-shrink-0 mt-0.5" style={{ color: 'var(--red)' }} />
           <div>
             <p className="text-sm font-medium" style={{ color: 'var(--text)' }}>
               {showLinkedinWarn && showGithubWarn ? 'LinkedIn and GitHub not added' : showLinkedinWarn ? 'LinkedIn not added' : 'GitHub not added'}
@@ -603,31 +704,33 @@ export default function StudentOnboarding() {
           </div>
         </div>
       )}
-      <div className="mb-6 p-4 rounded-lg border" style={{ borderColor: 'var(--border)', background: 'var(--bg-subtle)' }}>
+      <div className="mb-6 p-4 border" style={{ borderColor: 'var(--border-mid)', background: 'var(--bg-subtle)' }}>
         <div className="flex items-center gap-3 mb-3">
           <Github className="w-4 h-4" style={{ color: 'var(--text-mid)' }} />
-          <span className="text-sm font-medium" style={{ color: 'var(--text)' }}>Import from GitHub</span>
+          <span className="hunt-mono" style={{ fontSize: 11, fontWeight: 600, letterSpacing: '0.1em', textTransform: 'uppercase', color: 'var(--text)' }}>
+            ▲ Import from GitHub
+          </span>
           <span className="text-xs" style={{ color: 'var(--text-dim)' }}>— auto-fill skills & projects</span>
         </div>
         <div className="flex gap-2">
           <input type="text" value={githubUsername} onChange={e => setGithubUsername(e.target.value)}
             placeholder="username" className={inputCls + ' flex-1'} />
           <button onClick={handleGitHubImport} disabled={githubImporting}
-            className="px-5 py-3 text-sm font-medium rounded-lg transition-opacity hover:opacity-80 disabled:opacity-40 flex items-center gap-2 whitespace-nowrap"
-            style={{ background: 'var(--text)', color: 'var(--bg)' }}>
+            className="hunt-mono px-5 py-3 transition-opacity hover:opacity-80 disabled:opacity-40 flex items-center gap-2 whitespace-nowrap"
+            style={{ background: 'var(--ink)', color: 'var(--cream)', fontSize: 11, letterSpacing: '0.1em', textTransform: 'uppercase', fontWeight: 500 }}>
             {githubImporting ? <><Loader className="w-4 h-4 animate-spin" />Importing…</> : 'Import'}
           </button>
         </div>
       </div>
       <div className="mb-8">
-        <p className={sectionLabelCls} style={{ color: 'var(--text)' }}>Skills</p>
+        <p className={sectionLabelCls} style={{ color: 'var(--text)' }}>▲ Skills</p>
         <div className="flex flex-wrap gap-2 mb-4">
           {SKILL_CATEGORIES.map(cat => (
             <button key={cat} onClick={() => setActiveCategory(cat)}
-              className="px-3 py-1.5 text-xs font-medium rounded-full border transition-colors duration-150"
+              className="hunt-mono px-3 py-1.5 border transition-colors duration-150"
               style={activeCategory === cat
-                ? { background: 'var(--text)', color: 'var(--bg)', borderColor: 'var(--text)' }
-                : { background: 'transparent', color: 'var(--text-mid)', borderColor: 'var(--border)' }}>
+                ? { background: 'var(--ink)', color: 'var(--cream)', borderColor: 'var(--ink)', fontSize: 10.5, letterSpacing: '0.06em', textTransform: 'uppercase' }
+                : { background: 'transparent', color: 'var(--text-mid)', borderColor: 'var(--border-mid)', fontSize: 10.5, letterSpacing: '0.06em', textTransform: 'uppercase' }}>
               {cat}
             </button>
           ))}
@@ -637,10 +740,10 @@ export default function StudentOnboarding() {
             const added = formData.skills.some(s => s.name === skill.name);
             return (
               <button key={skill.id} onClick={() => addSkill(skill)}
-                className="px-3 py-1.5 text-sm rounded-lg border transition-all duration-150"
+                className="px-3 py-1.5 text-sm border transition-all duration-150"
                 style={added
-                  ? { background: 'var(--green-tint)', borderColor: 'var(--green)', color: 'var(--green-text)', cursor: 'default' }
-                  : { background: 'transparent', borderColor: 'var(--border)', color: 'var(--text-mid)' }}>
+                  ? { background: 'var(--blue-tint)', borderColor: 'var(--blue)', color: 'var(--blue-deep)', cursor: 'default' }
+                  : { background: 'transparent', borderColor: 'var(--border-mid)', color: 'var(--text-mid)' }}>
                 {skill.name}{added && ' ✓'}
               </button>
             );
@@ -648,24 +751,24 @@ export default function StudentOnboarding() {
         </div>
         {formData.skills.length > 0 && (
           <div>
-            <p className={sectionLabelCls} style={{ color: 'var(--text)' }}>Selected — {formData.skills.length} skill{formData.skills.length !== 1 && 's'}</p>
+            <p className={sectionLabelCls} style={{ color: 'var(--text)' }}>▲ Selected — {formData.skills.length} skill{formData.skills.length !== 1 && 's'}</p>
             <div className="space-y-2">
               {formData.skills.map(skill => (
-                <div key={skill.id} className="flex items-center gap-3 px-4 py-3 rounded-lg border"
-                  style={{ borderColor: 'var(--border)', background: 'var(--bg-subtle)' }}>
+                <div key={skill.id} className="flex items-center gap-3 px-4 py-3 border"
+                  style={{ borderColor: 'var(--border-mid)', background: 'var(--bg-subtle)' }}>
                   <span className="text-sm font-medium flex-1" style={{ color: 'var(--text)' }}>{skill.name}</span>
                   <div className="flex gap-1">
                     {[1,2,3,4,5].map(lv => (
                       <button key={lv} onClick={() => updateLevel(skill.id, lv)}
-                        className="w-7 h-7 rounded text-xs font-medium transition-colors duration-100"
+                        className="hunt-mono w-7 h-7 transition-colors duration-100"
                         style={skill.level >= lv
-                          ? { background: 'var(--green)', color: '#fff' }
-                          : { background: 'var(--bg)', border: '1px solid var(--border)', color: 'var(--text-dim)' }}>
+                          ? { background: 'var(--blue)', color: '#fff', fontSize: 11, fontWeight: 600 }
+                          : { background: 'var(--bg-card)', border: '1px solid var(--border-mid)', color: 'var(--text-dim)', fontSize: 11 }}>
                         {lv}
                       </button>
                     ))}
                   </div>
-                  <span className="text-xs w-20 text-right" style={{ color: 'var(--text-dim)' }}>{LEVEL_LABELS[skill.level]}</span>
+                  <span className="hunt-mono text-xs w-20 text-right" style={{ color: 'var(--text-dim)', letterSpacing: '0.04em' }}>{LEVEL_LABELS[skill.level]}</span>
                   <button onClick={() => removeSkill(skill.id)} style={{ color: 'var(--text-dim)' }} className="ml-1"><X className="w-4 h-4" /></button>
                 </div>
               ))}
@@ -673,42 +776,42 @@ export default function StudentOnboarding() {
           </div>
         )}
       </div>
-      <div className="pt-6" style={{ borderTop: '1px solid var(--border)' }}>
-        <p className={sectionLabelCls} style={{ color: 'var(--text)' }}>Projects</p>
-        <div className="p-4 rounded-lg border space-y-3 mb-4" style={{ borderColor: 'var(--border)', background: 'var(--bg-subtle)' }}>
+      <div className="pt-6" style={{ borderTop: '1px solid var(--border-mid)' }}>
+        <p className={sectionLabelCls} style={{ color: 'var(--text)' }}>▲ Projects</p>
+        <div className="p-4 border space-y-3 mb-4" style={{ borderColor: 'var(--border-mid)', background: 'var(--bg-subtle)' }}>
           <div className="grid md:grid-cols-2 gap-3">
             <div>
-              <label className={labelCls}>Project title <span className="text-[var(--green)]">*</span></label>
+              <label className={labelCls}>▲ Project title <span style={{ color: 'var(--blue)' }}>*</span></label>
               <input type="text" value={newProject.title} onChange={e => setNewProject({ ...newProject, title: e.target.value })} placeholder="E-commerce Dashboard" className={inputCls} />
             </div>
             <div>
-              <label className={labelCls}>Tech stack <span className="text-[var(--green)]">*</span></label>
+              <label className={labelCls}>▲ Tech stack <span style={{ color: 'var(--blue)' }}>*</span></label>
               <input type="text" value={newProject.techStack} onChange={e => setNewProject({ ...newProject, techStack: e.target.value })} placeholder="React, Node.js, PostgreSQL" className={inputCls} />
             </div>
           </div>
           <div>
-            <label className={labelCls}>Description</label>
+            <label className={labelCls}>▲ Description</label>
             <textarea value={newProject.description} rows={2} onChange={e => setNewProject({ ...newProject, description: e.target.value })} placeholder="What does this project do?" className={inputCls + ' resize-none'} />
           </div>
           <div className="grid md:grid-cols-2 gap-3">
             <div>
-              <label className={labelCls}>Live URL</label>
+              <label className={labelCls}>▲ Live URL</label>
               <input type="url" value={newProject.projectUrl} onChange={e => setNewProject({ ...newProject, projectUrl: e.target.value })} placeholder="https://" className={inputCls} />
             </div>
             <div>
-              <label className={labelCls}>GitHub URL</label>
+              <label className={labelCls}>▲ GitHub URL</label>
               <input type="url" value={newProject.githubUrl} onChange={e => setNewProject({ ...newProject, githubUrl: e.target.value })} placeholder="https://github.com/…" className={inputCls} />
             </div>
           </div>
-          <button onClick={addProject} className="w-full py-3 rounded-lg text-sm font-medium border border-dashed transition-colors flex items-center justify-center gap-2"
-            style={{ borderColor: 'var(--border-mid)', color: 'var(--text-mid)' }}>
+          <button onClick={addProject} className="hunt-mono w-full py-3 border border-dashed transition-colors flex items-center justify-center gap-2"
+            style={{ borderColor: 'var(--border-mid)', color: 'var(--text-mid)', fontSize: 11, letterSpacing: '0.08em', textTransform: 'uppercase', fontWeight: 500 }}>
             <Plus className="w-4 h-4" /> Add project
           </button>
         </div>
         {formData.projects.length > 0 && (
           <div className="space-y-3">
             {formData.projects.map(p => (
-              <div key={p.id} className="p-4 rounded-lg border" style={{ borderColor: 'var(--border)', background: 'var(--bg-card)' }}>
+              <div key={p.id} className="p-4 border" style={{ borderColor: 'var(--border-mid)', background: 'var(--bg-card)' }}>
                 <div className="flex items-start justify-between mb-1">
                   <span className="font-medium text-sm" style={{ color: 'var(--text)' }}>{p.title || p.name}</span>
                   <button onClick={() => removeProject(p.id)} style={{ color: 'var(--text-dim)' }} className="ml-3"><X className="w-4 h-4" /></button>
@@ -716,7 +819,7 @@ export default function StudentOnboarding() {
                 {p.description && <p className="text-xs mb-2" style={{ color: 'var(--text-dim)' }}>{p.description}</p>}
                 <div className="flex flex-wrap gap-1.5">
                   {(Array.isArray(p.techStack) ? p.techStack : [p.techStack]).map((t, i) => (
-                    <span key={i} className="px-2 py-0.5 text-xs rounded border" style={{ borderColor: 'var(--border)', color: 'var(--text-mid)' }}>{t}</span>
+                    <span key={i} className="hunt-mono px-2 py-0.5 border" style={{ borderColor: 'var(--border-mid)', color: 'var(--text-mid)', fontSize: 10, letterSpacing: '0.04em' }}>{t}</span>
                   ))}
                 </div>
               </div>
@@ -733,52 +836,54 @@ export default function StudentOnboarding() {
         sub="Please ensure you meet local employment requirements. Accurate info helps recruiters process faster." />
       <div className="space-y-5">
         <div>
-          <label className={labelCls}>Date of Birth <span className="text-[var(--green)]">*</span></label>
+          <label className={labelCls}>▲ Date of Birth <span style={{ color: 'var(--blue)' }}>*</span></label>
           <input type="date" value={formData.dob} onChange={e => hi('dob', e.target.value)} className={inputCls} />
         </div>
-        <div className="pt-4" style={{ borderTop: '1px solid var(--border)' }}>
-          <p className="text-sm font-medium mb-1" style={{ color: 'var(--text)' }}>Location of Residence</p>
+        <div className="pt-4" style={{ borderTop: '1px solid var(--border-mid)' }}>
+          <p className="hunt-mono mb-1" style={{ fontSize: 11, fontWeight: 600, letterSpacing: '0.1em', textTransform: 'uppercase', color: 'var(--text)' }}>
+            ▲ Location of Residence
+          </p>
           <p className="text-xs mb-4" style={{ color: 'var(--text-dim)' }}>Where you're based for most of the year. This may differ from your home address.</p>
           <div className="grid md:grid-cols-2 gap-4">
             <div className="md:col-span-2">
-              <label className={labelCls}>Country</label>
+              <label className={labelCls}>▲ Country</label>
               <input type="text" value="India" disabled className={inputCls} style={{ opacity: 0.6, cursor: 'not-allowed' }} />
             </div>
             <div>
-              <label className={labelCls}>State / Province <span className="text-[var(--green)]">*</span></label>
+              <label className={labelCls}>▲ State / Province <span style={{ color: 'var(--blue)' }}>*</span></label>
               <select value={formData.state} onChange={e => hi('state', e.target.value)} className={inputCls}>
                 <option value="">Select State / Province</option>
                 {INDIA_STATES.map(s => <option key={s} value={s}>{s}</option>)}
               </select>
             </div>
             <div>
-              <label className={labelCls}>City <span className="text-[var(--green)]">*</span></label>
+              <label className={labelCls}>▲ City <span style={{ color: 'var(--blue)' }}>*</span></label>
               <input type="text" value={formData.city} onChange={e => hi('city', e.target.value)} placeholder="Mumbai" className={inputCls} />
             </div>
             <div>
-              <label className={labelCls}>Postal Code <span className="text-[var(--green)]">*</span></label>
+              <label className={labelCls}>▲ Postal Code <span style={{ color: 'var(--blue)' }}>*</span></label>
               <input type="text" value={formData.pincode} onChange={e => hi('pincode', e.target.value)} placeholder="400001" className={inputCls} />
             </div>
           </div>
         </div>
         <label className="flex items-start gap-3 cursor-pointer">
-          <input type="checkbox" checked={formData.workFromDifferentCountry} onChange={e => hi('workFromDifferentCountry', e.target.checked)} className="mt-0.5 accent-[var(--green)]" />
+          <input type="checkbox" checked={formData.workFromDifferentCountry} onChange={e => hi('workFromDifferentCountry', e.target.checked)} className="mt-0.5" style={{ accentColor: 'var(--blue)' }} />
           <span className="text-sm" style={{ color: 'var(--text-mid)' }}>I will be physically working from a different country while performing services through HUNT.</span>
         </label>
         {workAuthError && (
-          <div className="p-3 rounded-lg border flex items-center gap-2" style={{ borderColor: 'rgba(239,68,68,0.4)', background: 'rgba(239,68,68,0.05)' }}>
-            <AlertCircle className="w-4 h-4 flex-shrink-0" style={{ color: '#ef4444' }} />
-            <p className="text-sm" style={{ color: '#ef4444' }}>Please confirm both authorizations below to continue.</p>
+          <div className="p-3 border flex items-center gap-2" style={{ borderColor: 'var(--red)', background: 'var(--red-tint)' }}>
+            <AlertCircle className="w-4 h-4 flex-shrink-0" style={{ color: 'var(--red)' }} />
+            <p className="text-sm" style={{ color: 'var(--red)' }}>Please confirm both authorizations below to continue.</p>
           </div>
         )}
-        <div className="space-y-4 pt-4" style={{ borderTop: '1px solid var(--border)' }}>
+        <div className="space-y-4 pt-4" style={{ borderTop: '1px solid var(--border-mid)' }}>
           <label className="flex items-start gap-3 cursor-pointer">
             <input type="checkbox" checked={formData.confirmWorkAuth}
               onChange={e => { hi('confirmWorkAuth', e.target.checked); if (e.target.checked && formData.confirmStayInIndia) setWorkAuthError(false); }}
-              className="mt-0.5 accent-[var(--green)]" />
+              className="mt-0.5" style={{ accentColor: 'var(--blue)' }} />
             <div>
-              <p className="text-sm font-medium mb-1" style={{ color: workAuthError && !formData.confirmWorkAuth ? '#ef4444' : 'var(--text)' }}>
-                I confirm that I am legally authorized to work from India. <span className="text-[var(--green)]">*</span>
+              <p className="text-sm font-medium mb-1" style={{ color: workAuthError && !formData.confirmWorkAuth ? 'var(--red)' : 'var(--text)' }}>
+                I confirm that I am legally authorized to work from India. <span style={{ color: 'var(--blue)' }}>*</span>
               </p>
               <p className="text-xs leading-relaxed" style={{ color: 'var(--text-dim)' }}>
                 By checking this, you confirm you have all necessary permits and rights to work from your indicated country, and agree to hold HUNT harmless from any liability arising from failure to maintain proper work authorization.
@@ -788,10 +893,10 @@ export default function StudentOnboarding() {
           <label className="flex items-start gap-3 cursor-pointer">
             <input type="checkbox" checked={formData.confirmStayInIndia}
               onChange={e => { hi('confirmStayInIndia', e.target.checked); if (e.target.checked && formData.confirmWorkAuth) setWorkAuthError(false); }}
-              className="mt-0.5 accent-[var(--green)]" />
+              className="mt-0.5" style={{ accentColor: 'var(--blue)' }} />
             <div>
-              <p className="text-sm font-medium mb-1" style={{ color: workAuthError && !formData.confirmStayInIndia ? '#ef4444' : 'var(--text)' }}>
-                I agree to remain working from India and notify HUNT in writing prior to any change. <span className="text-[var(--green)]">*</span>
+              <p className="text-sm font-medium mb-1" style={{ color: workAuthError && !formData.confirmStayInIndia ? 'var(--red)' : 'var(--text)' }}>
+                I agree to remain working from India and notify HUNT in writing prior to any change. <span style={{ color: 'var(--blue)' }}>*</span>
               </p>
               <p className="text-xs leading-relaxed" style={{ color: 'var(--text-dim)' }}>
                 By checking this, you agree to only work from the specified country unless prior written notice is given to HUNT, and to maintain proper work authorization for any future country.
@@ -799,20 +904,22 @@ export default function StudentOnboarding() {
             </div>
           </label>
         </div>
-        <div className="pt-4" style={{ borderTop: '1px solid var(--border)' }}>
-          <p className="text-sm font-medium mb-1" style={{ color: 'var(--text)' }}>Digital Signature</p>
+        <div className="pt-4" style={{ borderTop: '1px solid var(--border-mid)' }}>
+          <p className="hunt-mono mb-1" style={{ fontSize: 11, fontWeight: 600, letterSpacing: '0.1em', textTransform: 'uppercase', color: 'var(--text)' }}>
+            ▲ Digital Signature
+          </p>
           <p className="text-xs mb-4" style={{ color: 'var(--text-dim)' }}>Please provide your digital signature to confirm your agreement.</p>
           <div className="grid md:grid-cols-3 gap-4">
             <div>
-              <label className={labelCls}>Full Name <span className="text-[var(--green)]">*</span></label>
+              <label className={labelCls}>▲ Full Name <span style={{ color: 'var(--blue)' }}>*</span></label>
               <input type="text" value={formData.signatureName} onChange={e => hi('signatureName', e.target.value)} placeholder={formData.fullName || 'Your full name'} className={inputCls} />
             </div>
             <div>
-              <label className={labelCls}>Signature <span className="text-[var(--green)]">*</span></label>
+              <label className={labelCls}>▲ Signature <span style={{ color: 'var(--blue)' }}>*</span></label>
               <input type="text" value={formData.signatureText} onChange={e => hi('signatureText', e.target.value)} placeholder="Ex: Priya Sharma" className={inputCls} />
             </div>
             <div>
-              <label className={labelCls}>Date</label>
+              <label className={labelCls}>▲ Date</label>
               <input type="text" value={new Date().toLocaleDateString('en-US')} disabled className={inputCls} style={{ opacity: 0.6, cursor: 'not-allowed' }} />
             </div>
           </div>
@@ -828,49 +935,55 @@ export default function StudentOnboarding() {
         <StepHeader label="05 — Education & Experience" title={<>Confirm and add<br /><em>experiences.</em></>}
           sub="Review your details. Projects you added in Skills will be attached automatically." />
         <div className="mb-8">
-          <p className={sectionLabelCls} style={{ color: 'var(--text)' }}>Education</p>
+          <p className={sectionLabelCls} style={{ color: 'var(--text)' }}>▲ Education</p>
           <div className="space-y-4">
             {formData.education.map((edu, idx) => (
-              <div key={idx} className="p-4 rounded-lg border relative" style={{ borderColor: 'var(--border)', background: 'var(--bg-subtle)' }}>
+              <div key={idx} className="p-4 border relative" style={{ borderColor: 'var(--border-mid)', background: 'var(--bg-subtle)' }}>
                 {formData.education.length > 1 && (
                   <button onClick={() => removeEducation(idx)} className="absolute top-3 right-3" style={{ color: 'var(--text-dim)' }}><X className="w-4 h-4" /></button>
                 )}
                 <div className="grid md:grid-cols-2 gap-3">
-                  <div><label className={labelCls}>School</label><input type="text" value={edu.school} onChange={e => updateEducation(idx, 'school', e.target.value)} placeholder="Ex: VJTI Mumbai" className={inputCls} /></div>
-                  <div><label className={labelCls}>Degree</label><input type="text" value={edu.degree} onChange={e => updateEducation(idx, 'degree', e.target.value)} placeholder="Ex: B.Tech Computer Science" className={inputCls} /></div>
-                  <div><label className={labelCls}>Start Year</label><select value={edu.startYear} onChange={e => updateEducation(idx, 'startYear', e.target.value)} className={inputCls}><option value="">Select year</option>{yearOptions.map(y => <option key={y} value={y}>{y}</option>)}</select></div>
-                  <div><label className={labelCls}>End Year</label><select value={edu.endYear} onChange={e => updateEducation(idx, 'endYear', e.target.value)} className={inputCls}><option value="">Select year</option>{yearOptions.map(y => <option key={y} value={y}>{y}</option>)}</select></div>
-                  <div><label className={labelCls}>Major</label><input type="text" value={edu.major} onChange={e => updateEducation(idx, 'major', e.target.value)} placeholder="Ex: Computer Science" className={inputCls} /></div>
-                  <div><label className={labelCls}>GPA / CGPA</label><input type="text" value={edu.gpa} onChange={e => updateEducation(idx, 'gpa', e.target.value)} placeholder="Ex: 8.5 / 10" className={inputCls} /></div>
+                  <div><label className={labelCls}>▲ School</label><input type="text" value={edu.school} onChange={e => updateEducation(idx, 'school', e.target.value)} placeholder="Ex: VJTI Mumbai" className={inputCls} /></div>
+                  <div><label className={labelCls}>▲ Degree</label><input type="text" value={edu.degree} onChange={e => updateEducation(idx, 'degree', e.target.value)} placeholder="Ex: B.Tech Computer Science" className={inputCls} /></div>
+                  <div><label className={labelCls}>▲ Start Year</label><select value={edu.startYear} onChange={e => updateEducation(idx, 'startYear', e.target.value)} className={inputCls}><option value="">Select year</option>{yearOptions.map(y => <option key={y} value={y}>{y}</option>)}</select></div>
+                  <div><label className={labelCls}>▲ End Year</label><select value={edu.endYear} onChange={e => updateEducation(idx, 'endYear', e.target.value)} className={inputCls}><option value="">Select year</option>{yearOptions.map(y => <option key={y} value={y}>{y}</option>)}</select></div>
+                  <div><label className={labelCls}>▲ Major</label><input type="text" value={edu.major} onChange={e => updateEducation(idx, 'major', e.target.value)} placeholder="Ex: Computer Science" className={inputCls} /></div>
+                  <div><label className={labelCls}>▲ GPA / CGPA</label><input type="text" value={edu.gpa} onChange={e => updateEducation(idx, 'gpa', e.target.value)} placeholder="Ex: 8.5 / 10" className={inputCls} /></div>
                 </div>
               </div>
             ))}
-            <button onClick={addEducation} className="flex items-center gap-1.5 text-sm transition-colors" style={{ color: 'var(--text-dim)' }}><Plus className="w-4 h-4" /> Add education</button>
+            <button onClick={addEducation} className="hunt-mono flex items-center gap-1.5 transition-colors"
+              style={{ color: 'var(--text-dim)', fontSize: 11, letterSpacing: '0.08em', textTransform: 'uppercase' }}>
+              <Plus className="w-4 h-4" /> Add education
+            </button>
           </div>
         </div>
-        <div className="pt-6" style={{ borderTop: '1px solid var(--border)' }}>
-          <p className={sectionLabelCls} style={{ color: 'var(--text)' }}>Work Experience</p>
+        <div className="pt-6" style={{ borderTop: '1px solid var(--border-mid)' }}>
+          <p className={sectionLabelCls} style={{ color: 'var(--text)' }}>▲ Work Experience</p>
           <div className="space-y-4">
             {formData.workExperience.map((exp, idx) => (
-              <div key={idx} className="p-4 rounded-lg border relative" style={{ borderColor: 'var(--border)', background: 'var(--bg-subtle)' }}>
+              <div key={idx} className="p-4 border relative" style={{ borderColor: 'var(--border-mid)', background: 'var(--bg-subtle)' }}>
                 {formData.workExperience.length > 1 && (
                   <button onClick={() => removeWorkExp(idx)} className="absolute top-3 right-3" style={{ color: 'var(--text-dim)' }}><X className="w-4 h-4" /></button>
                 )}
                 <div className="grid md:grid-cols-2 gap-3">
-                  <div><label className={labelCls}>Company</label><input type="text" value={exp.company} onChange={e => updateWorkExp(idx, 'company', e.target.value)} placeholder="Ex: Razorpay" className={inputCls} /></div>
-                  <div><label className={labelCls}>Role</label><input type="text" value={exp.role} onChange={e => updateWorkExp(idx, 'role', e.target.value)} placeholder="Ex: Software Intern" className={inputCls} /></div>
-                  <div><label className={labelCls}>Start Year</label><select value={exp.startYear} onChange={e => updateWorkExp(idx, 'startYear', e.target.value)} className={inputCls}><option value="">Select year</option>{yearOptions.map(y => <option key={y} value={y}>{y}</option>)}</select></div>
-                  <div><label className={labelCls}>End Year</label><select value={exp.endYear} onChange={e => updateWorkExp(idx, 'endYear', e.target.value)} className={inputCls}><option value="">Select year</option>{yearOptions.map(y => <option key={y} value={y}>{y}</option>)}</select></div>
-                  <div><label className={labelCls}>City</label><input type="text" value={exp.city} onChange={e => updateWorkExp(idx, 'city', e.target.value)} placeholder="Ex: Bangalore" className={inputCls} /></div>
+                  <div><label className={labelCls}>▲ Company</label><input type="text" value={exp.company} onChange={e => updateWorkExp(idx, 'company', e.target.value)} placeholder="Ex: Razorpay" className={inputCls} /></div>
+                  <div><label className={labelCls}>▲ Role</label><input type="text" value={exp.role} onChange={e => updateWorkExp(idx, 'role', e.target.value)} placeholder="Ex: Software Intern" className={inputCls} /></div>
+                  <div><label className={labelCls}>▲ Start Year</label><select value={exp.startYear} onChange={e => updateWorkExp(idx, 'startYear', e.target.value)} className={inputCls}><option value="">Select year</option>{yearOptions.map(y => <option key={y} value={y}>{y}</option>)}</select></div>
+                  <div><label className={labelCls}>▲ End Year</label><select value={exp.endYear} onChange={e => updateWorkExp(idx, 'endYear', e.target.value)} className={inputCls}><option value="">Select year</option>{yearOptions.map(y => <option key={y} value={y}>{y}</option>)}</select></div>
+                  <div><label className={labelCls}>▲ City</label><input type="text" value={exp.city} onChange={e => updateWorkExp(idx, 'city', e.target.value)} placeholder="Ex: Bangalore" className={inputCls} /></div>
                 </div>
                 <div className="mt-3">
-                  <label className={labelCls}>Description</label>
+                  <label className={labelCls}>▲ Description</label>
                   <textarea value={exp.description} rows={3} onChange={e => updateWorkExp(idx, 'description', e.target.value)}
                     placeholder="Ex: Built REST APIs for payment gateway processing 10k+ transactions/day..." className={inputCls + ' resize-none'} />
                 </div>
               </div>
             ))}
-            <button onClick={addWorkExp} className="flex items-center gap-1.5 text-sm transition-colors" style={{ color: 'var(--text-dim)' }}><Plus className="w-4 h-4" /> Add work experience</button>
+            <button onClick={addWorkExp} className="hunt-mono flex items-center gap-1.5 transition-colors"
+              style={{ color: 'var(--text-dim)', fontSize: 11, letterSpacing: '0.08em', textTransform: 'uppercase' }}>
+              <Plus className="w-4 h-4" /> Add work experience
+            </button>
           </div>
         </div>
       </div>
@@ -883,14 +996,14 @@ export default function StudentOnboarding() {
         sub="What kind of roles and setup works best for you?" />
       <div className="space-y-6">
         <div>
-          <label className={labelCls}>Preferred roles</label>
+          <label className={labelCls}>▲ Preferred roles</label>
           <div className="grid grid-cols-2 gap-2">
             {ROLE_OPTIONS.map(role => (
               <button key={role} onClick={() => toggleRole(role)}
-                className="px-4 py-3 rounded-lg text-sm text-left transition-all border"
+                className="px-4 py-3 text-sm text-left transition-all border"
                 style={formData.preferredRoles.includes(role)
-                  ? { background: 'var(--green-tint)', borderColor: 'var(--green)', color: 'var(--green-text)', fontWeight: 500 }
-                  : { background: 'transparent', borderColor: 'var(--border)', color: 'var(--text-mid)' }}>
+                  ? { background: 'var(--blue-tint)', borderColor: 'var(--blue)', color: 'var(--blue-deep)', fontWeight: 500 }
+                  : { background: 'transparent', borderColor: 'var(--border-mid)', color: 'var(--text-mid)' }}>
                 {role}
               </button>
             ))}
@@ -898,7 +1011,7 @@ export default function StudentOnboarding() {
         </div>
         <div className="grid md:grid-cols-2 gap-4">
           <div>
-            <label className={labelCls}>Availability</label>
+            <label className={labelCls}>▲ Availability</label>
             <select value={formData.availability} onChange={e => hi('availability', e.target.value)} className={inputCls}>
               <option value="Immediate">Immediate</option>
               <option value="After exams">After exams</option>
@@ -906,7 +1019,7 @@ export default function StudentOnboarding() {
             </select>
           </div>
           <div>
-            <label className={labelCls}>Work preference</label>
+            <label className={labelCls}>▲ Work preference</label>
             <select value={formData.workPreference} onChange={e => hi('workPreference', e.target.value)} className={inputCls}>
               <option value="remote">Remote</option>
               <option value="onsite">On-site</option>
@@ -916,12 +1029,12 @@ export default function StudentOnboarding() {
           </div>
         </div>
         <div>
-          <label className={labelCls}>Resume</label>
+          <label className={labelCls}>▲ Resume</label>
           <p className="text-sm mb-3" style={{ color: 'var(--text-mid)' }}>Autofill your profile in seconds by uploading your resume</p>
-          <div className="inline-flex items-center gap-2 px-3 py-2 rounded-full border mb-4 text-xs"
-            style={{ borderColor: 'var(--green)', background: 'var(--green-tint)', color: 'var(--green-text)' }}>
-            <span>💡</span>
-            <span>Tip: Hiring managers are more likely to reach out when they see a resume attached</span>
+          <div className="hunt-mono inline-flex items-center gap-2 px-3 py-2 border mb-4"
+            style={{ borderColor: 'var(--blue)', background: 'var(--blue-tint)', color: 'var(--blue-deep)', fontSize: 10.5, letterSpacing: '0.06em', textTransform: 'uppercase' }}>
+            <span>▲</span>
+            <span>Tip: Hiring managers reach out more when they see a resume attached</span>
           </div>
           {!formData.resume ? (
             <div
@@ -929,43 +1042,45 @@ export default function StudentOnboarding() {
               onDragOver={e => { e.preventDefault(); setDragOver(true); }}
               onDragLeave={() => setDragOver(false)}
               onClick={() => fileInputRef.current?.click()}
-              className="cursor-pointer rounded-xl border-2 border-dashed flex flex-col items-center justify-center py-12 px-6 text-center transition-colors duration-150"
-              style={{ borderColor: dragOver ? 'var(--green)' : 'var(--border-mid)', background: dragOver ? 'var(--green-tint)' : 'var(--bg-subtle)' }}>
-              <div className="w-14 h-14 rounded-full flex items-center justify-center mb-4"
-                style={{ background: 'var(--bg-card)', border: '1px solid var(--border)' }}>
-                <Upload className="w-6 h-6" style={{ color: 'var(--text-dim)' }} />
+              className="cursor-pointer border-2 border-dashed flex flex-col items-center justify-center py-12 px-6 text-center transition-colors duration-150"
+              style={{ borderColor: dragOver ? 'var(--blue)' : 'var(--border-mid)', background: dragOver ? 'var(--blue-tint)' : 'var(--bg-subtle)' }}>
+              <div className="w-14 h-14 flex items-center justify-center mb-4"
+                style={{ background: 'var(--ink)', color: 'var(--cream)' }}>
+                <Upload className="w-6 h-6" />
               </div>
               <p className="text-sm font-medium mb-1" style={{ color: 'var(--text)' }}>Drop your resume here</p>
               <p className="text-sm" style={{ color: 'var(--text-mid)' }}>
-                or <span style={{ color: 'var(--green)', textDecoration: 'underline' }}>browse files</span> on your computer
+                or <span style={{ color: 'var(--blue)', textDecoration: 'underline' }}>browse files</span> on your computer
               </p>
-              <p className="text-xs mt-2" style={{ color: 'var(--text-dim)' }}>Supports PDF up to 3MB</p>
+              <p className="hunt-mono text-xs mt-2" style={{ color: 'var(--text-dim)', letterSpacing: '0.06em' }}>SUPPORTS PDF UP TO 3MB</p>
               <input ref={fileInputRef} type="file" accept=".pdf" className="sr-only"
                 onChange={e => { if (e.target.files?.[0]) hi('resume', e.target.files[0]); }} />
             </div>
           ) : (
-            <div className="flex items-center gap-3 px-4 py-3 rounded-xl border"
-              style={{ borderColor: 'var(--green)', background: 'var(--green-tint)' }}>
-              <CheckCircle2 className="w-5 h-5 flex-shrink-0" style={{ color: 'var(--green)' }} />
+            <div className="flex items-center gap-3 px-4 py-3 border"
+              style={{ borderColor: 'var(--blue)', background: 'var(--blue-tint)' }}>
+              <CheckCircle2 className="w-5 h-5 flex-shrink-0" style={{ color: 'var(--blue)' }} />
               <span className="text-sm flex-1" style={{ color: 'var(--text)' }}>{formData.resume.name}</span>
               <button onClick={() => hi('resume', null)} style={{ color: 'var(--text-dim)' }}><X className="w-4 h-4" /></button>
             </div>
           )}
           <label className="flex items-center gap-2 mt-3 cursor-pointer">
-            <input type="checkbox" checked={formData.noResume} onChange={e => hi('noResume', e.target.checked)} className="accent-[var(--green)]" />
+            <input type="checkbox" checked={formData.noResume} onChange={e => hi('noResume', e.target.checked)} style={{ accentColor: 'var(--blue)' }} />
             <span className="text-sm" style={{ color: 'var(--text-mid)' }}>I don't have a resume</span>
           </label>
         </div>
-        <div className="p-4 rounded-lg border" style={{ borderColor: 'var(--border)', background: 'var(--bg-subtle)' }}>
+        <div className="p-4 border" style={{ borderColor: 'var(--border-mid)', background: 'var(--bg-subtle)' }}>
           <div className="flex items-center justify-between mb-3">
-            <span className="text-sm font-medium" style={{ color: 'var(--text)' }}>Profile completeness</span>
-            <span className="text-2xl" style={{ fontFamily: "'Editorial New', Georgia, serif", color: 'var(--green)' }}>{completeness}%</span>
+            <span className="hunt-mono" style={{ fontSize: 11, fontWeight: 600, letterSpacing: '0.1em', textTransform: 'uppercase', color: 'var(--text)' }}>
+              ▲ Profile completeness
+            </span>
+            <span className="hunt-serif" style={{ fontSize: 32, lineHeight: 1, color: 'var(--blue)' }}>{completeness}<span style={{ fontSize: 16 }}>%</span></span>
           </div>
-          <div className="h-1.5 rounded-full overflow-hidden" style={{ background: 'var(--border)' }}>
-            <div className="h-full rounded-full transition-all duration-500" style={{ width: `${completeness}%`, background: 'var(--green)' }} />
+          <div style={{ height: '4px', background: 'var(--border-mid)', overflow: 'hidden' }}>
+            <div style={{ height: '100%', width: `${completeness}%`, background: 'var(--blue)', transition: 'width 0.5s' }} />
           </div>
-          <p className="text-xs mt-2" style={{ color: 'var(--text-dim)' }}>
-            {completeness >= 80 ? 'Ready to start swiping — strong profile.' : 'Add more to improve your match scores.'}
+          <p className="hunt-mono text-xs mt-2" style={{ color: 'var(--text-dim)', letterSpacing: '0.04em', textTransform: 'uppercase' }}>
+            {completeness >= 80 ? '▲ ready to start swiping — strong profile' : '▲ add more to improve match scores'}
           </p>
         </div>
       </div>
@@ -976,22 +1091,27 @@ export default function StudentOnboarding() {
   const CurrentStepComponent = stepComponents[currentStep - 1];
 
   return (
-    <div style={{ background: 'var(--bg)', color: 'var(--text)', fontFamily: "'DM Sans', system-ui, sans-serif", minHeight: '100vh' }}>
+    <div className="hunt-bitmap-bg" style={{ background: 'var(--bg)', color: 'var(--text)', fontFamily: "'Inter', system-ui, sans-serif", minHeight: '100vh' }}>
 
-      {/* Nav */}
+      {/* Nav — brutalist */}
       <nav className="flex items-center justify-between px-6 md:px-12 py-4"
-        style={{ position: 'sticky', top: 0, zIndex: 50, borderBottom: '1px solid var(--border)', background: 'var(--bg)' }}>
-        <span className="text-base font-medium" style={{ letterSpacing: '0.12em' }}>HUNT</span>
-        <span className="text-xs tracking-widest uppercase" style={{ color: 'var(--text-dim)' }}>Build your profile</span>
-        <button onClick={toggleTheme} className="w-9 h-9 rounded-full flex items-center justify-center border transition-colors"
-          style={{ border: '1px solid var(--border)', background: 'var(--bg-subtle)', color: 'var(--text-mid)' }}>
+        style={{ position: 'sticky', top: 0, zIndex: 50, borderBottom: '1px solid var(--border-mid)', background: 'var(--bg)' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+          <PixelMark size={18} />
+          <span className="hunt-mono" style={{ fontSize: 14, fontWeight: 600, letterSpacing: '0.18em', color: 'var(--ink)' }}>HUNT</span>
+        </div>
+        <span className="hunt-mono" style={{ fontSize: 10, letterSpacing: '0.14em', textTransform: 'uppercase', color: 'var(--text-dim)' }}>
+          ▲ Build your profile
+        </span>
+        <button onClick={toggleTheme} className="w-9 h-9 flex items-center justify-center border transition-colors"
+          style={{ border: '1px solid var(--border-mid)', background: 'var(--bg-subtle)', color: 'var(--text-mid)' }}>
           {theme === 'light' ? <Moon className="w-4 h-4" /> : <Sun className="w-4 h-4" />}
         </button>
       </nav>
 
-      {/* Progress bar — new design, sticky below nav */}
+      {/* Progress bar — sticky below nav */}
       <div className="px-6 md:px-12 py-4"
-        style={{ position: 'sticky', top: '57px', zIndex: 40, background: 'var(--bg)' }}>
+        style={{ position: 'sticky', top: '57px', zIndex: 40, background: 'var(--bg)', borderBottom: '1px solid var(--border)' }}>
         <div className="max-w-2xl mx-auto">
           <StepProgress currentStep={currentStep} totalSteps={STEPS.length} steps={STEPS} />
         </div>
@@ -999,27 +1119,27 @@ export default function StudentOnboarding() {
 
       {/* Content */}
       <div className="max-w-2xl mx-auto px-6 py-10 pb-20">
-        <div className="rounded-xl border p-6 md:p-10 mb-8"
-          style={{ background: 'var(--bg-card)', borderColor: 'var(--border)' }}>
+        <div className="border p-6 md:p-10 mb-8"
+          style={{ background: 'var(--bg-card)', borderColor: 'var(--border-mid)' }}>
           <CurrentStepComponent />
         </div>
         <div className="flex items-center justify-between">
           <button onClick={handleBack} disabled={currentStep === 1}
-            className="px-6 py-3 text-sm font-medium rounded-lg border transition-colors disabled:opacity-30"
-            style={{ borderColor: 'var(--border)', color: 'var(--text-mid)', background: 'transparent' }}>
+            className="hunt-mono px-6 py-3 border transition-colors disabled:opacity-30"
+            style={{ borderColor: 'var(--border-mid)', color: 'var(--text-mid)', background: 'transparent', fontSize: 11, letterSpacing: '0.1em', textTransform: 'uppercase', fontWeight: 500 }}>
             Back
           </button>
-          <span className="text-xs" style={{ color: 'var(--text-dim)' }}>{currentStep} / {STEPS.length}</span>
+          <span className="hunt-mono" style={{ fontSize: 10, letterSpacing: '0.08em', color: 'var(--text-dim)' }}>{currentStep} / {STEPS.length}</span>
           {currentStep < STEPS.length ? (
             <button onClick={handleNext}
-              className="px-6 py-3 text-sm font-medium rounded-lg flex items-center gap-2 transition-opacity hover:opacity-80"
-              style={{ background: 'var(--text)', color: 'var(--bg)' }}>
+              className="hunt-mono hunt-btn-primary px-6 py-3 flex items-center gap-2"
+              style={{ background: 'var(--blue)', color: '#fff', border: '1px solid var(--blue)', fontSize: 11, letterSpacing: '0.1em', textTransform: 'uppercase', fontWeight: 600, cursor: 'pointer' }}>
               Continue <ArrowRight className="w-4 h-4" />
             </button>
           ) : (
             <button onClick={handleSubmit} disabled={isSubmitting}
-              className="px-6 py-3 text-sm font-medium rounded-lg flex items-center gap-2 transition-opacity hover:opacity-80 disabled:opacity-40"
-              style={{ background: 'var(--green)', color: '#fff' }}>
+              className="hunt-mono hunt-btn-primary px-6 py-3 flex items-center gap-2 disabled:opacity-40"
+              style={{ background: 'var(--blue)', color: '#fff', border: '1px solid var(--blue)', fontSize: 11, letterSpacing: '0.1em', textTransform: 'uppercase', fontWeight: 600, cursor: isSubmitting ? 'wait' : 'pointer' }}>
               {isSubmitting ? <><Loader className="w-4 h-4 animate-spin" /> Creating…</> : <><CheckCircle2 className="w-4 h-4" /> Complete profile</>}
             </button>
           )}
@@ -1032,12 +1152,11 @@ export default function StudentOnboarding() {
 function StepHeader({ label, title, sub }) {
   return (
     <div className="mb-8">
-      <p className="text-xs font-medium tracking-widest uppercase mb-4" style={{ color: 'var(--text-dim)' }}>{label}</p>
-      <h2 className="text-4xl md:text-5xl font-normal leading-none mb-4 tracking-tight"
-        style={{ fontFamily: "'Editorial New', Georgia, serif", color: 'var(--text)' }}>
+      <p className="hunt-kicker mb-4" style={{ color: 'var(--blue)' }}>▲ {label}</p>
+      <h2 className="hunt-serif" style={{ fontSize: 'clamp(34px, 5vw, 48px)', color: 'var(--text)', lineHeight: 1.05, marginBottom: 14 }}>
         {title}
       </h2>
-      <p className="text-sm font-light leading-relaxed" style={{ color: 'var(--text-mid)', maxWidth: '380px' }}>{sub}</p>
+      <p className="text-sm leading-relaxed" style={{ color: 'var(--text-mid)', maxWidth: '420px' }}>{sub}</p>
     </div>
   );
 }
