@@ -3,7 +3,7 @@
 import React from 'react';
 import { Bookmark, Briefcase, MapPin, Clock } from 'lucide-react';
 
-export function SwipeView({ jobs, studentProfile, weeklyApplications, onApply, applying, canApply, selectedJob, onJobClick, savedJobs, onSave }) {
+export function SwipeView({ jobs, studentProfile, weeklyApplications, onApply, applying, canApply, selectedJob, onJobClick, isJobSaved, onSave }) {
 
   const scoreColor = s => (s >= 75 ? 'var(--blue)' : s >= 50 ? 'var(--amber)' : 'var(--red)');
   const compColor  = c => (c === 'High' ? 'var(--red)' : c === 'Medium' ? 'var(--amber)' : 'var(--blue)');
@@ -45,7 +45,7 @@ export function SwipeView({ jobs, studentProfile, weeklyApplications, onApply, a
       {jobs.map(job => {
         const matchData = job._match;
         const isSelected = selectedJob?.id === job.id;
-        const isSaved = savedJobs?.some(j => j.id === job.id);
+        const isSaved = isJobSaved?.(job.id);
         const logoGlyph = (job.company || '?').slice(0, 1).toUpperCase();
 
         return (
