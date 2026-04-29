@@ -6,6 +6,7 @@ export function SwipeView({ jobs, studentProfile, weeklyApplications, onApply, a
 
   const scoreColor = s => (s >= 75 ? 'var(--blue)' : s >= 50 ? 'var(--amber)' : 'var(--red)');
   const compColor  = c => (c === 'High' ? 'var(--red)' : c === 'Medium' ? 'var(--amber)' : 'var(--blue)');
+  const panelOpen  = !!selectedJob;
 
   if (!jobs || jobs.length === 0) {
     return (
@@ -22,7 +23,22 @@ export function SwipeView({ jobs, studentProfile, weeklyApplications, onApply, a
   }
 
   return (
-    <div>
+    <div style={{ overflowX: 'auto' }}>
+      {/* Header row */}
+      <div style={{
+        display: 'grid',
+        gridTemplateColumns: '48px minmax(160px,1fr) 120px 100px 80px 56px 32px',
+        gap: 12,
+        padding: '6px 24px 6px',
+        borderBottom: '1px solid var(--border-mid)',
+      }}>
+        {['', 'Role', 'Location', 'Stipend', 'Duration', 'Match', ''].map((h, i) => (
+          <div key={i} className="hunt-mono" style={{ fontSize: 8.5, letterSpacing: '0.12em', textTransform: 'uppercase', color: 'var(--text-faint)' }}>
+            {h}
+          </div>
+        ))}
+      </div>
+
       {jobs.map(job => {
         const matchData = job._match;
         const isSelected = selectedJob?.id === job.id;
@@ -35,66 +51,67 @@ export function SwipeView({ jobs, studentProfile, weeklyApplications, onApply, a
             onClick={() => onJobClick?.(job)}
             style={{
               display: 'grid',
-              gridTemplateColumns: '48px 1fr 140px 110px 90px 60px 32px',
+              gridTemplateColumns: '48px minmax(160px,1fr) 120px 100px 80px 56px 32px',
               alignItems: 'center',
-              gap: 16,
-              padding: '14px 24px',
+              gap: 12,
+              padding: '12px 24px',
               borderBottom: '1px solid var(--border)',
               borderLeft: isSelected ? '2px solid var(--blue)' : '2px solid transparent',
               background: isSelected ? 'var(--blue-tint)' : 'transparent',
               cursor: 'pointer',
               transition: 'background 0.1s',
+              minWidth: 520,
             }}
             onMouseEnter={e => { if (!isSelected) e.currentTarget.style.background = 'var(--bg-subtle)'; }}
-            onMouseLeave={e => { if (!isSelected) e.currentTarget.style.background = isSelected ? 'var(--blue-tint)' : 'transparent'; }}
+            onMouseLeave={e => { e.currentTarget.style.background = isSelected ? 'var(--blue-tint)' : 'transparent'; }}
           >
             {/* Logo */}
             <div style={{
-              width: 40, height: 40,
+              width: 36, height: 36,
               display: 'grid', placeItems: 'center',
               background: 'var(--ink)', color: 'var(--cream)',
               fontFamily: "'JetBrains Mono', monospace",
-              fontWeight: 600, fontSize: 15,
+              fontWeight: 600, fontSize: 14,
               position: 'relative', flexShrink: 0,
             }}>
               {logoGlyph}
-              <div style={{ position: 'absolute', bottom: -1, right: -1, width: 5, height: 5, background: 'var(--blue)' }} />
+              <div style={{ position: 'absolute', bottom: -1, right: -1, width: 4, height: 4, background: 'var(--blue)' }} />
             </div>
 
             {/* Company + Role */}
             <div style={{ minWidth: 0 }}>
-              <div className="hunt-kicker" style={{ fontSize: 9, color: 'var(--text-dim)', marginBottom: 3 }}>
+              <div className="hunt-kicker" style={{ fontSize: 8.5, color: 'var(--text-dim)', marginBottom: 3, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
                 {job.company}
               </div>
-              <div className="hunt-serif" style={{ fontSize: 15, color: 'var(--text)', lineHeight: 1.2, overflow: 'hidden', whiteSpace: 'nowrap', textOverflow: 'ellipsis' }}>
+              <div className="hunt-serif" style={{ fontSize: 14, color: 'var(--text)', lineHeight: 1.2, overflow: 'hidden', whiteSpace: 'nowrap', textOverflow: 'ellipsis' }}>
                 {job.role}
               </div>
             </div>
 
             {/* Location */}
-            <div className="hunt-mono" style={{ fontSize: 11, color: 'var(--text-mid)', letterSpacing: '0.02em' }}>
+            <div className="hunt-mono" style={{ fontSize: 10.5, color: 'var(--text-mid)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
               {job.location || '—'}
             </div>
 
             {/* Stipend */}
-            <div className="hunt-mono" style={{ fontSize: 11, color: 'var(--text-mid)', letterSpacing: '0.02em' }}>
+            <div className="hunt-mono" style={{ fontSize: 10.5, color: 'var(--text-mid)', whiteSpace: 'nowrap' }}>
               {job.stipend || '—'}
             </div>
 
             {/* Duration */}
-            <div className="hunt-mono" style={{ fontSize: 11, color: 'var(--text-dim)', letterSpacing: '0.02em' }}>
+            <div className="hunt-mono" style={{ fontSize: 10.5, color: 'var(--text-dim)', whiteSpace: 'nowrap' }}>
               {job.duration || '—'}
             </div>
 
             {/* Match % */}
             {matchData ? (
               <div style={{ textAlign: 'right' }}>
-                <div className="hunt-serif" style={{ fontSize: 20, lineHeight: 1, color: scoreColor(matchData.score), fontWeight: 700 }}>
-                  {matchData.score}<span style={{ fontSize: 11 }}>%</span>
+                <div className="hunt-serif" style={{ fontSize: 18, lineHeight: 1, color: scoreColor(matchData.score), fontWeight: 700, whiteSpace: 'nowrap' }}>
+                  {matchData.score}<span style={{ fontSize: 10 }}>%</span>
                 </div>
                 {matchData.competitionLevel && (
-                  <div className="hunt-mono" style={{ fontSize: 8, letterSpacing: '0.08em', textTransform: 'uppercase', color: compColor(matchData.competitionLevel), marginTop: 2 }}>
-                    {matchData.competitionLevel} comp
+                  <div className="hunt-mono" style={{ fontSize: 7.5, letterSpacing: '0.08em', textTransform: 'uppercase', color: compColor(matchData.competitionLevel), marginTop: 2, whiteSpace: 'nowrap' }}>
+                    {matchData.competitionLevel === 'Low' ? 'Low comp' : matchData.competitionLevel === 'Medium' ? 'Med comp' : 'High comp'}
                   </div>
                 )}
               </div>
@@ -111,7 +128,7 @@ export function SwipeView({ jobs, studentProfile, weeklyApplications, onApply, a
         );
       })}
 
-      <div style={{ padding: '20px 24px', borderTop: '1px solid var(--border)' }}>
+      <div style={{ padding: '16px 24px', borderTop: '1px solid var(--border)' }}>
         <span className="hunt-mono" style={{ fontSize: 9.5, color: 'var(--text-faint)', letterSpacing: '0.1em', textTransform: 'uppercase' }}>
           end of feed · new drops mon + thu @ 09:00 IST
         </span>
