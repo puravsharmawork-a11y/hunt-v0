@@ -116,6 +116,22 @@ function injectGlobals() {
 
     @keyframes hunt-blink { 0%, 70% { opacity: 1; } 71%, 100% { opacity: 0.1; } }
     .hunt-blink { animation: hunt-blink 1.2s steps(2, end) infinite; }
+
+    /* Marquee track for the brutalist signal band under nav */
+    @keyframes hunt-marquee { from { transform: translateX(0); } to { transform: translateX(-50%); } }
+    .hunt-marquee-track { display: flex; gap: 36px; animation: hunt-marquee 38s linear infinite; width: max-content; }
+    .hunt-marquee-track > span { display: flex; align-items: center; gap: 16px; }
+
+    /* Pixel corner ticks for cards */
+    .hunt-card-pixels { position: relative; }
+    .hunt-card-pixels::before, .hunt-card-pixels::after,
+    .hunt-card-pixels > .hunt-pixel-bl, .hunt-card-pixels > .hunt-pixel-br {
+      content: ''; position: absolute; width: 6px; height: 6px; background: var(--ink); z-index: 2;
+    }
+    .hunt-card-pixels::before { top: -1px; left: -1px; }
+    .hunt-card-pixels::after { top: -1px; right: -1px; }
+    .hunt-card-pixels > .hunt-pixel-bl { bottom: -1px; left: -1px; }
+    .hunt-card-pixels > .hunt-pixel-br { bottom: -1px; right: -1px; }
   `;
   document.head.appendChild(tag);
   _globalsInjected = true;
@@ -421,6 +437,7 @@ export default function StudentOnboarding() {
   const [step2Attempted, setStep2Attempted] = useState(false);
   const [workAuthError, setWorkAuthError] = useState(false);
   const [dragOver, setDragOver] = useState(false);
+  const [showSubmitted, setShowSubmitted] = useState(false);
   const fileInputRef = useRef(null);
 
   const [formData, setFormData] = useState({
@@ -543,10 +560,17 @@ export default function StudentOnboarding() {
         work_auth: { dob: formData.dob, state: formData.state, city: formData.city, pincode: formData.pincode, confirmed: formData.confirmWorkAuth },
         resume_url: resumeUrl, profile_completeness: calculateCompleteness(),
       });
-      const pendingSlug = localStorage.getItem('apply_after_login');
-      if (pendingSlug) { localStorage.removeItem('apply_after_login'); navigate(`/apply/${pendingSlug}`); } else navigate('/swipe');
+      // Show the brutalist completion screen — user clicks "Start swiping" to navigate
+      setShowSubmitted(true);
     } catch (e) { alert('Failed: ' + e.message); }
     finally { setIsSubmitting(false); }
+  };
+
+  // Navigate away once the user clicks the CTA on the completion screen
+  const handleStartSwiping = () => {
+    const pendingSlug = localStorage.getItem('apply_after_login');
+    if (pendingSlug) { localStorage.removeItem('apply_after_login'); navigate(`/apply/${pendingSlug}`); }
+    else navigate('/swipe');
   };
 
   const completeness = calculateCompleteness();
@@ -1090,6 +1114,20 @@ export default function StudentOnboarding() {
   const stepComponents = [Step1, Step2, Step3, Step4, Step5, Step6];
   const CurrentStepComponent = stepComponents[currentStep - 1];
 
+  // ── Once submitted, show the brutalist completion screen ──
+  if (showSubmitted) {
+    return (
+      <SubmittedView
+        formData={formData}
+        completeness={completeness}
+        theme={theme}
+        toggleTheme={toggleTheme}
+        onStartSwiping={handleStartSwiping}
+        onEditProfile={() => setShowSubmitted(false)}
+      />
+    );
+  }
+
   return (
     <div className="hunt-bitmap-bg" style={{ background: 'var(--bg)', color: 'var(--text)', fontFamily: "'Inter', system-ui, sans-serif", minHeight: '100vh' }}>
 
@@ -1112,39 +1150,90 @@ export default function StudentOnboarding() {
       {/* Progress bar — sticky below nav */}
       <div className="px-6 md:px-12 py-4"
         style={{ position: 'sticky', top: '57px', zIndex: 40, background: 'var(--bg)', borderBottom: '1px solid var(--border)' }}>
-        <div className="max-w-2xl mx-auto">
+        <div style={{ maxWidth: 1100, margin: '0 auto' }}>
           <StepProgress currentStep={currentStep} totalSteps={STEPS.length} steps={STEPS} />
         </div>
       </div>
 
-      {/* Content */}
-      <div className="max-w-2xl mx-auto px-6 py-10 pb-20">
-        <div className="border p-6 md:p-10 mb-8"
-          style={{ background: 'var(--bg-card)', borderColor: 'var(--border-mid)' }}>
-          <CurrentStepComponent />
-        </div>
-        <div className="flex items-center justify-between">
-          <button onClick={handleBack} disabled={currentStep === 1}
-            className="hunt-mono px-6 py-3 border transition-colors disabled:opacity-30"
-            style={{ borderColor: 'var(--border-mid)', color: 'var(--text-mid)', background: 'transparent', fontSize: 11, letterSpacing: '0.1em', textTransform: 'uppercase', fontWeight: 500 }}>
-            Back
-          </button>
-          <span className="hunt-mono" style={{ fontSize: 10, letterSpacing: '0.08em', color: 'var(--text-dim)' }}>{currentStep} / {STEPS.length}</span>
-          {currentStep < STEPS.length ? (
-            <button onClick={handleNext}
-              className="hunt-mono hunt-btn-primary px-6 py-3 flex items-center gap-2"
-              style={{ background: 'var(--blue)', color: '#fff', border: '1px solid var(--blue)', fontSize: 11, letterSpacing: '0.1em', textTransform: 'uppercase', fontWeight: 600, cursor: 'pointer' }}>
-              Continue <ArrowRight className="w-4 h-4" />
-            </button>
-          ) : (
-            <button onClick={handleSubmit} disabled={isSubmitting}
-              className="hunt-mono hunt-btn-primary px-6 py-3 flex items-center gap-2 disabled:opacity-40"
-              style={{ background: 'var(--blue)', color: '#fff', border: '1px solid var(--blue)', fontSize: 11, letterSpacing: '0.1em', textTransform: 'uppercase', fontWeight: 600, cursor: isSubmitting ? 'wait' : 'pointer' }}>
-              {isSubmitting ? <><Loader className="w-4 h-4 animate-spin" /> Creating…</> : <><CheckCircle2 className="w-4 h-4" /> Complete profile</>}
-            </button>
-          )}
+      {/* Brutalist marquee band */}
+      <div style={{
+        background: 'var(--ink)', color: 'var(--cream)',
+        padding: '8px 0', overflow: 'hidden',
+        borderBottom: '1px solid var(--border-mid)',
+      }}>
+        <div className="hunt-marquee-track hunt-mono" style={{
+          fontSize: 10.5, letterSpacing: '0.18em', textTransform: 'uppercase',
+        }}>
+          {Array(6).fill(0).map((_, i) => (
+            <span key={i}>
+              <span>Building HUNT profile</span>
+              <span style={{ color: 'var(--blue)' }}>●</span>
+              <span>Projects &gt; Pedigree</span>
+              <span style={{ color: 'var(--blue)' }}>●</span>
+              <span>Show don't tell</span>
+              <span style={{ color: 'var(--blue)' }}>●</span>
+              <span>Evidence over résumés</span>
+              <span style={{ color: 'var(--blue)' }}>●</span>
+            </span>
+          ))}
         </div>
       </div>
+
+      {/* Body — two-column layout: form + sticky sidebar */}
+      <div style={{
+        maxWidth: 1100, margin: '0 auto',
+        padding: '40px 32px 80px',
+        display: 'grid',
+        gridTemplateColumns: 'minmax(0,1fr) 280px',
+        gap: 32,
+      }} className="hunt-onb-body">
+        {/* Form column */}
+        <div>
+          <div className="hunt-card-pixels border" style={{
+            background: 'var(--bg-card)', borderColor: 'var(--border-mid)',
+            padding: '36px 40px',
+          }}>
+            <span className="hunt-pixel-bl" />
+            <span className="hunt-pixel-br" />
+            <CurrentStepComponent />
+          </div>
+          {/* Nav controls */}
+          <div className="flex items-center justify-between" style={{ marginTop: 24, gap: 12 }}>
+            <button onClick={handleBack} disabled={currentStep === 1}
+              className="hunt-mono px-6 py-3 border transition-colors disabled:opacity-30"
+              style={{ borderColor: 'var(--border-mid)', color: 'var(--text-mid)', background: 'transparent', fontSize: 11, letterSpacing: '0.1em', textTransform: 'uppercase', fontWeight: 500 }}>
+              ← Back
+            </button>
+            <span className="hunt-mono" style={{ fontSize: 10, letterSpacing: '0.08em', color: 'var(--text-dim)', textTransform: 'uppercase' }}>
+              {String(currentStep).padStart(2, '0')} / {String(STEPS.length).padStart(2, '0')} — {STEPS[currentStep - 1].label}
+            </span>
+            {currentStep < STEPS.length ? (
+              <button onClick={handleNext}
+                className="hunt-mono hunt-btn-primary px-6 py-3 flex items-center gap-2"
+                style={{ background: 'var(--blue)', color: '#fff', border: '1px solid var(--blue)', fontSize: 11, letterSpacing: '0.1em', textTransform: 'uppercase', fontWeight: 600, cursor: 'pointer' }}>
+                Continue <ArrowRight className="w-4 h-4" />
+              </button>
+            ) : (
+              <button onClick={handleSubmit} disabled={isSubmitting}
+                className="hunt-mono hunt-btn-primary px-6 py-3 flex items-center gap-2 disabled:opacity-40"
+                style={{ background: 'var(--blue)', color: '#fff', border: '1px solid var(--blue)', fontSize: 11, letterSpacing: '0.1em', textTransform: 'uppercase', fontWeight: 600, cursor: isSubmitting ? 'wait' : 'pointer' }}>
+                {isSubmitting ? <><Loader className="w-4 h-4 animate-spin" /> Creating…</> : <><CheckCircle2 className="w-4 h-4" /> Complete profile</>}
+              </button>
+            )}
+          </div>
+        </div>
+
+        {/* Side panel — Signal Strength + Recruiter View + meta */}
+        <SidePanel formData={formData} completeness={completeness} currentStep={currentStep} totalSteps={STEPS.length} />
+      </div>
+
+      {/* Mobile: hide sidebar */}
+      <style>{`
+        @media (max-width: 900px) {
+          .hunt-onb-body { grid-template-columns: 1fr !important; }
+          .hunt-onb-body aside { display: none !important; }
+        }
+      `}</style>
     </div>
   );
 }
@@ -1157,6 +1246,238 @@ function StepHeader({ label, title, sub }) {
         {title}
       </h2>
       <p className="text-sm leading-relaxed" style={{ color: 'var(--text-mid)', maxWidth: '420px' }}>{sub}</p>
+    </div>
+  );
+}
+
+// ─── Side panel: profile signal strength + live recruiter preview + meta ──────
+function SidePanel({ formData, completeness, currentStep, totalSteps }) {
+  const checklist = [
+    { label: 'Name',       done: !!formData.fullName },
+    { label: 'LinkedIn',   done: !!formData.linkedinUrl },
+    { label: 'GitHub',     done: !!formData.githubUrl },
+    { label: 'Skills ≥3',  done: formData.skills.length >= 3 },
+    { label: 'Project ≥1', done: formData.projects.length >= 1 },
+    { label: 'Roles',      done: formData.preferredRoles.length > 0 },
+    { label: 'Education',  done: !!formData.education[0]?.school },
+    { label: 'Resume',     done: !!formData.resume || formData.noResume },
+  ];
+  const topSkills = formData.skills.slice().sort((a, b) => b.level - a.level).slice(0, 4);
+
+  return (
+    <aside style={{
+      position: 'sticky', top: 180, alignSelf: 'flex-start',
+      display: 'grid', gap: 18,
+    }}>
+      {/* Signal Strength card */}
+      <div className="hunt-card-pixels border" style={{
+        background: 'var(--bg-card)', borderColor: 'var(--border-mid)',
+        padding: 16,
+      }}>
+        <span className="hunt-pixel-bl" />
+        <span className="hunt-pixel-br" />
+        <div style={{ display: 'flex', alignItems: 'baseline', justifyContent: 'space-between', marginBottom: 10 }}>
+          <span className="hunt-mono" style={{ fontSize: 10, fontWeight: 600, letterSpacing: '0.14em', textTransform: 'uppercase', color: 'var(--text)' }}>
+            Signal Strength
+          </span>
+          <span className="hunt-serif" style={{ fontSize: 24, color: 'var(--blue)', lineHeight: 1 }}>
+            {completeness}<span style={{ fontSize: 11, color: 'var(--text-dim)' }}>%</span>
+          </span>
+        </div>
+        <div style={{ height: 4, background: 'var(--border-mid)', marginBottom: 14, position: 'relative' }}>
+          <div style={{ position: 'absolute', inset: 0, width: `${completeness}%`, background: 'var(--blue)', transition: 'width 0.5s' }} />
+        </div>
+        <div style={{ display: 'grid', gap: 5 }}>
+          {checklist.map((c, i) => (
+            <div key={i} style={{
+              display: 'flex', alignItems: 'center', gap: 8,
+              fontSize: 11.5, color: c.done ? 'var(--text)' : 'var(--text-dim)',
+            }}>
+              <span style={{
+                width: 12, height: 12, border: '1px solid var(--border-mid)',
+                background: c.done ? 'var(--blue)' : 'transparent',
+                display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0,
+              }}>
+                {c.done && <CheckCircle2 style={{ width: 7, height: 7, color: '#fff', strokeWidth: 4 }} />}
+              </span>
+              <span style={{ flex: 1 }}>{c.label}</span>
+              {c.done && <span className="hunt-mono" style={{ fontSize: 9, color: 'var(--blue)', letterSpacing: '0.08em' }}>✓</span>}
+            </div>
+          ))}
+        </div>
+      </div>
+
+      {/* Recruiter View live preview */}
+      <div className="hunt-card-pixels border" style={{
+        background: 'var(--bg-card)', borderColor: 'var(--border-mid)',
+        padding: 16,
+      }}>
+        <span className="hunt-pixel-bl" />
+        <span className="hunt-pixel-br" />
+        <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 12 }}>
+          <span style={{ width: 6, height: 6, background: 'var(--ink)', display: 'inline-block' }} />
+          <span className="hunt-mono" style={{ fontSize: 10, fontWeight: 600, letterSpacing: '0.14em', textTransform: 'uppercase', color: 'var(--text)' }}>
+            Recruiter View
+          </span>
+        </div>
+        <div style={{ padding: 12, background: 'var(--bg-subtle)', border: '1px solid var(--border)' }}>
+          <div className="hunt-serif" style={{ fontSize: 18, marginBottom: 2, color: 'var(--text)' }}>
+            {formData.fullName || 'Your Name'}
+          </div>
+          <div className="hunt-mono" style={{
+            marginBottom: 10, fontSize: 9.5, letterSpacing: '0.1em',
+            textTransform: 'uppercase', color: 'var(--text-dim)',
+          }}>
+            {formData.city || '—'}{formData.state && `, ${formData.state}`}
+          </div>
+          <div style={{ display: 'flex', flexWrap: 'wrap', gap: 4, marginBottom: 10, minHeight: 22 }}>
+            {topSkills.length > 0 ? topSkills.map(s => (
+              <span key={s.id} className="hunt-mono" style={{
+                fontSize: 9, padding: '2px 6px',
+                background: 'var(--blue-tint)', color: 'var(--blue-deep)',
+                border: '1px solid var(--blue)',
+                letterSpacing: '0.04em', textTransform: 'uppercase',
+              }}>{s.name}</span>
+            )) : (
+              <span className="hunt-mono" style={{ fontSize: 9, color: 'var(--text-dim)', letterSpacing: '0.1em', textTransform: 'uppercase' }}>
+                Add skills to preview
+              </span>
+            )}
+          </div>
+          <div className="hunt-mono" style={{
+            fontSize: 10, color: 'var(--text-dim)',
+            display: 'flex', justifyContent: 'space-between',
+            paddingTop: 8, borderTop: '1px dashed var(--border-mid)',
+          }}>
+            <span>{formData.projects.length.toString().padStart(2, '0')} projects</span>
+            <span>{formData.skills.length.toString().padStart(2, '0')} skills</span>
+            <span>{formData.preferredRoles.length.toString().padStart(2, '0')} roles</span>
+          </div>
+        </div>
+      </div>
+
+      {/* Footer meta */}
+      <div className="hunt-mono" style={{
+        padding: '10px 0', fontSize: 10.5, color: 'var(--text-dim)', lineHeight: 1.6,
+      }}>
+        <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+          <span>Step</span><span>{String(currentStep).padStart(2, '0')}/{String(totalSteps).padStart(2, '0')}</span>
+        </div>
+        <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+          <span>Saved</span><span>Auto</span>
+        </div>
+        <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+          <span>Secure</span><span style={{ color: 'var(--blue)' }}>● TLS 1.3</span>
+        </div>
+      </div>
+    </aside>
+  );
+}
+
+// ─── Submitted view: brutalist completion screen ──────────────────────────────
+function SubmittedView({ formData, completeness, theme, toggleTheme, onStartSwiping, onEditProfile }) {
+  const firstName = formData.fullName?.split(' ')[0] || 'there';
+  return (
+    <div className="hunt-bitmap-bg" style={{
+      minHeight: '100vh', background: 'var(--bg)', color: 'var(--text)',
+      fontFamily: "'Inter', system-ui, sans-serif",
+      display: 'flex', alignItems: 'center', justifyContent: 'center',
+      padding: 32,
+    }}>
+      <div className="hunt-card-pixels border" style={{
+        background: 'var(--bg-card)', borderColor: 'var(--border-mid)',
+        padding: '56px 48px', maxWidth: 560, width: '100%',
+        textAlign: 'center',
+      }}>
+        <span className="hunt-pixel-bl" />
+        <span className="hunt-pixel-br" />
+
+        {/* Big blue checkbox with ink border */}
+        <div style={{ display: 'flex', justifyContent: 'center', marginBottom: 18 }}>
+          <div style={{
+            width: 60, height: 60,
+            border: '2px solid var(--ink)',
+            background: 'var(--blue)',
+            color: '#fff',
+            display: 'flex', alignItems: 'center', justifyContent: 'center',
+          }}>
+            <CheckCircle2 style={{ width: 28, height: 28, strokeWidth: 3 }} />
+          </div>
+        </div>
+
+        <p className="hunt-mono" style={{
+          fontSize: 11, fontWeight: 600, letterSpacing: '0.16em',
+          textTransform: 'uppercase', color: 'var(--text)', marginBottom: 14,
+        }}>
+          PROFILE — COMPLETE
+        </p>
+
+        <h1 className="hunt-serif" style={{
+          fontSize: 48, lineHeight: 1, marginBottom: 14,
+        }}>
+          Welcome, <em style={{ fontStyle: 'italic' }}>{firstName}.</em>
+        </h1>
+
+        <p style={{
+          fontSize: 14, color: 'var(--text-mid)',
+          marginBottom: 28, lineHeight: 1.55,
+        }}>
+          Your profile is live. Recruiters see {completeness}% signal strength.
+          Start swiping on roles that match your evidence.
+        </p>
+
+        <div style={{ display: 'flex', gap: 10, justifyContent: 'center', marginBottom: 24, flexWrap: 'wrap' }}>
+          <button onClick={onStartSwiping}
+            className="hunt-mono hunt-btn-primary px-6 py-3 flex items-center gap-2"
+            style={{
+              background: 'var(--blue)', color: '#fff',
+              border: '1px solid var(--blue)',
+              fontSize: 11, letterSpacing: '0.1em',
+              textTransform: 'uppercase', fontWeight: 600,
+              cursor: 'pointer',
+            }}>
+            Start swiping <ArrowRight className="w-4 h-4" />
+          </button>
+          <button onClick={onEditProfile}
+            className="hunt-mono px-6 py-3 border transition-colors"
+            style={{
+              borderColor: 'var(--border-mid)', color: 'var(--text-mid)',
+              background: 'transparent',
+              fontSize: 11, letterSpacing: '0.1em',
+              textTransform: 'uppercase', fontWeight: 500,
+              cursor: 'pointer',
+            }}>
+            Edit profile
+          </button>
+        </div>
+
+        {/* Stats row */}
+        <div style={{
+          paddingTop: 20, borderTop: '1px dashed var(--border-mid)',
+          display: 'flex', justifyContent: 'space-around',
+          fontFamily: "'JetBrains Mono', monospace", fontSize: 10.5,
+          color: 'var(--text-dim)', textTransform: 'uppercase', letterSpacing: '0.12em',
+        }}>
+          <div>
+            <div className="hunt-serif" style={{ fontSize: 24, color: 'var(--text)', lineHeight: 1, marginBottom: 4 }}>
+              {formData.skills.length}
+            </div>
+            Skills
+          </div>
+          <div>
+            <div className="hunt-serif" style={{ fontSize: 24, color: 'var(--text)', lineHeight: 1, marginBottom: 4 }}>
+              {formData.projects.length}
+            </div>
+            Projects
+          </div>
+          <div>
+            <div className="hunt-serif" style={{ fontSize: 24, color: 'var(--text)', lineHeight: 1, marginBottom: 4 }}>
+              {formData.preferredRoles.length}
+            </div>
+            Roles
+          </div>
+        </div>
+      </div>
     </div>
   );
 }
