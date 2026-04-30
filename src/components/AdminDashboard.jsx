@@ -947,15 +947,92 @@ function JobsTab({jobs:init,T,showToast}) {
   );
 }
 
-// ─── POST JOB FORM ────────────────────────────────────────────────────────────
-const LOGO_EMOJIS=['🚀','⚡','🎯','💡','🔥','🌊','🛠️','📊','🎨','🌱','⭐','🦾'];
+// ─── UPDATED PostJobForm for AdminDashboard.jsx ────────────────────────────
+// Drop this in to replace the existing PostJobForm function.
+// Adds: What You'll Do, Perks, and unlimited custom sections.
+// The submit handler passes these into the jobs.insert() call automatically.
+
 function PostJobForm({onSuccess,onCancel,T}) {
-  const [saving,setSaving]=useState(false);const [error,setError]=useState('');const [skillInput,setSkillInput]=useState('');const [niceInput,setNiceInput]=useState('');
-  const [form,setForm]=useState({logo:'🚀',company:'',role:'',description:'',stipend:'',duration:'',location:'',type:'Paid Internship',visibility:'private',required_skills:[],nice_to_have:[],max_applicants:50});
-  const set=k=>v=>setForm(f=>({...f,[k]:v}));
-  const addSkill=()=>{const n=skillInput.trim();if(!n||form.required_skills.find(s=>s.name.toLowerCase()===n.toLowerCase()))return;setForm(f=>({...f,required_skills:[...f.required_skills,{name:n,weight:0.25,level:3}]}));setSkillInput('');};
-  const addNice=()=>{const n=niceInput.trim();if(!n||form.nice_to_have.includes(n))return;setForm(f=>({...f,nice_to_have:[...f.nice_to_have,n]}));setNiceInput('');};
+  const [saving,setSaving]          = useState(false);
+  const [error,setError]            = useState('');
+  const [skillInput,setSkillInput]  = useState('');
+  const [niceInput,setNiceInput]    = useState('');
+  const [whatDoInput,setWhatDoInput]= useState('');
+  const [perkInput,setPerkInput]    = useState('');
+  const [newSecHeading,setNewSecHeading] = useState('');
+  const [newSecItemText,setNewSecItemText] = useState({}); // keyed by section index
+
+  const [form,setForm] = useState({
+    logo:'🚀', company:'', role:'', description:'',
+    stipend:'', duration:'', location:'',
+    type:'Paid Internship', visibility:'private',
+    required_skills:[], nice_to_have:[],
+    max_applicants:50,
+    whatYoullDo:[],
+    perks:[],
+    sections:[],  // [{heading:'', items:['',...]}]
+  });
+
+  const set = k => v => setForm(f=>({...f,[k]:v}));
+
+  // Required skills helpers
+  const addSkill=()=>{
+    const n=skillInput.trim();
+    if(!n||form.required_skills.find(s=>s.name.toLowerCase()===n.toLowerCase())) return;
+    setForm(f=>({...f,required_skills:[...f.required_skills,{name:n,weight:0.25,level:3}]}));
+    setSkillInput('');
+  };
+
+  // Nice to have helpers
+  const addNice=()=>{
+    const n=niceInput.trim();
+    if(!n||form.nice_to_have.includes(n)) return;
+    setForm(f=>({...f,nice_to_have:[...f.nice_to_have,n]}));
+    setNiceInput('');
+  };
+
+  // What you'll do helpers
+  const addWhatDo=()=>{
+    const n=whatDoInput.trim();
+    if(!n) return;
+    setForm(f=>({...f,whatYoullDo:[...f.whatYoullDo,n]}));
+    setWhatDoInput('');
+  };
+  const removeWhatDo=(i)=>setForm(f=>({...f,whatYoullDo:f.whatYoullDo.filter((_,idx)=>idx!==i)}));
+
+  // Perks helpers
+  const addPerk=()=>{
+    const n=perkInput.trim();
+    if(!n||form.perks.includes(n)) return;
+    setForm(f=>({...f,perks:[...f.perks,n]}));
+    setPerkInput('');
+  };
+  const removePerk=(i)=>setForm(f=>({...f,perks:f.perks.filter((_,idx)=>idx!==i)}));
+
+  // Custom sections helpers
+  const addSection=()=>{
+    const h=newSecHeading.trim();
+    if(!h) return;
+    setForm(f=>({...f,sections:[...f.sections,{heading:h,items:[]}]}));
+    setNewSecHeading('');
+  };
+  const removeSection=(si)=>setForm(f=>({...f,sections:f.sections.filter((_,i)=>i!==si)}));
+  const addSectionItem=(si)=>{
+    const text=(newSecItemText[si]||'').trim();
+    if(!text) return;
+    setForm(f=>({
+      ...f,
+      sections: f.sections.map((s,i)=> i===si ? {...s,items:[...s.items,text]} : s)
+    }));
+    setNewSecItemText(prev=>({...prev,[si]:''}));
+  };
+  const removeSectionItem=(si,ii)=>setForm(f=>({
+    ...f,
+    sections: f.sections.map((s,i)=> i===si ? {...s,items:s.items.filter((_,j)=>j!==ii)} : s)
+  }));
+
   const inp={width:'100%',padding:'9px 12px',borderRadius:8,border:`1px solid ${T.border}`,background:T.inputBg,color:T.text,fontSize:13,fontFamily:font,outline:'none',boxSizing:'border-box'};
+
   const submit=async()=>{
     if(!form.company.trim()||!form.role.trim()||!form.stipend.trim()||!form.location.trim()){setError('Fill in company, role, stipend and location.');return;}
     if(form.required_skills.length===0){setError('Add at least one required skill.');return;}
@@ -964,31 +1041,197 @@ function PostJobForm({onSuccess,onCancel,T}) {
       const total=form.required_skills.reduce((s,sk)=>s+sk.weight,0);
       const normSkills=form.required_skills.map(sk=>({...sk,weight:parseFloat((sk.weight/total).toFixed(3))}));
       const slug=`${form.company.toLowerCase().replace(/[^a-z0-9]+/g,'-')}-${form.role.toLowerCase().replace(/[^a-z0-9]+/g,'-')}-${Date.now()}`;
-      const {data,error:err}=await supabase.from('jobs').insert([{recruiter_id:ADMIN_RECRUITER_ID,company:form.company.trim(),logo:form.logo,role:form.role.trim(),description:form.description.trim(),stipend:form.stipend.trim(),duration:form.duration.trim(),location:form.location.trim(),type:form.type,visibility:form.visibility,share_slug:slug,required_skills:normSkills,nice_to_have:form.nice_to_have,max_applicants:form.max_applicants,current_applicants:0,is_active:true}]).select().single();
+      const {data,error:err}=await supabase.from('jobs').insert([{
+        recruiter_id:ADMIN_RECRUITER_ID,
+        company:form.company.trim(), logo:form.logo,
+        role:form.role.trim(), description:form.description.trim(),
+        stipend:form.stipend.trim(), duration:form.duration.trim(),
+        location:form.location.trim(), type:form.type,
+        visibility:form.visibility, share_slug:slug,
+        required_skills:normSkills, nice_to_have:form.nice_to_have,
+        max_applicants:form.max_applicants, current_applicants:0, is_active:true,
+        what_youll_do: form.whatYoullDo,
+        perks: form.perks,
+        sections: form.sections,
+      }]).select().single();
       if(err) throw err;
       onSuccess(data);
     } catch(e){setError('Failed: '+e.message);}
     finally{setSaving(false);}
   };
+
+  // Reusable list-item editor (shared by What You'll Do + custom section items)
+  function ListEditor({items,inputVal,setInputVal,onAdd,onRemove,placeholder,T}) {
+    return (
+      <div>
+        <div style={{display:'flex',gap:8,marginBottom:8}}>
+          <input style={{...inp,flex:1}} value={inputVal} onChange={e=>setInputVal(e.target.value)}
+            placeholder={placeholder}
+            onKeyDown={e=>e.key==='Enter'&&(e.preventDefault(),onAdd())}
+            onFocus={e=>e.target.style.borderColor=T.accent} onBlur={e=>e.target.style.borderColor=T.border}/>
+          <button onClick={onAdd} style={{padding:'9px 14px',borderRadius:8,border:'none',background:T.accent,color:'#fff',fontSize:12,fontWeight:500,cursor:'pointer',fontFamily:font,whiteSpace:'nowrap'}}>Add</button>
+        </div>
+        {items.length>0 && (
+          <div style={{display:'flex',flexDirection:'column',gap:4}}>
+            {items.map((item,i)=>(
+              <div key={i} style={{display:'flex',alignItems:'flex-start',gap:8,padding:'7px 10px',borderRadius:7,border:`1px solid ${T.border}`,background:T.surfaceAlt}}>
+                <div style={{width:5,height:5,background:T.muted,flexShrink:0,marginTop:5,borderRadius:1}}/>
+                <span style={{flex:1,fontSize:12,color:T.text,lineHeight:1.5}}>{item}</span>
+                <button onClick={()=>onRemove(i)} style={{background:'transparent',border:'none',cursor:'pointer',color:T.muted,display:'flex',padding:0,flexShrink:0}}>
+                  <X size={12}/>
+                </button>
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
+    );
+  }
+
   return (
     <div style={{background:T.surface,border:`1px solid ${T.border}`,borderRadius:12,overflow:'hidden',marginBottom:16}}>
       <div style={{padding:'12px 18px',borderBottom:`1px solid ${T.border}`,background:T.surfaceAlt,display:'flex',alignItems:'center',justifyContent:'space-between'}}>
-        <div><p style={{fontSize:10,color:T.accent,letterSpacing:'0.1em',textTransform:'uppercase',margin:0,fontWeight:500}}>New internship</p><p style={{fontSize:13,fontWeight:600,color:T.text,margin:'2px 0 0'}}>Post & get shareable link</p></div>
+        <div>
+          <p style={{fontSize:10,color:T.accent,letterSpacing:'0.1em',textTransform:'uppercase',margin:0,fontWeight:500}}>New internship</p>
+          <p style={{fontSize:13,fontWeight:600,color:T.text,margin:'2px 0 0'}}>Post & get shareable link</p>
+        </div>
         <button onClick={onCancel} style={{background:'transparent',border:'none',cursor:'pointer',color:T.muted}}><X size={16}/></button>
       </div>
+
       <div style={{padding:20,display:'flex',flexDirection:'column',gap:14}}>
-        <div><p style={{fontSize:10,color:T.muted,letterSpacing:'0.08em',textTransform:'uppercase',marginBottom:6}}>Logo</p><div style={{display:'flex',flexWrap:'wrap',gap:6}}>{LOGO_EMOJIS.map(e=>(<button key={e} onClick={()=>set('logo')(e)} style={{width:34,height:34,borderRadius:6,fontSize:17,border:`1.5px solid ${form.logo===e?T.accent:T.border}`,background:form.logo===e?T.accentSoft:T.surfaceAlt,cursor:'pointer'}}>{e}</button>))}</div></div>
-        <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:12}}>
-          <div><p style={{fontSize:10,color:T.muted,letterSpacing:'0.08em',textTransform:'uppercase',marginBottom:5}}>Company *</p><input style={inp} value={form.company} onChange={e=>set('company')(e.target.value)} placeholder="Company name" onFocus={e=>e.target.style.borderColor=T.accent} onBlur={e=>e.target.style.borderColor=T.border}/></div>
-          <div><p style={{fontSize:10,color:T.muted,letterSpacing:'0.08em',textTransform:'uppercase',marginBottom:5}}>Role *</p><input style={inp} value={form.role} onChange={e=>set('role')(e.target.value)} placeholder="e.g. Backend Intern" onFocus={e=>e.target.style.borderColor=T.accent} onBlur={e=>e.target.style.borderColor=T.border}/></div>
-        </div>
-        <div style={{display:'grid',gridTemplateColumns:'1fr 1fr 1fr',gap:12}}>
-          <div><p style={{fontSize:10,color:T.muted,letterSpacing:'0.08em',textTransform:'uppercase',marginBottom:5}}>Stipend *</p><input style={inp} value={form.stipend} onChange={e=>set('stipend')(e.target.value)} placeholder="₹15,000/month" onFocus={e=>e.target.style.borderColor=T.accent} onBlur={e=>e.target.style.borderColor=T.border}/></div>
-          <div><p style={{fontSize:10,color:T.muted,letterSpacing:'0.08em',textTransform:'uppercase',marginBottom:5}}>Duration</p><input style={inp} value={form.duration} onChange={e=>set('duration')(e.target.value)} placeholder="3 months" onFocus={e=>e.target.style.borderColor=T.accent} onBlur={e=>e.target.style.borderColor=T.border}/></div>
-          <div><p style={{fontSize:10,color:T.muted,letterSpacing:'0.08em',textTransform:'uppercase',marginBottom:5}}>Location *</p><input style={inp} value={form.location} onChange={e=>set('location')(e.target.value)} placeholder="Remote / Jaipur" onFocus={e=>e.target.style.borderColor=T.accent} onBlur={e=>e.target.style.borderColor=T.border}/></div>
-        </div>
-        <div><p style={{fontSize:10,color:T.muted,letterSpacing:'0.08em',textTransform:'uppercase',marginBottom:5}}>Description</p><textarea style={{...inp,resize:'none'}} rows={3} value={form.description} onChange={e=>set('description')(e.target.value)} placeholder="What will the intern work on?" onFocus={e=>e.target.style.borderColor=T.accent} onBlur={e=>e.target.style.borderColor=T.border}/></div>
+
+        {/* Logo */}
         <div>
+          <p style={{fontSize:10,color:T.muted,letterSpacing:'0.08em',textTransform:'uppercase',marginBottom:6}}>Logo</p>
+          <div style={{display:'flex',flexWrap:'wrap',gap:6}}>
+            {LOGO_EMOJIS.map(e=>(<button key={e} onClick={()=>set('logo')(e)} style={{width:34,height:34,borderRadius:6,fontSize:17,border:`1.5px solid ${form.logo===e?T.accent:T.border}`,background:form.logo===e?T.accentSoft:T.surfaceAlt,cursor:'pointer'}}>{e}</button>))}
+          </div>
+        </div>
+
+        {/* Company + Role */}
+        <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:12}}>
+          <div>
+            <p style={{fontSize:10,color:T.muted,letterSpacing:'0.08em',textTransform:'uppercase',marginBottom:5}}>Company *</p>
+            <input style={inp} value={form.company} onChange={e=>set('company')(e.target.value)} placeholder="Company name" onFocus={e=>e.target.style.borderColor=T.accent} onBlur={e=>e.target.style.borderColor=T.border}/>
+          </div>
+          <div>
+            <p style={{fontSize:10,color:T.muted,letterSpacing:'0.08em',textTransform:'uppercase',marginBottom:5}}>Role *</p>
+            <input style={inp} value={form.role} onChange={e=>set('role')(e.target.value)} placeholder="e.g. Backend Intern" onFocus={e=>e.target.style.borderColor=T.accent} onBlur={e=>e.target.style.borderColor=T.border}/>
+          </div>
+        </div>
+
+        {/* Stipend + Duration + Location */}
+        <div style={{display:'grid',gridTemplateColumns:'1fr 1fr 1fr',gap:12}}>
+          <div>
+            <p style={{fontSize:10,color:T.muted,letterSpacing:'0.08em',textTransform:'uppercase',marginBottom:5}}>Stipend *</p>
+            <input style={inp} value={form.stipend} onChange={e=>set('stipend')(e.target.value)} placeholder="₹15,000/month" onFocus={e=>e.target.style.borderColor=T.accent} onBlur={e=>e.target.style.borderColor=T.border}/>
+          </div>
+          <div>
+            <p style={{fontSize:10,color:T.muted,letterSpacing:'0.08em',textTransform:'uppercase',marginBottom:5}}>Duration</p>
+            <input style={inp} value={form.duration} onChange={e=>set('duration')(e.target.value)} placeholder="3 months" onFocus={e=>e.target.style.borderColor=T.accent} onBlur={e=>e.target.style.borderColor=T.border}/>
+          </div>
+          <div>
+            <p style={{fontSize:10,color:T.muted,letterSpacing:'0.08em',textTransform:'uppercase',marginBottom:5}}>Location *</p>
+            <input style={inp} value={form.location} onChange={e=>set('location')(e.target.value)} placeholder="Remote / Jaipur" onFocus={e=>e.target.style.borderColor=T.accent} onBlur={e=>e.target.style.borderColor=T.border}/>
+          </div>
+        </div>
+
+        {/* Description */}
+        <div>
+          <p style={{fontSize:10,color:T.muted,letterSpacing:'0.08em',textTransform:'uppercase',marginBottom:5}}>Description</p>
+          <textarea style={{...inp,resize:'none'}} rows={3} value={form.description} onChange={e=>set('description')(e.target.value)} placeholder="What will the intern work on?" onFocus={e=>e.target.style.borderColor=T.accent} onBlur={e=>e.target.style.borderColor=T.border}/>
+        </div>
+
+        {/* ── WHAT YOU'LL DO ── */}
+        <div style={{borderTop:`1px solid ${T.border}`,paddingTop:14}}>
+          <p style={{fontSize:10,color:T.muted,letterSpacing:'0.08em',textTransform:'uppercase',marginBottom:5}}>What you'll do</p>
+          <p style={{fontSize:11,color:T.muted,marginBottom:8}}>Add bullet points that show up in the "What you'll do" section.</p>
+          <ListEditor
+            items={form.whatYoullDo} inputVal={whatDoInput} setInputVal={setWhatDoInput}
+            onAdd={addWhatDo} onRemove={removeWhatDo}
+            placeholder="e.g. Build and ship features end to end" T={T}
+          />
+        </div>
+
+        {/* ── PERKS ── */}
+        <div>
+          <p style={{fontSize:10,color:T.muted,letterSpacing:'0.08em',textTransform:'uppercase',marginBottom:5}}>Perks & benefits</p>
+          <div style={{display:'flex',gap:8,marginBottom:8}}>
+            <input style={{...inp,flex:1}} value={perkInput} onChange={e=>setPerkInput(e.target.value)}
+              placeholder="e.g. Flexible hours · Certificate of completion"
+              onKeyDown={e=>e.key==='Enter'&&(e.preventDefault(),addPerk())}
+              onFocus={e=>e.target.style.borderColor=T.accent} onBlur={e=>e.target.style.borderColor=T.border}/>
+            <button onClick={addPerk} style={{padding:'9px 14px',borderRadius:8,border:`1px solid ${T.border}`,background:'transparent',color:T.sub,fontSize:12,cursor:'pointer',fontFamily:font}}>Add</button>
+          </div>
+          {form.perks.length>0 && (
+            <div style={{display:'flex',flexWrap:'wrap',gap:6}}>
+              {form.perks.map((p,i)=>(
+                <span key={i} style={{display:'flex',alignItems:'center',gap:5,fontSize:11,padding:'4px 10px',borderRadius:20,border:`1px solid ${T.border}`,color:T.sub,background:T.surfaceAlt}}>
+                  ✦ {p}
+                  <button onClick={()=>removePerk(i)} style={{background:'transparent',border:'none',cursor:'pointer',color:T.muted,display:'flex',padding:0}}><X size={10}/></button>
+                </span>
+              ))}
+            </div>
+          )}
+        </div>
+
+        {/* ── CUSTOM SECTIONS ── */}
+        <div style={{borderTop:`1px solid ${T.border}`,paddingTop:14}}>
+          <p style={{fontSize:10,color:T.muted,letterSpacing:'0.08em',textTransform:'uppercase',marginBottom:4}}>Custom sections</p>
+          <p style={{fontSize:11,color:T.muted,marginBottom:10}}>Add any section with your own heading — "Who we're looking for", "Tech stack", "About us" — it shows as a section in the job card.</p>
+
+          {/* Existing sections */}
+          {form.sections.map((sec,si)=>(
+            <div key={si} style={{marginBottom:12,padding:'12px 14px',borderRadius:8,border:`1px solid ${T.border}`,background:T.surfaceAlt}}>
+              <div style={{display:'flex',alignItems:'center',justifyContent:'space-between',marginBottom:8}}>
+                <span style={{fontSize:12,fontWeight:600,color:T.text}}>{sec.heading}</span>
+                <button onClick={()=>removeSection(si)} style={{background:'transparent',border:'none',cursor:'pointer',color:T.muted,display:'flex',padding:0}}><Trash2 size={12}/></button>
+              </div>
+              {/* Section items */}
+              {sec.items.length>0 && (
+                <div style={{display:'flex',flexDirection:'column',gap:4,marginBottom:8}}>
+                  {sec.items.map((item,ii)=>(
+                    <div key={ii} style={{display:'flex',alignItems:'flex-start',gap:8,padding:'5px 8px',borderRadius:6,background:T.surface}}>
+                      <div style={{width:4,height:4,background:T.muted,flexShrink:0,marginTop:5}}/>
+                      <span style={{flex:1,fontSize:11,color:T.text}}>{item}</span>
+                      <button onClick={()=>removeSectionItem(si,ii)} style={{background:'transparent',border:'none',cursor:'pointer',color:T.muted,display:'flex',padding:0}}><X size={10}/></button>
+                    </div>
+                  ))}
+                </div>
+              )}
+              {/* Add item to this section */}
+              <div style={{display:'flex',gap:6}}>
+                <input
+                  style={{...inp,flex:1,fontSize:11,padding:'6px 10px'}}
+                  value={newSecItemText[si]||''}
+                  onChange={e=>setNewSecItemText(prev=>({...prev,[si]:e.target.value}))}
+                  placeholder="Add a point…"
+                  onKeyDown={e=>e.key==='Enter'&&(e.preventDefault(),addSectionItem(si))}
+                  onFocus={e=>e.target.style.borderColor=T.accent} onBlur={e=>e.target.style.borderColor=T.border}
+                />
+                <button onClick={()=>addSectionItem(si)} style={{padding:'6px 12px',borderRadius:6,border:'none',background:T.accent,color:'#fff',fontSize:11,cursor:'pointer',fontFamily:font,whiteSpace:'nowrap'}}>Add</button>
+              </div>
+            </div>
+          ))}
+
+          {/* New section heading input */}
+          <div style={{display:'flex',gap:8}}>
+            <input
+              style={{...inp,flex:1}}
+              value={newSecHeading}
+              onChange={e=>setNewSecHeading(e.target.value)}
+              placeholder='Section heading — e.g. "Who we\'re looking for"'
+              onKeyDown={e=>e.key==='Enter'&&(e.preventDefault(),addSection())}
+              onFocus={e=>e.target.style.borderColor=T.accent} onBlur={e=>e.target.style.borderColor=T.border}
+            />
+            <button onClick={addSection} style={{padding:'9px 14px',borderRadius:8,border:`1px solid ${T.border}`,background:T.surfaceAlt,color:T.sub,fontSize:12,cursor:'pointer',fontFamily:font,whiteSpace:'nowrap',display:'flex',alignItems:'center',gap:5}}>
+              <Plus size={12}/> Add section
+            </button>
+          </div>
+        </div>
+
+        {/* Required skills */}
+        <div style={{borderTop:`1px solid ${T.border}`,paddingTop:14}}>
           <p style={{fontSize:10,color:T.muted,letterSpacing:'0.08em',textTransform:'uppercase',marginBottom:5}}>Required skills *</p>
           <div style={{display:'flex',gap:8,marginBottom:8}}>
             <input style={{...inp,flex:1}} value={skillInput} onChange={e=>setSkillInput(e.target.value)} placeholder="Type skill + Enter" list="pjf-skills" onKeyDown={e=>e.key==='Enter'&&addSkill()} onFocus={e=>e.target.style.borderColor=T.accent} onBlur={e=>e.target.style.borderColor=T.border}/>
@@ -1004,6 +1247,8 @@ function PostJobForm({onSuccess,onCancel,T}) {
             </div>
           ))}
         </div>
+
+        {/* Nice to have */}
         <div>
           <p style={{fontSize:10,color:T.muted,letterSpacing:'0.08em',textTransform:'uppercase',marginBottom:5}}>Nice to have</p>
           <div style={{display:'flex',gap:8,marginBottom:6}}>
@@ -1014,6 +1259,8 @@ function PostJobForm({onSuccess,onCancel,T}) {
             {form.nice_to_have.map(s=>(<span key={s} style={{display:'flex',alignItems:'center',gap:4,fontSize:11,padding:'3px 8px',borderRadius:20,border:`1px solid ${T.border}`,color:T.sub}}>{s}<button onClick={()=>setForm(f=>({...f,nice_to_have:f.nice_to_have.filter(x=>x!==s)}))} style={{background:'transparent',border:'none',cursor:'pointer',color:T.muted,display:'flex',padding:0}}><X size={10}/></button></span>))}
           </div>
         </div>
+
+        {/* Visibility + Max applicants */}
         <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:12}}>
           <div>
             <p style={{fontSize:10,color:T.muted,letterSpacing:'0.08em',textTransform:'uppercase',marginBottom:5}}>Visibility</p>
@@ -1028,11 +1275,14 @@ function PostJobForm({onSuccess,onCancel,T}) {
             </div>
           </div>
         </div>
+
         {error && <div style={{padding:'9px 12px',borderRadius:8,background:T.redSoft,border:`1px solid ${T.redBorder}`}}><p style={{fontSize:12,color:T.red,margin:0}}>{error}</p></div>}
+
         <div style={{display:'flex',gap:8}}>
           <button onClick={onCancel} style={{flex:1,padding:11,borderRadius:8,border:`1px solid ${T.border}`,background:'transparent',color:T.sub,fontSize:13,cursor:'pointer',fontFamily:font}}>Cancel</button>
           <button onClick={submit} disabled={saving} style={{flex:2,padding:11,borderRadius:8,border:'none',background:saving?T.muted:T.accent,color:'#fff',fontSize:13,fontWeight:500,cursor:saving?'default':'pointer',fontFamily:font}}>{saving?'Posting…':'Post & get link →'}</button>
         </div>
+
       </div>
     </div>
   );
