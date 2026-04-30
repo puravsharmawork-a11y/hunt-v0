@@ -280,6 +280,7 @@ export default function StudentDashboard() {
             weeklyApplications={weeklyApplications}
             applying={applying}
             canApply={canApply}
+            appliedJobs={appliedJobs}
           />
         )}
 
