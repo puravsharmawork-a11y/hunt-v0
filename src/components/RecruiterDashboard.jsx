@@ -476,6 +476,10 @@ function SubTabStrip({ tabs, active, onChange }) {
 // Drop this in to replace the existing PostRoleDrawer function entirely.
 // Adds: What You'll Do, Perks, and unlimited custom sections.
 
+// ─── UPDATED PostRoleDrawer for RecruiterDashboard.jsx ─────────────────────
+// Drop this in to replace the existing PostRoleDrawer function entirely.
+// Adds: What You'll Do, Perks, and unlimited custom sections.
+
 function PostRoleDrawer({ recruiter, open, onClose, onSuccess, showToast }) {
   const [skillInput, setSkillInput]       = useState('');
   const [niceInput, setNiceInput]         = useState('');
@@ -758,7 +762,7 @@ function PostRoleDrawer({ recruiter, open, onClose, onSuccess, showToast }) {
                   <FocusInput
                     value={newSecHeading}
                     onChange={e => setNewSecHeading(e.target.value)}
-                    placeholder='Heading — e.g. "Who we\'re looking for"'
+                    placeholder="Heading — e.g. Who we're looking for"
                     onKeyDown={e => e.key === 'Enter' && (e.preventDefault(), addSection())}
                     style={{ flex: 1 }}
                   />
@@ -865,7 +869,6 @@ function PostRoleDrawer({ recruiter, open, onClose, onSuccess, showToast }) {
     </>
   );
 }
-
 // ═══════════════════════════════════════════════════════════════════════════
 // 6. APPLICANT SNAPSHOT
 // ═══════════════════════════════════════════════════════════════════════════
