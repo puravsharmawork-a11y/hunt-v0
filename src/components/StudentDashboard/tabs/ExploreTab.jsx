@@ -362,7 +362,11 @@ export function ExploreTab({
 
               {/* End of feed marker */}
               {allJobs.length > 0 && viewMode === 'grid' && displayedJobs.length > 0 && (
-                <div style={{ marginTop: 36, padding: '24px 0 16px', borderTop: '1px solid var(--border)' }} />
+                <div style={{ marginTop: 36, padding: '24px 0 16px', borderTop: '1px solid var(--border)' }}>
+                  <span className="hunt-mono" style={{ fontSize: 10, color: 'var(--text-faint)', letterSpacing: '0.1em', textTransform: 'uppercase' }}>
+                    no more jobs right now — check back for more
+                  </span>
+                </div>
               )}
             </div>
           </div>
