@@ -78,7 +78,7 @@ export function ExploreTab({
         {!(selectedJob && isPanelMaximized) && (
           <div
             style={{
-              flex: selectedJob && !isPanelMaximized ? '0 0 48%' : 1,
+              flex: selectedJob && !isPanelMaximized ? '0 0 42%' : 1,
               display: 'flex',
               flexDirection: 'column',
               overflow: 'hidden',
