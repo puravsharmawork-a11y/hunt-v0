@@ -957,7 +957,13 @@ function JobsTab({jobs:init,T,showToast}) {
 // Adds: What You'll Do, Perks, and unlimited custom sections.
 // The submit handler passes these into the jobs.insert() call automatically.
 
+// ─── UPDATED PostJobForm for AdminDashboard.jsx ────────────────────────────
+// Drop this in to replace the existing PostJobForm function.
+// Adds: What You'll Do, Perks, and unlimited custom sections.
+// The submit handler passes these into the jobs.insert() call automatically.
+
 function PostJobForm({onSuccess,onCancel,T}) {
+  const LOGO_EMOJIS=['🚀','⚡','🎯','💡','🔥','🌊','🛠️','📊','🎨','🌱','⭐','🦾'];
   const [saving,setSaving]          = useState(false);
   const [error,setError]            = useState('');
   const [skillInput,setSkillInput]  = useState('');
