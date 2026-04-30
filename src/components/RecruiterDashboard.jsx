@@ -727,7 +727,7 @@ function PostRoleDrawer({ recruiter, open, onClose, onSuccess, showToast }) {
               <div>
                 <Label>Custom sections</Label>
                 <p style={{ fontSize: 11, color: 'var(--text-dim)', marginBottom: 10 }}>
-                  Create any section with your own heading — "Who we're looking for", "About us", "Tech stack". It shows directly on the job card.
+                  Create any section with your own heading — "Enter your section heading", "About us", "Tech stack". It shows directly on the job card.
                 </p>
 
                 {/* Existing sections */}
