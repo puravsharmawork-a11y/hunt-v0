@@ -132,7 +132,11 @@ export function SwipeView({ jobs, selectedJob, onJobClick, isJobSaved, onSave })
         );
       })}
 
-      <div style={{ padding: '20px 28px', borderTop: '1px solid var(--border)' }} />
+      <div style={{ padding: '20px 28px', borderTop: '1px solid var(--border)' }}>
+        <span className="hunt-mono" style={{ fontSize: 10, color: 'var(--text-faint)', letterSpacing: '0.1em', textTransform: 'uppercase' }}>
+          no more jobs right now — check back for more
+        </span>
+      </div>
     </div>
   );
 }
