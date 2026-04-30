@@ -472,19 +472,30 @@ function SubTabStrip({ tabs, active, onChange }) {
 // 5. POST ROLE — SLIDE-OVER DRAWER
 //    Triggered from: Roles tab header button OR Home quick action
 // ═══════════════════════════════════════════════════════════════════════════
+// ─── UPDATED PostRoleDrawer for RecruiterDashboard.jsx ─────────────────────
+// Drop this in to replace the existing PostRoleDrawer function entirely.
+// Adds: What You'll Do, Perks, and unlimited custom sections.
+
 function PostRoleDrawer({ recruiter, open, onClose, onSuccess, showToast }) {
-  const [skillInput, setSkillInput] = useState('');
-  const [niceInput, setNiceInput]   = useState('');
-  const [saving, setSaving]         = useState(false);
+  const [skillInput, setSkillInput]       = useState('');
+  const [niceInput, setNiceInput]         = useState('');
+  const [whatDoInput, setWhatDoInput]     = useState('');
+  const [perkInput, setPerkInput]         = useState('');
+  const [newSecHeading, setNewSecHeading] = useState('');
+  const [newSecItemText, setNewSecItemText] = useState({}); // {sectionIdx: value}
+  const [saving, setSaving]               = useState(false);
+
   const [form, setForm] = useState(() => ({
     logo: recruiter?.startups?.logo_emoji || '🚀',
     role: '', description: '', stipend: '', duration: '',
     location: '', type: 'Paid Internship', visibility: 'public',
     required_skills: [], nice_to_have: [],
     max_applicants: 50, minimum_match_threshold: 50, positions: 1,
+    whatYoullDo: [],
+    perks: [],
+    sections: [],   // [{heading:'', items:['',...]}]
   }));
 
-  // Reset form when drawer closes
   useEffect(() => {
     if (!open) {
       setForm({
@@ -493,12 +504,16 @@ function PostRoleDrawer({ recruiter, open, onClose, onSuccess, showToast }) {
         location: '', type: 'Paid Internship', visibility: 'public',
         required_skills: [], nice_to_have: [],
         max_applicants: 50, minimum_match_threshold: 50, positions: 1,
+        whatYoullDo: [], perks: [], sections: [],
       });
+      setNewSecItemText({});
+      setNewSecHeading('');
     }
   }, [open]);
 
   const set = (k) => (v) => setForm(f => ({ ...f, [k]: v }));
 
+  // Required skills
   const addSkill = () => {
     const name = skillInput.trim();
     if (!name || form.required_skills.find(s => s.name.toLowerCase() === name.toLowerCase())) return;
@@ -506,12 +521,50 @@ function PostRoleDrawer({ recruiter, open, onClose, onSuccess, showToast }) {
     setSkillInput('');
   };
   const removeSkill = (name) => setForm(f => ({ ...f, required_skills: f.required_skills.filter(s => s.name !== name) }));
+
+  // Nice to have
   const addNice = () => {
     const name = niceInput.trim();
     if (!name || form.nice_to_have.includes(name)) return;
     setForm(f => ({ ...f, nice_to_have: [...f.nice_to_have, name] }));
     setNiceInput('');
   };
+
+  // What you'll do
+  const addWhatDo = () => {
+    const n = whatDoInput.trim(); if (!n) return;
+    setForm(f => ({ ...f, whatYoullDo: [...f.whatYoullDo, n] }));
+    setWhatDoInput('');
+  };
+  const removeWhatDo = (i) => setForm(f => ({ ...f, whatYoullDo: f.whatYoullDo.filter((_, idx) => idx !== i) }));
+
+  // Perks
+  const addPerk = () => {
+    const n = perkInput.trim(); if (!n || form.perks.includes(n)) return;
+    setForm(f => ({ ...f, perks: [...f.perks, n] }));
+    setPerkInput('');
+  };
+  const removePerk = (i) => setForm(f => ({ ...f, perks: f.perks.filter((_, idx) => idx !== i) }));
+
+  // Custom sections
+  const addSection = () => {
+    const h = newSecHeading.trim(); if (!h) return;
+    setForm(f => ({ ...f, sections: [...f.sections, { heading: h, items: [] }] }));
+    setNewSecHeading('');
+  };
+  const removeSection = (si) => setForm(f => ({ ...f, sections: f.sections.filter((_, i) => i !== si) }));
+  const addSectionItem = (si) => {
+    const text = (newSecItemText[si] || '').trim(); if (!text) return;
+    setForm(f => ({
+      ...f,
+      sections: f.sections.map((s, i) => i === si ? { ...s, items: [...s.items, text] } : s),
+    }));
+    setNewSecItemText(prev => ({ ...prev, [si]: '' }));
+  };
+  const removeSectionItem = (si, ii) => setForm(f => ({
+    ...f,
+    sections: f.sections.map((s, i) => i === si ? { ...s, items: s.items.filter((_, j) => j !== ii) } : s),
+  }));
 
   const handleSubmit = async () => {
     if (!form.role.trim())     return showToast('Role title is required.', 'error');
@@ -534,6 +587,9 @@ function PostRoleDrawer({ recruiter, open, onClose, onSuccess, showToast }) {
         max_applicants: form.max_applicants,
         minimum_match_threshold: form.minimum_match_threshold,
         positions: form.positions, current_applicants: 0, is_active: true, status: 'live',
+        what_youll_do: form.whatYoullDo,
+        perks: form.perks,
+        sections: form.sections,
       });
       onSuccess();
       onClose();
@@ -549,49 +605,43 @@ function PostRoleDrawer({ recruiter, open, onClose, onSuccess, showToast }) {
     fontWeight: active ? 600 : 400,
   });
 
+  // Reusable list-item row
+  const ListItemRow = ({ item, onRemove }) => (
+    <div style={{ display: 'flex', alignItems: 'flex-start', gap: 8, padding: '7px 10px', borderRadius: 7, border: '1px solid var(--border)', background: 'var(--bg-subtle)', marginBottom: 4 }}>
+      <div style={{ width: 4, height: 4, background: 'var(--text-dim)', flexShrink: 0, marginTop: 6 }} />
+      <span style={{ flex: 1, fontSize: 12, color: 'var(--text)', lineHeight: 1.5 }}>{item}</span>
+      <button onClick={onRemove} style={{ background: 'transparent', border: 'none', cursor: 'pointer', color: 'var(--text-dim)', display: 'flex', padding: 0, flexShrink: 0 }}><X size={12} /></button>
+    </div>
+  );
+
   return (
     <>
-      {/* Backdrop */}
       {open && (
-        <div onClick={onClose} style={{
-          position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.35)',
-          zIndex: 9000, backdropFilter: 'blur(2px)',
-        }} />
+        <div onClick={onClose} style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.35)', zIndex: 9000, backdropFilter: 'blur(2px)' }} />
       )}
 
-      {/* Drawer panel */}
       <div style={{
         position: 'fixed', top: 0, right: 0, bottom: 0,
-        width: 500, background: 'var(--bg-card)', borderLeft: '1px solid var(--border)',
+        width: 520, background: 'var(--bg-card)', borderLeft: '1px solid var(--border)',
         zIndex: 9001, display: 'flex', flexDirection: 'column',
         transform: open ? 'translateX(0)' : 'translateX(100%)',
         transition: 'transform 0.28s cubic-bezier(0.4, 0, 0.2, 1)',
         boxShadow: open ? '-8px 0 40px rgba(0,0,0,0.12)' : 'none',
       }}>
         {/* Drawer header */}
-        <div style={{
-          padding: '18px 22px', borderBottom: '1px solid var(--border)',
-          display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexShrink: 0,
-        }}>
+        <div style={{ padding: '18px 22px', borderBottom: '1px solid var(--border)', display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexShrink: 0 }}>
           <div>
-            <p style={{ fontSize: 10, fontWeight: 600, letterSpacing: '0.1em', textTransform: 'uppercase', color: 'var(--text-dim)', margin: 0, marginBottom: 4 }}>
-              Post a role
-            </p>
-            <h2 style={{ fontFamily: "'Editorial New', Georgia, serif", fontSize: 20, fontWeight: 400, color: 'var(--text)', margin: 0 }}>
-              Hire your next <em>intern.</em>
-            </h2>
+            <p style={{ fontSize: 10, fontWeight: 600, letterSpacing: '0.1em', textTransform: 'uppercase', color: 'var(--text-dim)', margin: 0, marginBottom: 4 }}>Post a role</p>
+            <h2 style={{ fontFamily: "'Editorial New', Georgia, serif", fontSize: 20, fontWeight: 400, color: 'var(--text)', margin: 0 }}>Hire your next <em>intern.</em></h2>
           </div>
-          <button onClick={onClose} style={{
-            background: 'transparent', border: '1px solid var(--border)',
-            borderRadius: 7, cursor: 'pointer', color: 'var(--text-dim)',
-            display: 'flex', alignItems: 'center', justifyContent: 'center',
-            width: 32, height: 32, flexShrink: 0,
-          }}><X size={14} /></button>
+          <button onClick={onClose} style={{ background: 'transparent', border: '1px solid var(--border)', borderRadius: 7, cursor: 'pointer', color: 'var(--text-dim)', display: 'flex', alignItems: 'center', justifyContent: 'center', width: 32, height: 32, flexShrink: 0 }}>
+            <X size={14} />
+          </button>
         </div>
 
-        {/* Scrollable form body */}
+        {/* Scrollable body */}
         <div style={{ flex: 1, overflowY: 'auto', padding: '22px' }}>
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 18 }}>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
 
             {/* Logo + Role */}
             <div style={{ display: 'flex', gap: 14, alignItems: 'flex-end' }}>
@@ -599,11 +649,7 @@ function PostRoleDrawer({ recruiter, open, onClose, onSuccess, showToast }) {
                 <Label>Logo</Label>
                 <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 5, width: 152 }}>
                   {LOGO_EMOJIS.slice(0, 8).map(e => (
-                    <button key={e} onClick={() => set('logo')(e)} style={{
-                      width: 34, height: 34, borderRadius: 6, fontSize: 17, cursor: 'pointer',
-                      border: `1.5px solid ${form.logo === e ? 'var(--text)' : 'var(--border)'}`,
-                      background: 'var(--bg-subtle)',
-                    }}>{e}</button>
+                    <button key={e} onClick={() => set('logo')(e)} style={{ width: 34, height: 34, borderRadius: 6, fontSize: 17, cursor: 'pointer', border: `1.5px solid ${form.logo === e ? 'var(--text)' : 'var(--border)'}`, background: 'var(--bg-subtle)' }}>{e}</button>
                   ))}
                 </div>
               </div>
@@ -633,8 +679,99 @@ function PostRoleDrawer({ recruiter, open, onClose, onSuccess, showToast }) {
                 placeholder="What will the intern actually work on? Be specific — 2-3 sentences." />
             </div>
 
+            {/* Divider */}
+            <div style={{ borderTop: '1px solid var(--border)', paddingTop: 4 }}>
+              <p style={{ fontSize: 10, fontWeight: 600, color: 'var(--text-dim)', letterSpacing: '0.1em', textTransform: 'uppercase', marginBottom: 16 }}>Role content sections</p>
+
+              {/* What you'll do */}
+              <div style={{ marginBottom: 18 }}>
+                <Label>What you'll do</Label>
+                <p style={{ fontSize: 11, color: 'var(--text-dim)', marginBottom: 8 }}>These show as bullet points in "What you'll do" on the job card.</p>
+                <div style={{ display: 'flex', gap: 8, marginBottom: 8 }}>
+                  <FocusInput value={whatDoInput} onChange={e => setWhatDoInput(e.target.value)}
+                    placeholder="e.g. Build and ship features end to end"
+                    onKeyDown={e => e.key === 'Enter' && (e.preventDefault(), addWhatDo())}
+                    style={{ flex: 1 }} />
+                  <button onClick={addWhatDo} style={{ ...btnPrimary(false), padding: '10px 14px' }}>Add</button>
+                </div>
+                {form.whatYoullDo.map((item, i) => <ListItemRow key={i} item={item} onRemove={() => removeWhatDo(i)} />)}
+              </div>
+
+              {/* Perks */}
+              <div style={{ marginBottom: 18 }}>
+                <Label>Perks & benefits</Label>
+                <div style={{ display: 'flex', gap: 8, marginBottom: 8 }}>
+                  <FocusInput value={perkInput} onChange={e => setPerkInput(e.target.value)}
+                    placeholder="e.g. Flexible hours · Certificate of completion"
+                    onKeyDown={e => e.key === 'Enter' && (e.preventDefault(), addPerk())}
+                    style={{ flex: 1 }} />
+                  <button onClick={addPerk} style={{ ...btnGhost(), padding: '10px 14px' }}>Add</button>
+                </div>
+                {form.perks.length > 0 && (
+                  <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>
+                    {form.perks.map((p, i) => (
+                      <span key={i} style={{ display: 'flex', alignItems: 'center', gap: 5, fontSize: 11, padding: '4px 10px', borderRadius: 20, border: '1px solid var(--border)', color: 'var(--text-mid)', background: 'var(--bg-subtle)' }}>
+                        ✦ {p}
+                        <button onClick={() => removePerk(i)} style={{ background: 'transparent', border: 'none', cursor: 'pointer', color: 'var(--text-dim)', display: 'flex', padding: 0 }}><X size={10} /></button>
+                      </span>
+                    ))}
+                  </div>
+                )}
+              </div>
+
+              {/* Custom sections */}
+              <div>
+                <Label>Custom sections</Label>
+                <p style={{ fontSize: 11, color: 'var(--text-dim)', marginBottom: 10 }}>
+                  Create any section with your own heading — "Who we're looking for", "About us", "Tech stack". It shows directly on the job card.
+                </p>
+
+                {/* Existing sections */}
+                {form.sections.map((sec, si) => (
+                  <div key={si} style={{ marginBottom: 12, padding: '12px 14px', borderRadius: 10, border: '1px solid var(--border)', background: 'var(--bg-subtle)' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 8 }}>
+                      <span style={{ fontSize: 12, fontWeight: 600, color: 'var(--text)' }}>▲ {sec.heading}</span>
+                      <button onClick={() => removeSection(si)} style={{ background: 'transparent', border: 'none', cursor: 'pointer', color: 'var(--text-dim)', display: 'flex', padding: 0 }}><Trash2 size={12} /></button>
+                    </div>
+                    {sec.items.map((item, ii) => (
+                      <div key={ii} style={{ display: 'flex', alignItems: 'flex-start', gap: 8, padding: '5px 0', borderBottom: '1px solid var(--border)', marginBottom: 4 }}>
+                        <div style={{ width: 4, height: 4, background: 'var(--text-dim)', flexShrink: 0, marginTop: 6 }} />
+                        <span style={{ flex: 1, fontSize: 11, color: 'var(--text)' }}>{item}</span>
+                        <button onClick={() => removeSectionItem(si, ii)} style={{ background: 'transparent', border: 'none', cursor: 'pointer', color: 'var(--text-dim)', display: 'flex', padding: 0, flexShrink: 0 }}><X size={10} /></button>
+                      </div>
+                    ))}
+                    <div style={{ display: 'flex', gap: 6, marginTop: 8 }}>
+                      <FocusInput
+                        value={newSecItemText[si] || ''}
+                        onChange={e => setNewSecItemText(prev => ({ ...prev, [si]: e.target.value }))}
+                        placeholder="Add a point…"
+                        onKeyDown={e => e.key === 'Enter' && (e.preventDefault(), addSectionItem(si))}
+                        style={{ flex: 1, fontSize: 11, padding: '6px 10px' }}
+                      />
+                      <button onClick={() => addSectionItem(si)} style={{ ...btnPrimary(false), padding: '6px 12px', fontSize: 11 }}>Add</button>
+                    </div>
+                  </div>
+                ))}
+
+                {/* New section */}
+                <div style={{ display: 'flex', gap: 8 }}>
+                  <FocusInput
+                    value={newSecHeading}
+                    onChange={e => setNewSecHeading(e.target.value)}
+                    placeholder='Heading — e.g. "Who we\'re looking for"'
+                    onKeyDown={e => e.key === 'Enter' && (e.preventDefault(), addSection())}
+                    style={{ flex: 1 }}
+                  />
+                  <button onClick={addSection} style={{ ...btnGhost(), whiteSpace: 'nowrap' }}>
+                    <Plus size={12} /> Add section
+                  </button>
+                </div>
+              </div>
+            </div>
+
             {/* Required skills */}
-            <div>
+            <div style={{ borderTop: '1px solid var(--border)', paddingTop: 4 }}>
+              <p style={{ fontSize: 10, fontWeight: 600, color: 'var(--text-dim)', letterSpacing: '0.1em', textTransform: 'uppercase', marginBottom: 12 }}>Skills & config</p>
               <Label required>Required skills</Label>
               <p style={{ fontSize: 11, color: 'var(--text-dim)', marginBottom: 8 }}>Type a skill and press Enter. Set level 1–5 for each.</p>
               <div style={{ display: 'flex', gap: 8, marginBottom: 10 }}>
@@ -647,29 +784,16 @@ function PostRoleDrawer({ recruiter, open, onClose, onSuccess, showToast }) {
               {form.required_skills.length > 0 && (
                 <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
                   {form.required_skills.map(skill => (
-                    <div key={skill.name} style={{
-                      display: 'flex', alignItems: 'center', gap: 10,
-                      padding: '8px 12px', borderRadius: 8,
-                      border: '1px solid var(--border)', background: 'var(--bg-subtle)',
-                    }}>
+                    <div key={skill.name} style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '8px 12px', borderRadius: 8, border: '1px solid var(--border)', background: 'var(--bg-subtle)' }}>
                       <span style={{ fontSize: 12, fontWeight: 500, color: 'var(--text)', flex: 1 }}>{skill.name}</span>
                       <span style={{ fontSize: 10, color: 'var(--text-dim)' }}>Level</span>
                       <div style={{ display: 'flex', gap: 3 }}>
                         {[1,2,3,4,5].map(lv => (
                           <button key={lv} onClick={() => setForm(f => ({ ...f, required_skills: f.required_skills.map(s => s.name === skill.name ? { ...s, level: lv } : s) }))}
-                            style={{
-                              width: 22, height: 22, borderRadius: 4, fontSize: 10, fontWeight: 600,
-                              cursor: 'pointer', fontFamily: 'inherit', border: 'none',
-                              background: skill.level >= lv ? 'var(--text)' : 'var(--bg-card)',
-                              color: skill.level >= lv ? 'var(--bg)' : 'var(--text-dim)',
-                              outline: skill.level >= lv ? 'none' : '1px solid var(--border)',
-                            }}>{lv}</button>
+                            style={{ width: 22, height: 22, borderRadius: 4, fontSize: 10, fontWeight: 600, cursor: 'pointer', fontFamily: 'inherit', border: 'none', background: skill.level >= lv ? 'var(--text)' : 'var(--bg-card)', color: skill.level >= lv ? 'var(--bg)' : 'var(--text-dim)', outline: skill.level >= lv ? 'none' : '1px solid var(--border)' }}>{lv}</button>
                         ))}
                       </div>
-                      <button onClick={() => removeSkill(skill.name)}
-                        style={{ background: 'transparent', border: 'none', cursor: 'pointer', color: 'var(--text-dim)', display: 'flex', padding: 0 }}>
-                        <X size={14} />
-                      </button>
+                      <button onClick={() => removeSkill(skill.name)} style={{ background: 'transparent', border: 'none', cursor: 'pointer', color: 'var(--text-dim)', display: 'flex', padding: 0 }}><X size={14} /></button>
                     </div>
                   ))}
                 </div>
@@ -690,10 +814,7 @@ function PostRoleDrawer({ recruiter, open, onClose, onSuccess, showToast }) {
                   {form.nice_to_have.map(s => (
                     <span key={s} style={{ display: 'flex', alignItems: 'center', gap: 4, fontSize: 11, padding: '3px 10px', borderRadius: 20, border: '1px solid var(--border)', color: 'var(--text-mid)' }}>
                       {s}
-                      <button onClick={() => setForm(f => ({ ...f, nice_to_have: f.nice_to_have.filter(x => x !== s) }))}
-                        style={{ background: 'transparent', border: 'none', cursor: 'pointer', color: 'var(--text-dim)', display: 'flex', padding: 0 }}>
-                        <X size={10} />
-                      </button>
+                      <button onClick={() => setForm(f => ({ ...f, nice_to_have: f.nice_to_have.filter(x => x !== s) }))} style={{ background: 'transparent', border: 'none', cursor: 'pointer', color: 'var(--text-dim)', display: 'flex', padding: 0 }}><X size={10} /></button>
                     </span>
                   ))}
                 </div>
@@ -733,7 +854,7 @@ function PostRoleDrawer({ recruiter, open, onClose, onSuccess, showToast }) {
           </div>
         </div>
 
-        {/* Sticky footer CTA */}
+        {/* Sticky footer */}
         <div style={{ padding: '14px 22px', borderTop: '1px solid var(--border)', flexShrink: 0, background: 'var(--bg-card)' }}>
           <button onClick={handleSubmit} disabled={saving}
             style={{ ...btnPrimary(saving), width: '100%', justifyContent: 'center', padding: '13px 16px', fontSize: 13 }}>
