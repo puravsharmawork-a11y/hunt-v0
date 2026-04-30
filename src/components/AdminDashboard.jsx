@@ -952,6 +952,11 @@ function JobsTab({jobs:init,T,showToast}) {
 // Adds: What You'll Do, Perks, and unlimited custom sections.
 // The submit handler passes these into the jobs.insert() call automatically.
 
+// ─── UPDATED PostJobForm for AdminDashboard.jsx ────────────────────────────
+// Drop this in to replace the existing PostJobForm function.
+// Adds: What You'll Do, Perks, and unlimited custom sections.
+// The submit handler passes these into the jobs.insert() call automatically.
+
 function PostJobForm({onSuccess,onCancel,T}) {
   const [saving,setSaving]          = useState(false);
   const [error,setError]            = useState('');
@@ -1220,7 +1225,7 @@ function PostJobForm({onSuccess,onCancel,T}) {
               style={{...inp,flex:1}}
               value={newSecHeading}
               onChange={e=>setNewSecHeading(e.target.value)}
-              placeholder='Section heading — e.g. "Who we\'re looking for"'
+              placeholder="Section heading — e.g. Who we're looking for"
               onKeyDown={e=>e.key==='Enter'&&(e.preventDefault(),addSection())}
               onFocus={e=>e.target.style.borderColor=T.accent} onBlur={e=>e.target.style.borderColor=T.border}
             />
