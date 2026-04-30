@@ -73,7 +73,7 @@ export function ExploreTab({
               >
                 <div>
                   <h1 className="hunt-serif" style={{ fontSize: 28, color: 'var(--text)', lineHeight: 1 }}>
-                    opportunities <em>for you.</em>
+                    Opportunities <em>for you.</em>
                   </h1>
                 </div>
 
