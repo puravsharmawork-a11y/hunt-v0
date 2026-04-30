@@ -1354,6 +1354,43 @@ function NotificationsTab({T, showToast}) {
   const [deletingId, setDeletingId]       = useState(null);
   const [form, setForm] = useState({ title: '', body: '', type: 'info' });
 
+  // ── NEW: marquee toggle state ──
+  const [marqueeEnabled, setMarqueeEnabled] = useState(true);
+  const [marqueeLoading, setMarqueeLoading] = useState(true);
+  const [marqueeToggling, setMarqueeToggling] = useState(false);
+
+  // ── Fetch marquee setting on mount ──
+  useEffect(() => {
+    (async () => {
+      const { data } = await supabase
+        .from('platform_settings')
+        .select('value')
+        .eq('key', 'marquee_enabled')
+        .single();
+      if (data) setMarqueeEnabled(data.value === true || data.value === 'true');
+      setMarqueeLoading(false);
+    })();
+  }, []);
+
+  // ── Toggle marquee ──
+  const toggleMarquee = async () => {
+    setMarqueeToggling(true);
+    const newVal = !marqueeEnabled;
+    try {
+      const { error } = await supabase
+        .from('platform_settings')
+        .upsert({ key: 'marquee_enabled', value: newVal, updated_at: new Date().toISOString() });
+      if (error) throw error;
+      setMarqueeEnabled(newVal);
+      showToast(newVal ? 'Marquee bar turned ON' : 'Marquee bar turned OFF');
+    } catch (e) {
+      showToast('Failed to update: ' + e.message, 'error');
+    } finally {
+      setMarqueeToggling(false);
+    }
+  };
+  // ... rest of existing NotificationsTab code unchanged ...
+
   const fetchNotifications = useCallback(async () => {
     const { data, error } = await supabase
       .from('notifications')
