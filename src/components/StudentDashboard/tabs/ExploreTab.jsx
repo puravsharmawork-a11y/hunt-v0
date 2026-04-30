@@ -25,7 +25,9 @@ export function ExploreTab({
   studentProfile,
   notified, setNotified,
   handleSaveToggle, isJobSaved,
+  appliedJobs,
 }) {
+  const isJobApplied = (jobId) => (appliedJobs || []).some(j => j.id === jobId);
   const hasSearch = (searchQuery || '').trim().length > 0;
   const hasFilters = activeFiltersCount > 0;
 
@@ -355,6 +357,7 @@ export function ExploreTab({
                       onClick={() => handleJobClick(job)}
                       isSaved={isJobSaved(job.id)}
                       onSave={handleSaveToggle}
+                      isApplied={isJobApplied(job.id)}
                     />
                   ))}
                 </div>
@@ -392,6 +395,7 @@ export function ExploreTab({
               canApply={canApply}
               isSaved={isJobSaved(selectedJob?.id)}
               onSave={handleSaveToggle}
+              isApplied={isJobApplied(selectedJob?.id)}
             />
           </div>
         )}
