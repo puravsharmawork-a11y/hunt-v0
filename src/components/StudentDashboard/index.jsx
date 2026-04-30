@@ -6,7 +6,7 @@ import { useNavigate } from 'react-router-dom';
 
 import {
   getStudentProfile, getActiveJobs, createApplication,
-  getWeeklyApplicationCount, signOut, supabase,
+  getMyApplications, getWeeklyApplicationCount, signOut, supabase,
 } from '../../services/supabase';
 import { calculateMatchScore } from '../../services/matching';
 import { sendToAirtable, prepareApplicationData } from '../../services/airtable';
@@ -73,9 +73,7 @@ export default function StudentDashboard() {
   const [huntFastActive, setHuntFastActive] = useState(false);
   const [filters, setFilters] = useState({ role: '', location: '', minMatch: 0, stipend: 'Any', duration: 'Any', skill: '' });
   const [appliedJobs, setAppliedJobs] = useState([]);
-  const [savedJobs, setSavedJobs] = useState(() => {
-    try { return JSON.parse(localStorage.getItem('hunt-saved-jobs') || '[]'); } catch { return []; }
-  });
+  const [savedJobs, setSavedJobs] = useState([]);
   const [homeSubTab, setHomeSubTab] = useState('applications');
   const [showNotifications, setShowNotifications] = useState(false);
   const [showAccountMenu, setShowAccountMenu] = useState(false);
@@ -90,7 +88,6 @@ export default function StudentDashboard() {
   const initials = studentProfile?.full_name?.split(' ').map(n => n[0]).join('') || 'U';
 
   useEffect(() => { applyTokens(theme); localStorage.setItem('hunt-theme', theme); }, [theme]);
-  useEffect(() => { localStorage.setItem('hunt-saved-jobs', JSON.stringify(savedJobs)); }, [savedJobs]);
   useEffect(() => { loadData(); }, []);
 
   // ── Fetch unread count on mount so bell dot shows immediately ─────────────
@@ -129,23 +126,25 @@ export default function StudentDashboard() {
       }));
       setAllJobs(jobsWithScores.filter(j => j._match.score >= 30).sort((a, b) => b._match.score - a._match.score));
       setWeeklyApplications(await getWeeklyApplicationCount());
-      // Hydrate appliedJobs from DB so state survives page reloads
-      const { data: { user } } = await supabase.auth.getUser();
-      if (user) {
-        const { data: apps } = await supabase
-          .from('applications')
-          .select('job_id, match_score, created_at')
-          .eq('student_id', user.id);
-        if (apps && apps.length > 0) {
-          const appliedJobIds = new Set(apps.map(a => a.job_id));
-          const appliedWithScore = activeJobs
-            .filter(j => appliedJobIds.has(j.id))
-            .map(j => {
-              const app = apps.find(a => a.job_id === j.id);
-              return { ...j, matchScore: app?.match_score || 0, appliedAt: app?.created_at };
-            });
-          setAppliedJobs(appliedWithScore);
-        }
+      // Hydrate appliedJobs from DB — getMyApplications joins jobs table
+      const myApps = await getMyApplications();
+      if (myApps && myApps.length > 0) {
+        const hydrated = myApps
+          .filter(app => app.jobs) // guard against orphaned applications
+          .map(app => ({
+            ...app.jobs,
+            matchScore: app.match_score || 0,
+            appliedAt: app.applied_at,
+          }));
+        setAppliedJobs(hydrated);
+      }
+      // Hydrate savedJobs from Supabase
+      const { data: savedRows } = await supabase
+        .from('saved_jobs')
+        .select('job_id, saved_at, jobs(*)')
+        .eq('student_id', profile.id);
+      if (savedRows && savedRows.length > 0) {
+        setSavedJobs(savedRows.filter(r => r.jobs).map(r => ({ ...r.jobs, savedAt: r.saved_at })));
       }
     } catch (err) { console.error(err); }
     finally { setLoading(false); }
@@ -187,7 +186,7 @@ export default function StudentDashboard() {
 
   const handleApply = async (job, matchData) => {
     if (applying || weeklyApplications >= WEEKLY_LIMIT) return;
-    // Prevent double-apply (guard against stale UI state)
+    // Already applied (state knows) — just close panel, never alert
     if (appliedJobs.some(j => j.id === job.id)) {
       setSelectedJob(null);
       return;
@@ -201,7 +200,7 @@ export default function StudentDashboard() {
       setWeeklyApplications(c => c + 1);
       setSelectedJob(null);
     } catch (err) {
-      // If DB says already applied, just sync state silently instead of alerting
+      // Supabase duplicate key — already in DB, just sync state silently
       if (err.message?.includes('already applied') || err.code === '23505') {
         setAppliedJobs(p => p.some(j => j.id === job.id) ? p : [...p, { ...job, matchScore: matchData.score }]);
         setSelectedJob(null);
@@ -214,8 +213,27 @@ export default function StudentDashboard() {
 
   const handleSignOut = async () => { try { await signOut(); navigate('/'); } catch (e) { console.error(e); } };
   const dismissWelcome = () => { setShowWelcome(false); if (studentProfile?.id) localStorage.setItem(`hunt-welcomed-${studentProfile.id}`, '1'); };
-  const handleSaveToggle = (job) => {
-    setSavedJobs(prev => prev.some(j => j.id === job.id) ? prev.filter(j => j.id !== job.id) : [...prev, job]);
+  const handleSaveToggle = async (job) => {
+    const isSaved = savedJobs.some(j => j.id === job.id);
+    // Optimistic update first so UI feels instant
+    setSavedJobs(prev => isSaved ? prev.filter(j => j.id !== job.id) : [...prev, { ...job, savedAt: new Date().toISOString() }]);
+    try {
+      if (isSaved) {
+        await supabase
+          .from('saved_jobs')
+          .delete()
+          .eq('student_id', studentProfile.id)
+          .eq('job_id', job.id);
+      } else {
+        await supabase
+          .from('saved_jobs')
+          .insert({ student_id: studentProfile.id, job_id: job.id });
+      }
+    } catch (err) {
+      // Rollback optimistic update on failure
+      console.error('Save toggle failed:', err);
+      setSavedJobs(prev => isSaved ? [...prev, job] : prev.filter(j => j.id !== job.id));
+    }
   };
   const isJobSaved = (jobId) => savedJobs.some(j => j.id === jobId);
   const activeFiltersCount = Object.entries(filters).filter(([k, v]) => v && v !== 'Any' && v !== 0 && v !== '').length;
