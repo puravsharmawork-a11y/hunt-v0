@@ -100,7 +100,7 @@ export function ExploreTab({
               >
                 <div>
                   <h1 className="hunt-serif" style={{ fontSize: 28, color: 'var(--text)', lineHeight: 1 }}>
-                    Opportunities <em>for you.</em>
+                    opportunities <em>for you.</em>
                   </h1>
                 </div>
 
@@ -341,8 +341,8 @@ export function ExploreTab({
                 <div
                   style={{
                     display: 'grid',
-                    gridTemplateColumns: selectedJob ? '1fr' : 'repeat(2, 1fr)',
-                    gap: 12,
+                    gridTemplateColumns: selectedJob ? 'repeat(2, 1fr)' : 'repeat(3, 1fr)',
+                    gap: 10,
                     marginTop: 8,
                   }}
                 >
