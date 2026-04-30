@@ -132,11 +132,7 @@ export function SwipeView({ jobs, selectedJob, onJobClick, isJobSaved, onSave })
         );
       })}
 
-      <div style={{ padding: '20px 28px', borderTop: '1px solid var(--border)' }}>
-        <span className="hunt-mono" style={{ fontSize: 9.5, color: 'var(--text-faint)', letterSpacing: '0.1em', textTransform: 'uppercase' }}>
-          end of feed · new drops mon + thu @ 09:00 IST
-        </span>
-      </div>
+      <div style={{ padding: '20px 28px', borderTop: '1px solid var(--border)' }} />
     </div>
   );
 }
