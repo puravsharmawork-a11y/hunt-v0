@@ -99,36 +99,33 @@ export function ExploreTab({
                 }}
               >
                 <div>
-                  <p className="hunt-kicker hunt-kicker-ink" style={{ marginBottom: 6 }}>
-                    ▲ the hunt / week 17
-                  </p>
                   <h1 className="hunt-serif" style={{ fontSize: 28, color: 'var(--text)', lineHeight: 1 }}>
-                    {displayedJobs.length} opportunities <em>for you.</em>
+                    opportunities <em>for you.</em>
                   </h1>
                 </div>
 
                 <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
                   {/* Hunt Fast */}
                   <button
-                    onClick={() => setHuntFastActive(p => !p)}
-                    title="Auto-sort by best match"
+                    onClick={() => alert('Hunt-fast · Coming soon')}
+                    title="Coming soon"
                     style={{
                       display: 'inline-flex',
                       alignItems: 'center',
                       gap: 6,
                       padding: '8px 12px',
-                      border: '1px solid ' + (huntFastActive ? 'var(--blue)' : 'var(--border-mid)'),
-                      background: huntFastActive ? 'var(--blue)' : 'transparent',
-                      color: huntFastActive ? '#fff' : 'var(--text-mid)',
+                      border: '1px solid var(--border-mid)',
+                      background: 'transparent',
+                      color: 'var(--text-mid)',
                       fontFamily: "'JetBrains Mono', monospace",
                       fontSize: 10.5,
                       letterSpacing: '0.1em',
                       textTransform: 'uppercase',
                       cursor: 'pointer',
+                      opacity: 0.6,
                     }}
                   >
                     <Sparkles size={12} /> HUNT-fast
-                    {huntFastActive && <span className="hunt-blink">●</span>}
                   </button>
 
                   {/* View toggle */}
@@ -365,28 +362,7 @@ export function ExploreTab({
 
               {/* End of feed marker */}
               {allJobs.length > 0 && viewMode === 'grid' && displayedJobs.length > 0 && (
-                <div
-                  style={{
-                    marginTop: 36,
-                    padding: '24px 0 16px',
-                    borderTop: '1px solid var(--border)',
-                    display: 'flex',
-                    justifyContent: 'space-between',
-                    alignItems: 'center',
-                  }}
-                >
-                  <div
-                    className="hunt-mono"
-                    style={{
-                      fontSize: 10,
-                      color: 'var(--text-faint)',
-                      letterSpacing: '0.1em',
-                      textTransform: 'uppercase',
-                    }}
-                  >
-                    end of feed · new drops mon + thu @ 09:00 IST
-                  </div>
-                </div>
+                <div style={{ marginTop: 36, padding: '24px 0 16px', borderTop: '1px solid var(--border)' }} />
               )}
             </div>
           </div>
