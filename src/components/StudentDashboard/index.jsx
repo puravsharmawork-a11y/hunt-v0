@@ -73,7 +73,9 @@ export default function StudentDashboard() {
   const [huntFastActive, setHuntFastActive] = useState(false);
   const [filters, setFilters] = useState({ role: '', location: '', minMatch: 0, stipend: 'Any', duration: 'Any', skill: '' });
   const [appliedJobs, setAppliedJobs] = useState([]);
-  const [savedJobs, setSavedJobs] = useState([]);
+  const [savedJobs, setSavedJobs] = useState(() => {
+    try { return JSON.parse(localStorage.getItem('hunt-saved-jobs') || '[]'); } catch { return []; }
+  });
   const [homeSubTab, setHomeSubTab] = useState('applications');
   const [showNotifications, setShowNotifications] = useState(false);
   const [showAccountMenu, setShowAccountMenu] = useState(false);
@@ -88,6 +90,7 @@ export default function StudentDashboard() {
   const initials = studentProfile?.full_name?.split(' ').map(n => n[0]).join('') || 'U';
 
   useEffect(() => { applyTokens(theme); localStorage.setItem('hunt-theme', theme); }, [theme]);
+  useEffect(() => { localStorage.setItem('hunt-saved-jobs', JSON.stringify(savedJobs)); }, [savedJobs]);
   useEffect(() => { loadData(); }, []);
 
   // ── Fetch unread count on mount so bell dot shows immediately ─────────────
@@ -126,6 +129,24 @@ export default function StudentDashboard() {
       }));
       setAllJobs(jobsWithScores.filter(j => j._match.score >= 30).sort((a, b) => b._match.score - a._match.score));
       setWeeklyApplications(await getWeeklyApplicationCount());
+      // Hydrate appliedJobs from DB so state survives page reloads
+      const { data: { user } } = await supabase.auth.getUser();
+      if (user) {
+        const { data: apps } = await supabase
+          .from('applications')
+          .select('job_id, match_score, created_at')
+          .eq('student_id', user.id);
+        if (apps && apps.length > 0) {
+          const appliedJobIds = new Set(apps.map(a => a.job_id));
+          const appliedWithScore = activeJobs
+            .filter(j => appliedJobIds.has(j.id))
+            .map(j => {
+              const app = apps.find(a => a.job_id === j.id);
+              return { ...j, matchScore: app?.match_score || 0, appliedAt: app?.created_at };
+            });
+          setAppliedJobs(appliedWithScore);
+        }
+      }
     } catch (err) { console.error(err); }
     finally { setLoading(false); }
   };
@@ -166,15 +187,28 @@ export default function StudentDashboard() {
 
   const handleApply = async (job, matchData) => {
     if (applying || weeklyApplications >= WEEKLY_LIMIT) return;
+    // Prevent double-apply (guard against stale UI state)
+    if (appliedJobs.some(j => j.id === job.id)) {
+      setSelectedJob(null);
+      return;
+    }
     setApplying(true);
     try {
       await createApplication(job.id, matchData.score, matchData.breakdown);
       const airtableData = prepareApplicationData(studentProfile, job, matchData.score, matchData.breakdown);
       await sendToAirtable(airtableData);
-      setAppliedJobs(p => [...p, { ...job, matchScore: matchData.score }]);
+      setAppliedJobs(p => [...p, { ...job, matchScore: matchData.score, appliedAt: new Date().toISOString() }]);
       setWeeklyApplications(c => c + 1);
       setSelectedJob(null);
-    } catch (err) { alert('Failed: ' + err.message); }
+    } catch (err) {
+      // If DB says already applied, just sync state silently instead of alerting
+      if (err.message?.includes('already applied') || err.code === '23505') {
+        setAppliedJobs(p => p.some(j => j.id === job.id) ? p : [...p, { ...job, matchScore: matchData.score }]);
+        setSelectedJob(null);
+      } else {
+        alert('Failed: ' + err.message);
+      }
+    }
     finally { setApplying(false); }
   };
 
