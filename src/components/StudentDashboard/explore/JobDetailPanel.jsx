@@ -279,6 +279,22 @@ export function JobDetailPanel({
           </Section>
         )}
 
+        {/* CUSTOM SECTIONS */}
+        {(job.sections || []).map((sec, i) => (
+          sec.heading && (sec.items || []).length > 0 && (
+            <Section key={i} label={sec.heading}>
+              <ul style={{ margin: 0, padding: 0, listStyle: 'none', display: 'flex', flexDirection: 'column', gap: 8 }}>
+                {sec.items.map((item, j) => (
+                  <li key={j} style={{ display: 'flex', gap: 10, alignItems: 'flex-start' }}>
+                    <div style={{ width: 5, height: 5, background: 'var(--ink)', flexShrink: 0, marginTop: 6 }} />
+                    <span style={{ fontSize: 13, color: 'var(--text-mid)', lineHeight: 1.6 }}>{item}</span>
+                  </li>
+                ))}
+              </ul>
+            </Section>
+          )
+        ))}
+
         {/* MATCH BREAKDOWN */}
         {matchData?.breakdown && (
           <Section label="Match breakdown">
