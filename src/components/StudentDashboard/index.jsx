@@ -298,6 +298,7 @@ export default function StudentDashboard() {
             savedJobs={savedJobs}
             handleSaveToggle={handleSaveToggle}
             handleJobClick={handleJobClick}
+            setAppliedJobs={setAppliedJobs}
           />
         )}
 
