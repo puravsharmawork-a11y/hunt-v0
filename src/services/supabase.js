@@ -310,3 +310,41 @@ export const calculateProfileCompleteness = (profile) => {
 
   return Math.min(score, 100);
 };
+// ─── ADD THESE FUNCTIONS TO THE BOTTOM OF YOUR supabase.js ───────────────────
+// They read/write the two new columns: github_signals, resume_signals
+
+export const getGitHubSignals = async () => {
+  const user = await getCurrentUser();
+  const { data, error } = await supabase
+    .from('students')
+    .select('github_signals, github_url')
+    .eq('auth_id', user.id)
+    .single();
+  if (error) throw error;
+  return data;
+};
+
+export const getResumeSignals = async () => {
+  const user = await getCurrentUser();
+  const { data, error } = await supabase
+    .from('students')
+    .select('resume_signals, resume_url')
+    .eq('auth_id', user.id)
+    .single();
+  if (error) throw error;
+  return data;
+};
+
+// Merge resume-extracted skills back into the profile's skills array
+// Call this after parseResume() if you want to persist merged skills
+export const mergeAndSaveSkills = async (mergedSkills) => {
+  const user = await getCurrentUser();
+  const { data, error } = await supabase
+    .from('students')
+    .update({ skills: mergedSkills })
+    .eq('auth_id', user.id)
+    .select('id, skills')
+    .single();
+  if (error) throw error;
+  return data;
+};
