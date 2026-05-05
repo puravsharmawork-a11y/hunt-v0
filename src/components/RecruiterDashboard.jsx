@@ -1582,7 +1582,7 @@ function RecruiterProfileForm({ recruiter, onUpdate, showToast }) {
 function NetworkTab() {
   return (
     <div>
-      <PageHeader eyebrow="Network" title={<>Connect with <em>builders.</>} />
+      <PageHeader eyebrow="Network" title={<>Connect with <em>builders.</em></>} />
       <EmptyState icon="🌐" title="Coming soon." message="Connect with other startups, recruiters, and high-signal builders. We're building this carefully — quality over quantity, like everything else on HUNT." />
     </div>
   );
