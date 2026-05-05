@@ -1,6 +1,5 @@
 // src/components/RecruiterDashboard.jsx
-// HUNT — RECRUITER DASHBOARD (v5 — recruiter→candidate notification loop)
-// Run 02_recruiter_loop_migration.sql before using this file.
+// HUNT — RECRUITER DASHBOARD (v6 — lean sidebar, recent roles home, hunt sort, pipeline-only hiring)
 
 import React, { useState, useEffect, useMemo } from 'react';
 import {
@@ -9,6 +8,7 @@ import {
   ArrowLeft, Pause, Play, ExternalLink, Github, Building2, Home,
   Layers, UserCheck, GitBranch, Network, Sparkles,
   Bookmark, ThumbsDown, Phone, Award, Bell, Lock, MessageSquare,
+  LayoutGrid, List,
 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { supabase, getCurrentUser, signOut } from '../services/supabase';
@@ -143,7 +143,6 @@ async function getAllApplicationsForRecruiter(recruiterId) {
   return (apps || []).map(a => ({ ...a, jobs: jobLookup[a.job_id] }));
 }
 
-// ─── UPDATED: writes recruiter_message + notification row ─────────────────
 const NOTIF_META = {
   shortlisted: {
     type:  'success',
@@ -168,7 +167,6 @@ const NOTIF_META = {
 };
 
 async function updateApplicationStatus(appId, status, studentId, recruiterMessage, jobMeta = {}) {
-  // 1. Patch the application row
   const patch = { status };
   if (status === 'shortlisted') patch.shortlisted_at = new Date().toISOString();
   if (status === 'interview')   patch.interviewed_at = new Date().toISOString();
@@ -179,7 +177,6 @@ async function updateApplicationStatus(appId, status, studentId, recruiterMessag
     .from('applications').update(patch).eq('id', appId).select().single();
   if (error) throw new Error(error.message || 'Status update failed');
 
-  // 2. Write notification for the student (non-fatal if it fails)
   if (studentId && NOTIF_META[status]) {
     const nm = NOTIF_META[status];
     const { role = 'the role', company = 'a recruiter' } = jobMeta;
@@ -236,11 +233,11 @@ const SKILL_OPTIONS = [
 const LOGO_EMOJIS = ['🚀','⚡','🎯','💡','🔥','🌊','🛠️','📊','🎨','🌱','⭐','🦾','🧬','🌐','🔮','🎮'];
 
 const NAV_ITEMS = [
-  { id: 'home',    label: 'Home',    icon: Home },
-  { id: 'roles',   label: 'Roles',   icon: Layers },
-  { id: 'hiring',  label: 'Hiring',  icon: UserCheck },
-  { id: 'profile', label: 'Profile', icon: Building2 },
-  { id: 'network', label: 'Network', icon: Network },
+  { id: 'home',    label: 'Home',     icon: Home },
+  { id: 'roles',   label: 'Roles',    icon: Layers },
+  { id: 'hiring',  label: 'Pipeline', icon: GitBranch },
+  { id: 'profile', label: 'Profile',  icon: Building2 },
+  { id: 'network', label: 'Network',  icon: Network },
 ];
 
 const STATUS_META = {
@@ -534,7 +531,6 @@ function PostRoleDrawer({ recruiter, open, onClose, onSuccess, showToast }) {
 
         <div style={{ flex: 1, overflowY: 'auto', padding: '22px' }}>
           <div style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
-            {/* Logo + Role */}
             <div style={{ display: 'flex', gap: 14, alignItems: 'flex-end' }}>
               <div style={{ flexShrink: 0 }}>
                 <Label>Logo</Label>
@@ -549,7 +545,6 @@ function PostRoleDrawer({ recruiter, open, onClose, onSuccess, showToast }) {
                 <FocusInput value={form.role} onChange={e => set('role')(e.target.value)} placeholder="Backend Engineering Intern" />
               </div>
             </div>
-            {/* Grid fields */}
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
               <div><Label required>Stipend</Label><FocusInput value={form.stipend} onChange={e => set('stipend')(e.target.value)} placeholder="₹25,000/month" /></div>
               <div><Label required>Duration</Label><FocusInput value={form.duration} onChange={e => set('duration')(e.target.value)} placeholder="3 / 6 months" /></div>
@@ -561,12 +556,10 @@ function PostRoleDrawer({ recruiter, open, onClose, onSuccess, showToast }) {
                 </FocusSelect>
               </div>
             </div>
-            {/* Description */}
             <div>
               <Label>Description</Label>
               <FocusTextarea value={form.description} onChange={e => set('description')(e.target.value)} rows={3} placeholder="What will the intern actually work on? Be specific — 2-3 sentences." />
             </div>
-            {/* Content sections */}
             <div style={{ borderTop: '1px solid var(--border)', paddingTop: 4 }}>
               <p style={{ fontSize: 10, fontWeight: 600, color: 'var(--text-dim)', letterSpacing: '0.1em', textTransform: 'uppercase', marginBottom: 16 }}>Role content sections</p>
               <div style={{ marginBottom: 18 }}>
@@ -621,7 +614,6 @@ function PostRoleDrawer({ recruiter, open, onClose, onSuccess, showToast }) {
                 </div>
               </div>
             </div>
-            {/* Skills */}
             <div style={{ borderTop: '1px solid var(--border)', paddingTop: 4 }}>
               <p style={{ fontSize: 10, fontWeight: 600, color: 'var(--text-dim)', letterSpacing: '0.1em', textTransform: 'uppercase', marginBottom: 12 }}>Skills & config</p>
               <Label required>Required skills</Label>
@@ -649,7 +641,6 @@ function PostRoleDrawer({ recruiter, open, onClose, onSuccess, showToast }) {
                 </div>
               )}
             </div>
-            {/* Nice to have */}
             <div>
               <Label>Nice to have (optional)</Label>
               <div style={{ display: 'flex', gap: 8, marginBottom: 8 }}>
@@ -667,7 +658,6 @@ function PostRoleDrawer({ recruiter, open, onClose, onSuccess, showToast }) {
                 </div>
               )}
             </div>
-            {/* Config */}
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 12 }}>
               <div>
                 <Label>Visibility</Label>
@@ -706,16 +696,221 @@ function PostRoleDrawer({ recruiter, open, onClose, onSuccess, showToast }) {
 }
 
 // ═══════════════════════════════════════════════════════════════════════════
-// 6. APPLICANT SNAPSHOT — with message textarea + updated action buttons
+// 6. APPLICANT SNAPSHOT (Card version for HUNT Sort grid)
 // ═══════════════════════════════════════════════════════════════════════════
+function ApplicantSnapshotCard({ app, rank, onStatusChange, isGridView }) {
+  const s         = app.students || {};
+  const skills    = s.skills    || [];
+  const projects  = s.projects  || [];
+  const score     = app.match_score    || 0;
+  const breakdown = app.match_breakdown || {};
+  const [recruiterNote, setRecruiterNote] = useState('');
+  const [sending, setSending] = useState(false);
+  const [expanded, setExpanded] = useState(false);
+
+  const ACTIONS = [
+    { key: 'shortlisted', label: 'Shortlist', icon: Bookmark,   color: 'var(--green-text)' },
+    { key: 'interview',   label: 'Interview', icon: Phone,      color: 'var(--blue)' },
+    { key: 'hired',       label: 'Hire',      icon: Award,      color: 'var(--purple)' },
+    { key: 'rejected',    label: 'Pass',      icon: ThumbsDown, color: 'var(--red)' },
+  ];
+
+  const handleAction = async (key) => {
+    setSending(true);
+    try { await onStatusChange(app.id, key, recruiterNote); setRecruiterNote(''); }
+    finally { setSending(false); }
+  };
+
+  if (isGridView) {
+    // Grid snapshot card
+    return (
+      <div style={{
+        background: 'var(--bg-card)', border: '1px solid var(--border)', borderRadius: 14,
+        overflow: 'hidden', display: 'flex', flexDirection: 'column',
+        transition: 'border-color 0.15s, box-shadow 0.15s',
+      }}>
+        {/* Rank badge + score */}
+        <div style={{ padding: '14px 16px 10px', borderBottom: '1px solid var(--border)', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+          <span style={{ fontSize: 10, fontWeight: 700, color: 'var(--text-dim)', fontFamily: "'Editorial New', Georgia, serif" }}>#{rank}</span>
+          <ScoreNumber score={score} size={20} />
+        </div>
+
+        {/* Candidate info */}
+        <div style={{ padding: '14px 16px', flex: 1 }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 12 }}>
+            <Avatar name={s.full_name} size={40} />
+            <div>
+              <p style={{ fontFamily: "'Editorial New', Georgia, serif", fontSize: 14, color: 'var(--text)', margin: 0, fontWeight: 400 }}>{s.full_name || 'Student'}</p>
+              <p style={{ fontSize: 10, color: 'var(--text-dim)', margin: '2px 0 0' }}>{s.college || '—'} · Y{s.year || '?'}</p>
+            </div>
+          </div>
+
+          {/* Skills */}
+          {skills.length > 0 && (
+            <div style={{ display: 'flex', flexWrap: 'wrap', gap: 4, marginBottom: 10 }}>
+              {skills.slice(0, 4).map((sk, i) => (
+                <span key={i} style={{ fontSize: 9, padding: '2px 7px', borderRadius: 5, background: 'var(--green-tint)', border: '1px solid var(--green)', color: 'var(--green-text)' }}>
+                  {sk.name} <span style={{ opacity: 0.6 }}>L{sk.level}</span>
+                </span>
+              ))}
+              {skills.length > 4 && <span style={{ fontSize: 9, padding: '2px 5px', color: 'var(--text-dim)' }}>+{skills.length - 4}</span>}
+            </div>
+          )}
+
+          {/* Projects preview */}
+          {projects.length > 0 && (
+            <div style={{ marginBottom: 10 }}>
+              {projects.slice(0, 2).map((p, i) => (
+                <div key={i} style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '5px 0', borderBottom: i < Math.min(projects.length, 2) - 1 ? '1px solid var(--border)' : 'none' }}>
+                  <div style={{ width: 3, height: 3, borderRadius: '50%', background: 'var(--text-dim)', flexShrink: 0 }} />
+                  <span style={{ fontSize: 11, color: 'var(--text)', flex: 1, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{p.title || p.name}</span>
+                  {(p.githubUrl || p.github_url) && <a href={p.githubUrl || p.github_url} target="_blank" rel="noopener noreferrer" style={{ color: 'var(--text-dim)' }} onClick={e => e.stopPropagation()}><Github size={10} /></a>}
+                </div>
+              ))}
+            </div>
+          )}
+
+          {/* Links */}
+          <div style={{ display: 'flex', gap: 5, flexWrap: 'wrap', marginBottom: 10 }}>
+            {s.github_url    && <a href={s.github_url}    target="_blank" rel="noopener noreferrer" style={{ ...linkChip, fontSize: 10, padding: '3px 8px' }}><Github size={10} /> GitHub</a>}
+            {s.resume_url    && <a href={s.resume_url}    target="_blank" rel="noopener noreferrer" style={{ ...linkChip, fontSize: 10, padding: '3px 8px', color: 'var(--text)', borderColor: 'var(--text)' }}>📄 Resume</a>}
+            {s.portfolio_url && <a href={s.portfolio_url} target="_blank" rel="noopener noreferrer" style={{ ...linkChip, fontSize: 10, padding: '3px 8px' }}><ExternalLink size={10} /> Portfolio</a>}
+          </div>
+
+          {/* Status */}
+          {app.status && app.status !== 'pending' && (
+            <div style={{ marginBottom: 10 }}>
+              <StatusPill status={app.status} />
+            </div>
+          )}
+        </div>
+
+        {/* Actions */}
+        <div style={{ padding: '10px 14px', borderTop: '1px solid var(--border)', background: 'var(--bg-subtle)' }}>
+          <textarea
+            value={recruiterNote}
+            onChange={e => setRecruiterNote(e.target.value)}
+            placeholder="Optional message…"
+            rows={2}
+            style={{ ...inp, fontSize: 11, padding: '7px 10px', marginBottom: 8, minHeight: 'unset', resize: 'none' }}
+            onFocus={e => e.target.style.borderColor = 'var(--text)'}
+            onBlur={e  => e.target.style.borderColor = 'var(--border)'}
+          />
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: 5 }}>
+            {ACTIONS.map(opt => {
+              const active = app.status === opt.key;
+              const Icon = opt.icon;
+              return (
+                <button key={opt.key} disabled={sending} onClick={() => handleAction(opt.key)} style={{
+                  padding: '7px 6px', borderRadius: 7, fontSize: 10, fontWeight: 500,
+                  cursor: sending ? 'wait' : 'pointer', fontFamily: 'inherit',
+                  display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 4,
+                  border:     `1px solid ${active ? opt.color : 'var(--border)'}`,
+                  background: active ? opt.color : 'transparent',
+                  color:      active ? '#fff'    : opt.color,
+                  opacity:    sending ? 0.6      : 1,
+                  transition: 'all 0.15s',
+                }}>
+                  <Icon size={11} /> {opt.label}
+                </button>
+              );
+            })}
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  // List view row
+  return (
+    <div style={{
+      background: 'var(--bg-card)', border: '1px solid var(--border)', borderRadius: 10,
+      overflow: 'hidden',
+    }}>
+      <div style={{ padding: '12px 16px', display: 'flex', alignItems: 'center', gap: 12, cursor: 'pointer' }}
+           onClick={() => setExpanded(e => !e)}>
+        <span style={{ fontSize: 10, color: 'var(--text-dim)', width: 22, textAlign: 'center', fontFamily: "'Editorial New', Georgia, serif", flexShrink: 0 }}>#{rank}</span>
+        <Avatar name={s.full_name} size={34} />
+        <div style={{ flex: 1, minWidth: 0 }}>
+          <p style={{ fontSize: 13, fontWeight: 500, color: 'var(--text)', margin: 0 }}>{s.full_name || 'Student'}</p>
+          <p style={{ fontSize: 10, color: 'var(--text-dim)', margin: '2px 0 0', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{s.college || '—'} · Year {s.year || '?'}</p>
+        </div>
+        <div style={{ display: 'flex', flexWrap: 'wrap', gap: 4, maxWidth: 200 }}>
+          {skills.slice(0, 3).map((sk, i) => (
+            <span key={i} style={{ fontSize: 9, padding: '2px 7px', borderRadius: 5, background: 'var(--green-tint)', border: '1px solid var(--green)', color: 'var(--green-text)' }}>{sk.name}</span>
+          ))}
+        </div>
+        <ScoreNumber score={score} size={18} />
+        {app.status && app.status !== 'pending' && <StatusPill status={app.status} />}
+        <ChevronRight size={14} style={{ color: 'var(--text-dim)', transform: expanded ? 'rotate(90deg)' : 'none', transition: 'transform 0.15s', flexShrink: 0 }} />
+      </div>
+
+      {expanded && (
+        <div style={{ padding: '0 16px 14px 16px', borderTop: '1px solid var(--border)' }}>
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16, paddingTop: 14 }}>
+            <div>
+              {projects.length > 0 && (
+                <div style={{ marginBottom: 10 }}>
+                  <p style={{ fontSize: 9, fontWeight: 600, letterSpacing: '0.1em', textTransform: 'uppercase', color: 'var(--text-dim)', marginBottom: 6 }}>Projects</p>
+                  {projects.slice(0, 3).map((p, i) => (
+                    <div key={i} style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '5px 0', borderBottom: '1px solid var(--border)' }}>
+                      <span style={{ fontSize: 11, color: 'var(--text)', flex: 1 }}>{p.title || p.name}</span>
+                      {(p.githubUrl || p.github_url) && <a href={p.githubUrl || p.github_url} target="_blank" rel="noopener noreferrer" style={{ color: 'var(--text-dim)' }}><Github size={10} /></a>}
+                    </div>
+                  ))}
+                </div>
+              )}
+              <div style={{ display: 'flex', gap: 5, flexWrap: 'wrap' }}>
+                {s.github_url    && <a href={s.github_url}    target="_blank" rel="noopener noreferrer" style={{ ...linkChip, fontSize: 10, padding: '3px 8px' }}><Github size={10} /> GitHub</a>}
+                {s.resume_url    && <a href={s.resume_url}    target="_blank" rel="noopener noreferrer" style={{ ...linkChip, fontSize: 10, padding: '3px 8px', color: 'var(--text)', borderColor: 'var(--text)' }}>📄 Resume</a>}
+                {s.portfolio_url && <a href={s.portfolio_url} target="_blank" rel="noopener noreferrer" style={{ ...linkChip, fontSize: 10, padding: '3px 8px' }}><ExternalLink size={10} /> Portfolio</a>}
+              </div>
+            </div>
+            <div>
+              <textarea
+                value={recruiterNote}
+                onChange={e => setRecruiterNote(e.target.value)}
+                placeholder="Optional message to candidate…"
+                rows={2}
+                style={{ ...inp, fontSize: 11, padding: '7px 10px', marginBottom: 8, minHeight: 'unset', resize: 'none' }}
+                onFocus={e => e.target.style.borderColor = 'var(--text)'}
+                onBlur={e  => e.target.style.borderColor = 'var(--border)'}
+              />
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: 5 }}>
+                {ACTIONS.map(opt => {
+                  const active = app.status === opt.key;
+                  const Icon = opt.icon;
+                  return (
+                    <button key={opt.key} disabled={sending} onClick={() => handleAction(opt.key)} style={{
+                      padding: '7px 6px', borderRadius: 7, fontSize: 10, fontWeight: 500,
+                      cursor: sending ? 'wait' : 'pointer', fontFamily: 'inherit',
+                      display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 4,
+                      border:     `1px solid ${active ? opt.color : 'var(--border)'}`,
+                      background: active ? opt.color : 'transparent',
+                      color:      active ? '#fff'    : opt.color,
+                      opacity:    sending ? 0.6      : 1,
+                      transition: 'all 0.15s',
+                    }}>
+                      <Icon size={11} /> {opt.label}
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
+// Full snapshot panel (used in role detail all-applicants view)
 function ApplicantSnapshot({ app, onStatusChange, onClose, compact = false }) {
   const s         = app.students || {};
   const skills    = s.skills    || [];
   const projects  = s.projects  || [];
   const score     = app.match_score    || 0;
   const breakdown = app.match_breakdown || {};
-
-  // ── NEW: recruiter note state ──────────────────────────────────────────
   const [recruiterNote, setRecruiterNote] = useState('');
   const [sending, setSending] = useState(false);
 
@@ -726,15 +921,10 @@ function ApplicantSnapshot({ app, onStatusChange, onClose, compact = false }) {
     { key: 'rejected',    label: 'Pass',       icon: ThumbsDown, color: 'var(--red)' },
   ];
 
-  // ── NEW: pass note through to parent handler ───────────────────────────
   const handleAction = async (key) => {
     setSending(true);
-    try {
-      await onStatusChange(app.id, key, recruiterNote);
-      setRecruiterNote(''); // clear after sending
-    } finally {
-      setSending(false);
-    }
+    try { await onStatusChange(app.id, key, recruiterNote); setRecruiterNote(''); }
+    finally { setSending(false); }
   };
 
   return (
@@ -745,7 +935,6 @@ function ApplicantSnapshot({ app, onStatusChange, onClose, compact = false }) {
       </div>
 
       <div style={{ padding: 18, overflowY: 'auto', flex: 1 }}>
-        {/* Header */}
         <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', marginBottom: 18 }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
             <Avatar name={s.full_name} size={46} />
@@ -761,7 +950,6 @@ function ApplicantSnapshot({ app, onStatusChange, onClose, compact = false }) {
           </div>
         </div>
 
-        {/* Score breakdown */}
         {Object.keys(breakdown).length > 0 && (
           <div style={{ background: 'var(--bg-subtle)', border: '1px solid var(--border)', borderRadius: 10, padding: '14px 16px', marginBottom: 14 }}>
             <p style={{ fontSize: 9, fontWeight: 600, letterSpacing: '0.1em', textTransform: 'uppercase', color: 'var(--text-dim)', marginBottom: 10 }}>Score breakdown</p>
@@ -777,7 +965,6 @@ function ApplicantSnapshot({ app, onStatusChange, onClose, compact = false }) {
           </div>
         )}
 
-        {/* Skills */}
         {skills.length > 0 && (
           <div style={{ marginBottom: 14 }}>
             <p style={{ fontSize: 9, fontWeight: 600, letterSpacing: '0.1em', textTransform: 'uppercase', color: 'var(--text-dim)', marginBottom: 8 }}>Skills</p>
@@ -791,7 +978,6 @@ function ApplicantSnapshot({ app, onStatusChange, onClose, compact = false }) {
           </div>
         )}
 
-        {/* Projects */}
         {projects.length > 0 && !compact && (
           <div style={{ marginBottom: 14 }}>
             <p style={{ fontSize: 9, fontWeight: 600, letterSpacing: '0.1em', textTransform: 'uppercase', color: 'var(--text-dim)', marginBottom: 8 }}>Projects</p>
@@ -814,7 +1000,6 @@ function ApplicantSnapshot({ app, onStatusChange, onClose, compact = false }) {
           </div>
         )}
 
-        {/* Links */}
         <div style={{ display: 'flex', gap: 6, marginBottom: 16, flexWrap: 'wrap' }}>
           {s.github_url    && <a href={s.github_url}    target="_blank" rel="noopener noreferrer" style={linkChip}><Github size={11} /> GitHub</a>}
           {s.linkedin_url  && <a href={s.linkedin_url}  target="_blank" rel="noopener noreferrer" style={linkChip}><ExternalLink size={11} /> LinkedIn</a>}
@@ -822,7 +1007,6 @@ function ApplicantSnapshot({ app, onStatusChange, onClose, compact = false }) {
           {s.resume_url    && <a href={s.resume_url}    target="_blank" rel="noopener noreferrer" style={{ ...linkChip, color: 'var(--text)', borderColor: 'var(--text)' }}>📄 Resume</a>}
         </div>
 
-        {/* ── NEW: message textarea ──────────────────────────────────────── */}
         <div style={{ marginBottom: 10 }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 6 }}>
             <MessageSquare size={11} style={{ color: 'var(--text-dim)' }} />
@@ -835,51 +1019,33 @@ function ApplicantSnapshot({ app, onStatusChange, onClose, compact = false }) {
             onChange={e => setRecruiterNote(e.target.value)}
             placeholder="e.g. Great projects! We'd love to chat — sending a Calendly link shortly."
             rows={3}
-            style={{
-              width: '100%', padding: '9px 11px', fontSize: 12, lineHeight: 1.5,
-              background: 'var(--bg-subtle)', border: '1px solid var(--border)',
-              color: 'var(--text)', resize: 'vertical', fontFamily: 'inherit',
-              borderRadius: 7, boxSizing: 'border-box', outline: 'none',
-              transition: 'border-color 0.15s',
-            }}
+            style={{ width: '100%', padding: '9px 11px', fontSize: 12, lineHeight: 1.5, background: 'var(--bg-subtle)', border: '1px solid var(--border)', color: 'var(--text)', resize: 'vertical', fontFamily: 'inherit', borderRadius: 7, boxSizing: 'border-box', outline: 'none', transition: 'border-color 0.15s' }}
             onFocus={e => e.target.style.borderColor = 'var(--text)'}
             onBlur={e  => e.target.style.borderColor = 'var(--border)'}
           />
-          {recruiterNote.trim() && (
-            <p style={{ fontSize: 10, color: 'var(--text-dim)', marginTop: 4 }}>
-              This message will be shown to the candidate in their dashboard.
-            </p>
-          )}
         </div>
 
-        {/* ── UPDATED: action buttons — pass recruiterNote ───────────────── */}
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: 6 }}>
           {ACTIONS.map(opt => {
             const active = app.status === opt.key;
             const Icon   = opt.icon;
             return (
-              <button
-                key={opt.key}
-                disabled={sending}
-                onClick={() => handleAction(opt.key)}
-                style={{
-                  padding: '10px', borderRadius: 8, fontSize: 11, fontWeight: 500,
-                  cursor: sending ? 'wait' : 'pointer', fontFamily: 'inherit',
-                  display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 5,
-                  border:     `1px solid ${active ? opt.color : 'var(--border)'}`,
-                  background: active ? opt.color : 'transparent',
-                  color:      active ? '#fff'    : opt.color,
-                  opacity:    sending ? 0.6      : 1,
-                  transition: 'all 0.15s',
-                }}
-              >
+              <button key={opt.key} disabled={sending} onClick={() => handleAction(opt.key)} style={{
+                padding: '10px', borderRadius: 8, fontSize: 11, fontWeight: 500,
+                cursor: sending ? 'wait' : 'pointer', fontFamily: 'inherit',
+                display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 5,
+                border:     `1px solid ${active ? opt.color : 'var(--border)'}`,
+                background: active ? opt.color : 'transparent',
+                color:      active ? '#fff'    : opt.color,
+                opacity:    sending ? 0.6      : 1,
+                transition: 'all 0.15s',
+              }}>
                 <Icon size={12} /> {opt.label}
               </button>
             );
           })}
         </div>
 
-        {/* Current status display */}
         {app.status && app.status !== 'pending' && (
           <div style={{ marginTop: 10, display: 'flex', alignItems: 'center', gap: 6 }}>
             <span style={{ fontSize: 10, color: 'var(--text-dim)' }}>Current status:</span>
@@ -887,7 +1053,6 @@ function ApplicantSnapshot({ app, onStatusChange, onClose, compact = false }) {
           </div>
         )}
 
-        {/* Show existing recruiter message if any */}
         {app.recruiter_message && (
           <div style={{ marginTop: 10, padding: '9px 11px', background: 'var(--bg-subtle)', border: '1px solid var(--border)', borderRadius: 7, borderLeft: '3px solid var(--blue)' }}>
             <p style={{ fontSize: 9, fontWeight: 600, color: 'var(--text-dim)', letterSpacing: '0.08em', textTransform: 'uppercase', marginBottom: 4 }}>Last message sent</p>
@@ -900,50 +1065,7 @@ function ApplicantSnapshot({ app, onStatusChange, onClose, compact = false }) {
 }
 
 // ═══════════════════════════════════════════════════════════════════════════
-// 7. CANDIDATE HIGHLIGHT CARD
-// ═══════════════════════════════════════════════════════════════════════════
-function CandidateHighlightCard({ app, onClick, isSelected }) {
-  const s      = app.students || {};
-  const score  = app.match_score || 0;
-  const skills = (s.skills || []).slice(0, 3);
-  return (
-    <div onClick={onClick} className="hn-card" style={{
-      background: 'var(--bg-card)',
-      border: isSelected ? '1.5px solid var(--text)' : '1px solid var(--border)',
-      borderRadius: 12, padding: 16, cursor: 'pointer',
-      transition: 'border-color 0.15s, box-shadow 0.15s',
-      boxShadow: isSelected ? '0 2px 12px rgba(0,0,0,0.06)' : 'none',
-      display: 'flex', flexDirection: 'column', gap: 10,
-    }}>
-      <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between' }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-          <Avatar name={s.full_name} size={38} />
-          <div>
-            <p style={{ fontSize: 13, fontWeight: 500, color: 'var(--text)', margin: 0, lineHeight: 1.2 }}>{s.full_name || 'Student'}</p>
-            <p style={{ fontSize: 10, color: 'var(--text-dim)', margin: '2px 0 0' }}>{s.college || '—'}</p>
-          </div>
-        </div>
-        <ScoreNumber score={score} size={20} />
-      </div>
-      {app.jobs?.role && <p style={{ fontSize: 10, color: 'var(--text-mid)', margin: 0 }}>{app.jobs.logo} {app.jobs.role}</p>}
-      {skills.length > 0 && (
-        <div style={{ display: 'flex', flexWrap: 'wrap', gap: 4 }}>
-          {skills.map((sk, i) => (
-            <span key={i} style={{ fontSize: 9, padding: '2px 7px', borderRadius: 5, background: 'var(--green-tint)', border: '1px solid var(--green)', color: 'var(--green-text)' }}>{sk.name}</span>
-          ))}
-          {(s.skills || []).length > 3 && <span style={{ fontSize: 9, padding: '2px 7px', color: 'var(--text-dim)' }}>+{s.skills.length - 3}</span>}
-        </div>
-      )}
-      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', paddingTop: 8, borderTop: '1px solid var(--border)' }}>
-        <StatusPill status={app.status || 'pending'} />
-        <ChevronRight size={14} style={{ color: 'var(--text-dim)' }} />
-      </div>
-    </div>
-  );
-}
-
-// ═══════════════════════════════════════════════════════════════════════════
-// 8. ROLE CARD
+// 7. ROLE CARD
 // ═══════════════════════════════════════════════════════════════════════════
 function RoleCard({ job, onClick, onTogglePause, onCopyLink, onDelete }) {
   const filled = (job.current_applicants || 0) / (job.max_applicants || 50);
@@ -984,13 +1106,15 @@ function RoleCard({ job, onClick, onTogglePause, onCopyLink, onDelete }) {
 }
 
 // ═══════════════════════════════════════════════════════════════════════════
-// 9. ROLE DETAIL VIEW
+// 8. ROLE DETAIL VIEW — with HUNT Sort
 // ═══════════════════════════════════════════════════════════════════════════
 function RoleDetailView({ job, onBack, onCopyLink, recruiter, showToast }) {
   const [apps, setApps]               = useState([]);
   const [loading, setLoading]         = useState(true);
   const [selectedApp, setSelectedApp] = useState(null);
   const [statusFilter, setStatusFilter] = useState('all');
+  const [huntSortActive, setHuntSortActive] = useState(false);
+  const [huntSortView, setHuntSortView]     = useState('grid'); // 'grid' | 'list'
 
   useEffect(() => {
     (async () => {
@@ -1000,15 +1124,11 @@ function RoleDetailView({ job, onBack, onCopyLink, recruiter, showToast }) {
     })();
   }, [job.id]);
 
-  // ── UPDATED: receives note from ApplicantSnapshot ──────────────────────
   const handleStatusChange = async (appId, status, note = '') => {
     const app = apps.find(a => a.id === appId);
     try {
       await updateApplicationStatus(
-        appId,
-        status,
-        app?.students?.id,
-        note,
+        appId, status, app?.students?.id, note,
         { role: job.role, company: job.company || recruiter?.startups?.name },
       );
       setApps(a => a.map(x => x.id === appId ? { ...x, status, recruiter_message: note || x.recruiter_message } : x));
@@ -1018,6 +1138,12 @@ function RoleDetailView({ job, onBack, onCopyLink, recruiter, showToast }) {
     } catch (e) { showToast(e.message || 'Update failed', 'error'); }
   };
 
+  // Top 6 by match score
+  const huntSortedApps = useMemo(() =>
+    [...apps].sort((a, b) => (b.match_score || 0) - (a.match_score || 0)).slice(0, 6),
+    [apps]
+  );
+
   const filtered = statusFilter === 'all' ? apps : apps.filter(a => (a.status || 'pending') === statusFilter);
   const counts   = apps.reduce((acc, a) => { const s = a.status || 'pending'; acc[s] = (acc[s] || 0) + 1; acc.all = (acc.all || 0) + 1; return acc; }, {});
   const avgScore = apps.length ? Math.round(apps.reduce((s, a) => s + (a.match_score || 0), 0) / apps.length) : 0;
@@ -1025,6 +1151,8 @@ function RoleDetailView({ job, onBack, onCopyLink, recruiter, showToast }) {
   return (
     <div>
       <button onClick={onBack} style={{ ...btnGhost(), marginBottom: 18, padding: '6px 12px' }}><ArrowLeft size={12} /> All roles</button>
+
+      {/* Role header */}
       <div style={{ background: 'var(--bg-card)', border: '1px solid var(--border)', borderRadius: 14, padding: 22, marginBottom: 18 }}>
         <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', marginBottom: 18 }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: 14 }}>
@@ -1050,24 +1178,105 @@ function RoleDetailView({ job, onBack, onCopyLink, recruiter, showToast }) {
           ))}
         </div>
       </div>
-      <div style={{ display: 'flex', gap: 6, marginBottom: 14, flexWrap: 'wrap' }}>
-        {[
-          { id: 'all',         label: `All (${counts.all || 0})` },
-          { id: 'pending',     label: `Pending (${counts.pending || 0})` },
-          { id: 'shortlisted', label: `Shortlisted (${counts.shortlisted || 0})` },
-          { id: 'interview',   label: `Interview (${counts.interview || 0})` },
-          { id: 'hired',       label: `Hired (${counts.hired || 0})` },
-          { id: 'rejected',    label: `Passed (${counts.rejected || 0})` },
-        ].map(t => (
-          <button key={t.id} onClick={() => setStatusFilter(t.id)} style={{
-            padding: '6px 12px', borderRadius: 16, fontSize: 11, fontFamily: 'inherit', cursor: 'pointer',
-            background: statusFilter === t.id ? 'var(--text)' : 'transparent',
-            border: `1px solid ${statusFilter === t.id ? 'var(--text)' : 'var(--border)'}`,
-            color: statusFilter === t.id ? 'var(--bg)' : 'var(--text-mid)',
-            fontWeight: statusFilter === t.id ? 500 : 400,
-          }}>{t.label}</button>
-        ))}
+
+      {/* HUNT Sort section */}
+      <div style={{ background: 'var(--bg-card)', border: '1.5px solid var(--green)', borderRadius: 14, padding: 20, marginBottom: 18 }}>
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: huntSortActive ? 18 : 0 }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+            <div style={{ width: 32, height: 32, borderRadius: 8, background: 'var(--green-tint)', border: '1px solid var(--green)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+              <Sparkles size={15} style={{ color: 'var(--green)' }} />
+            </div>
+            <div>
+              <p style={{ fontSize: 13, fontWeight: 600, color: 'var(--text)', margin: 0 }}>HUNT Sort</p>
+              <p style={{ fontSize: 11, color: 'var(--text-dim)', margin: '1px 0 0' }}>Top 6 candidates ranked by match score</p>
+            </div>
+          </div>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+            {huntSortActive && (
+              <div style={{ display: 'flex', gap: 4 }}>
+                <button onClick={() => setHuntSortView('grid')} style={{ ...iconBtn, background: huntSortView === 'grid' ? 'var(--bg-subtle)' : 'transparent', borderColor: huntSortView === 'grid' ? 'var(--text)' : 'var(--border)', color: huntSortView === 'grid' ? 'var(--text)' : 'var(--text-dim)' }}>
+                  <LayoutGrid size={13} />
+                </button>
+                <button onClick={() => setHuntSortView('list')} style={{ ...iconBtn, background: huntSortView === 'list' ? 'var(--bg-subtle)' : 'transparent', borderColor: huntSortView === 'list' ? 'var(--text)' : 'var(--border)', color: huntSortView === 'list' ? 'var(--text)' : 'var(--text-dim)' }}>
+                  <List size={13} />
+                </button>
+              </div>
+            )}
+            <button
+              onClick={() => setHuntSortActive(h => !h)}
+              style={{
+                padding: '8px 14px', borderRadius: 8, fontSize: 12, fontWeight: 600,
+                cursor: 'pointer', fontFamily: 'inherit',
+                background: huntSortActive ? 'var(--green)' : 'var(--green-tint)',
+                color: huntSortActive ? '#fff' : 'var(--green-text)',
+                border: `1px solid var(--green)`,
+                display: 'flex', alignItems: 'center', gap: 6, transition: 'all 0.15s',
+              }}
+            >
+              <Sparkles size={13} />
+              {huntSortActive ? 'Hide' : 'Run HUNT Sort'}
+            </button>
+          </div>
+        </div>
+
+        {huntSortActive && (
+          apps.length === 0 ? (
+            <p style={{ textAlign: 'center', color: 'var(--text-dim)', fontSize: 13, padding: '24px 0' }}>No applicants yet.</p>
+          ) : huntSortView === 'grid' ? (
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(260px, 1fr))', gap: 14 }}>
+              {huntSortedApps.map((app, i) => (
+                <ApplicantSnapshotCard
+                  key={app.id}
+                  app={app}
+                  rank={i + 1}
+                  isGridView={true}
+                  onStatusChange={async (id, status, note) => {
+                    await handleStatusChange(id, status, note);
+                  }}
+                />
+              ))}
+            </div>
+          ) : (
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+              {huntSortedApps.map((app, i) => (
+                <ApplicantSnapshotCard
+                  key={app.id}
+                  app={app}
+                  rank={i + 1}
+                  isGridView={false}
+                  onStatusChange={async (id, status, note) => {
+                    await handleStatusChange(id, status, note);
+                  }}
+                />
+              ))}
+            </div>
+          )
+        )}
       </div>
+
+      {/* All applicants */}
+      <div style={{ marginBottom: 14, display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 8 }}>
+        <p style={{ fontSize: 10, fontWeight: 600, letterSpacing: '0.1em', textTransform: 'uppercase', color: 'var(--text-dim)', margin: 0 }}>All applicants</p>
+        <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
+          {[
+            { id: 'all',         label: `All (${counts.all || 0})` },
+            { id: 'pending',     label: `Pending (${counts.pending || 0})` },
+            { id: 'shortlisted', label: `Shortlisted (${counts.shortlisted || 0})` },
+            { id: 'interview',   label: `Interview (${counts.interview || 0})` },
+            { id: 'hired',       label: `Hired (${counts.hired || 0})` },
+            { id: 'rejected',    label: `Passed (${counts.rejected || 0})` },
+          ].map(t => (
+            <button key={t.id} onClick={() => setStatusFilter(t.id)} style={{
+              padding: '5px 10px', borderRadius: 14, fontSize: 11, fontFamily: 'inherit', cursor: 'pointer',
+              background: statusFilter === t.id ? 'var(--text)' : 'transparent',
+              border: `1px solid ${statusFilter === t.id ? 'var(--text)' : 'var(--border)'}`,
+              color: statusFilter === t.id ? 'var(--bg)' : 'var(--text-mid)',
+              fontWeight: statusFilter === t.id ? 500 : 400,
+            }}>{t.label}</button>
+          ))}
+        </div>
+      </div>
+
       {loading ? (
         <p style={{ textAlign: 'center', color: 'var(--text-dim)', padding: 40, fontSize: 13 }}>Loading applicants…</p>
       ) : filtered.length === 0 ? (
@@ -1113,17 +1322,17 @@ function ApplicantRow({ app, rank, onClick, isSelected }) {
 }
 
 // ═══════════════════════════════════════════════════════════════════════════
-// 10. TAB: HOME
+// 9. TAB: HOME — shows recent roles, no top candidates / quick actions
 // ═══════════════════════════════════════════════════════════════════════════
-function HomeTab({ recruiter, jobs, allApps, onNavigate, onPostRole }) {
+function HomeTab({ recruiter, jobs, allApps, onPostRole, onOpenRole }) {
   const liveJobs    = jobs.filter(j => (j.status || (j.is_active ? 'live' : 'paused')) === 'live');
   const totalApps   = allApps.length;
   const shortlisted = allApps.filter(a => a.status === 'shortlisted').length;
   const hired       = allApps.filter(a => a.status === 'hired').length;
-  const avgScore    = allApps.length ? Math.round(allApps.reduce((s, a) => s + (a.match_score || 0), 0) / allApps.length) : 0;
-  const topPicks    = useMemo(() => [...allApps].filter(a => (a.match_score || 0) >= 60 && a.status !== 'rejected').sort((a, b) => (b.match_score || 0) - (a.match_score || 0)).slice(0, 6), [allApps]);
-  const startupName = recruiter.startups?.name || recruiter.company_name || 'there';
+  const recentJobs  = [...jobs].sort((a, b) => new Date(b.created_at) - new Date(a.created_at)).slice(0, 6);
   const firstName   = recruiter.contact_name?.split(' ')[0] || 'recruiter';
+  const startupName = recruiter.startups?.name || recruiter.company_name || 'there';
+
   return (
     <div>
       <div style={{ marginBottom: 28 }}>
@@ -1131,7 +1340,9 @@ function HomeTab({ recruiter, jobs, allApps, onNavigate, onPostRole }) {
         <h1 style={{ fontFamily: "'Editorial New', Georgia, serif", fontSize: 28, fontWeight: 400, color: 'var(--text)', margin: 0, lineHeight: 1.2 }}>Welcome back, <em>{firstName}.</em></h1>
         <p style={{ fontSize: 13, color: 'var(--text-mid)', marginTop: 8 }}>Here's what's happening at {startupName}.</p>
       </div>
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 12, marginBottom: 32 }}>
+
+      {/* Stats */}
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 12, marginBottom: 36 }}>
         {[{ label: 'Live roles', val: liveJobs.length }, { label: 'Applicants', val: totalApps }, { label: 'Shortlisted', val: shortlisted }, { label: 'Hired', val: hired }].map(s => (
           <div key={s.label} style={{ background: 'var(--bg-card)', border: '1px solid var(--border)', borderRadius: 12, padding: '16px 20px' }}>
             <p style={{ fontSize: 10, fontWeight: 600, letterSpacing: '0.1em', textTransform: 'uppercase', color: 'var(--text-dim)', marginBottom: 8 }}>{s.label}</p>
@@ -1139,45 +1350,70 @@ function HomeTab({ recruiter, jobs, allApps, onNavigate, onPostRole }) {
           </div>
         ))}
       </div>
-      <div style={{ display: 'grid', gridTemplateColumns: '1fr 280px', gap: 28 }}>
-        <div>
-          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 14 }}>
-            <h3 style={{ fontFamily: "'Editorial New', Georgia, serif", fontSize: 18, color: 'var(--text)', margin: 0, fontWeight: 400 }}>Top picks for you</h3>
-            <button onClick={() => onNavigate('hiring')} style={{ ...btnGhost(), padding: '5px 10px' }}>See all <ChevronRight size={11} /></button>
-          </div>
-          {topPicks.length === 0 ? <EmptyState icon="🎯" title="No top picks yet." message="Once students apply to your roles, the strongest matches show up here." /> : (
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: 10 }}>
-              {topPicks.map(app => <CandidateHighlightCard key={app.id} app={app} onClick={() => onNavigate('hiring')} />)}
-            </div>
-          )}
-        </div>
-        <div>
-          <h3 style={{ fontFamily: "'Editorial New', Georgia, serif", fontSize: 18, color: 'var(--text)', margin: '0 0 14px', fontWeight: 400 }}>Quick actions</h3>
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
-            <button onClick={onPostRole} style={{ ...btnPrimary(false), justifyContent: 'flex-start', padding: '12px 14px' }}><Plus size={14} /> Post a new role</button>
-            <button onClick={() => onNavigate('hiring')} style={{ ...btnGhost(), justifyContent: 'flex-start', padding: '12px 14px' }}><UserCheck size={14} /> Browse all candidates</button>
-            <button onClick={() => onNavigate('hiring')} style={{ ...btnGhost(), justifyContent: 'flex-start', padding: '12px 14px' }}><GitBranch size={14} /> View pipeline</button>
-            <button onClick={() => onNavigate('roles')} style={{ ...btnGhost(), justifyContent: 'flex-start', padding: '12px 14px' }}><Layers size={14} /> Manage roles</button>
-          </div>
-          <div style={{ marginTop: 22, padding: 16, background: 'var(--bg-card)', border: '1px solid var(--border)', borderRadius: 12 }}>
-            <p style={{ fontSize: 10, fontWeight: 600, letterSpacing: '0.1em', textTransform: 'uppercase', color: 'var(--text-dim)', marginBottom: 8 }}>Avg match score</p>
-            <p style={{ fontFamily: "'Editorial New', Georgia, serif", fontSize: 32, color: 'var(--text)', margin: 0, lineHeight: 1, fontWeight: 400 }}>{avgScore}%</p>
-            <p style={{ fontSize: 11, color: 'var(--text-mid)', marginTop: 8, lineHeight: 1.5 }}>
-              {avgScore >= 70 ? 'Strong applicant pool. Move fast.' : avgScore >= 50 ? 'Mixed pool — focus on top 6.' : 'Consider tightening role requirements.'}
-            </p>
-          </div>
-        </div>
+
+      {/* Recent roles */}
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 16 }}>
+        <h3 style={{ fontFamily: "'Editorial New', Georgia, serif", fontSize: 18, color: 'var(--text)', margin: 0, fontWeight: 400 }}>Recent roles</h3>
+        <button onClick={onPostRole} style={{ ...btnPrimary(false), padding: '7px 12px', fontSize: 11 }}>
+          <Plus size={12} /> Post a role
+        </button>
       </div>
+
+      {recentJobs.length === 0 ? (
+        <EmptyState icon="📋" title="No roles posted yet." message="Post your first role to start receiving matched candidates."
+          cta={<button onClick={onPostRole} style={{ ...btnPrimary(false), margin: '0 auto' }}><Plus size={13} /> Post a role</button>} />
+      ) : (
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))', gap: 12 }}>
+          {recentJobs.map(job => {
+            const filled = (job.current_applicants || 0) / (job.max_applicants || 50);
+            const status = job.status || (job.is_active ? 'live' : 'paused');
+            const statusStyle = status === 'live'
+              ? { color: 'var(--green-text)', bg: 'var(--green-tint)', border: 'var(--green)', label: '● Live' }
+              : { color: 'var(--amber)', bg: 'var(--amber-tint)', border: 'var(--amber)', label: '⏸ Paused' };
+            const jobApps = allApps.filter(a => a.job_id === job.id);
+            return (
+              <div key={job.id} onClick={() => onOpenRole(job)} className="hn-card" style={{ background: 'var(--bg-card)', border: '1px solid var(--border)', borderRadius: 12, padding: 18, cursor: 'pointer', transition: 'border-color 0.15s', display: 'flex', flexDirection: 'column', gap: 10 }}>
+                <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between' }}>
+                  <div style={{ display: 'flex', alignItems: 'flex-start', gap: 10 }}>
+                    <span style={{ fontSize: 26, lineHeight: 1 }}>{job.logo || '🚀'}</span>
+                    <div>
+                      <p style={{ fontFamily: "'Editorial New', Georgia, serif", fontSize: 14, fontWeight: 400, color: 'var(--text)', margin: 0, lineHeight: 1.25 }}>{job.role}</p>
+                      <p style={{ fontSize: 10, color: 'var(--text-dim)', marginTop: 3 }}>{job.stipend} · {job.duration}</p>
+                    </div>
+                  </div>
+                  <span style={{ fontSize: 9, padding: '2px 7px', borderRadius: 8, fontWeight: 500, background: statusStyle.bg, color: statusStyle.color, border: `1px solid ${statusStyle.border}`, whiteSpace: 'nowrap', flexShrink: 0 }}>{statusStyle.label}</span>
+                </div>
+                <div style={{ display: 'flex', gap: 10, fontSize: 10, color: 'var(--text-mid)' }}>
+                  <span style={{ display: 'flex', alignItems: 'center', gap: 3 }}><MapPin size={10} /> {job.location}</span>
+                  <span style={{ display: 'flex', alignItems: 'center', gap: 3 }}><Users size={10} /> {job.current_applicants || 0}/{job.max_applicants || 50}</span>
+                </div>
+                <div style={{ height: 3, borderRadius: 2, background: 'var(--border)', overflow: 'hidden' }}>
+                  <div style={{ height: '100%', width: `${Math.min(filled, 1) * 100}%`, background: filled > 0.8 ? 'var(--red)' : filled > 0.5 ? 'var(--amber)' : 'var(--green)', borderRadius: 2 }} />
+                </div>
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', paddingTop: 4, borderTop: '1px solid var(--border)' }}>
+                  <span style={{ fontSize: 10, color: 'var(--text-dim)' }}>{jobApps.length} applicant{jobApps.length !== 1 ? 's' : ''}</span>
+                  <ChevronRight size={13} style={{ color: 'var(--text-dim)' }} />
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      )}
     </div>
   );
 }
 
 // ═══════════════════════════════════════════════════════════════════════════
-// 11. TAB: ROLES
+// 10. TAB: ROLES
 // ═══════════════════════════════════════════════════════════════════════════
-function RolesTab({ jobs, onCopyLink, onTogglePause, onDelete, onPostRole, recruiter, showToast }) {
+function RolesTab({ jobs, onCopyLink, onTogglePause, onDelete, onPostRole, recruiter, showToast, initialOpenJob }) {
   const [subTab, setSubTab] = useState('live');
-  const [openJob, setOpenJob] = useState(null);
+  const [openJob, setOpenJob] = useState(initialOpenJob || null);
+
+  useEffect(() => {
+    if (initialOpenJob) setOpenJob(initialOpenJob);
+  }, [initialOpenJob]);
+
   const grouped = {
     live:   jobs.filter(j => (j.status || (j.is_active ? 'live' : 'paused')) === 'live'),
     paused: jobs.filter(j => (j.status || (j.is_active ? 'live' : 'paused')) === 'paused'),
@@ -1188,10 +1424,12 @@ function RolesTab({ jobs, onCopyLink, onTogglePause, onDelete, onPostRole, recru
     { id: 'paused', label: `Paused (${grouped.paused.length})` },
     { id: 'closed', label: `Closed (${grouped.closed.length})` },
   ];
+
   if (openJob) return <RoleDetailView job={openJob} onBack={() => setOpenJob(null)} onCopyLink={onCopyLink} recruiter={recruiter} showToast={showToast} />;
+
   return (
     <div>
-      <PageHeader eyebrow="Roles" title={<>Manage your <em>roles.</em></>} action={<button onClick={onPostRole} style={{ ...btnPrimary(false), padding: '10px 16px' }}><Plus size={13} /> Post a role</button>} />
+      <PageHeader eyebrow="Roles" title={<>Manage your <em>roles.</>} action={<button onClick={onPostRole} style={{ ...btnPrimary(false), padding: '10px 16px' }}><Plus size={13} /> Post a role</button>} />
       <SubTabStrip tabs={SUBTABS} active={subTab} onChange={setSubTab} />
       {grouped[subTab].length === 0 ? (
         <EmptyState icon={subTab === 'live' ? '📋' : subTab === 'paused' ? '⏸' : '✕'} title={`No ${subTab} roles.`} message={subTab === 'live' ? 'Post your first role to start receiving matched candidates.' : `Roles you ${subTab === 'paused' ? 'pause' : 'close'} will appear here.`}
@@ -1206,59 +1444,13 @@ function RolesTab({ jobs, onCopyLink, onTogglePause, onDelete, onPostRole, recru
 }
 
 // ═══════════════════════════════════════════════════════════════════════════
-// 12. TAB: HIRING
+// 11. TAB: HIRING — pipeline only
 // ═══════════════════════════════════════════════════════════════════════════
 function HiringTab({ allApps, onStatusChange }) {
-  const [subTab, setSubTab] = useState('top-picks');
-  const SUBTABS = [{ id: 'top-picks', label: 'Top Picks' }, { id: 'pipeline', label: 'Pipeline' }];
   return (
     <div>
-      <PageHeader eyebrow="Hiring" title={<>Your <em>hiring</em> centre.</>} subtitle="Review top candidates and move them through your pipeline." />
-      <SubTabStrip tabs={SUBTABS} active={subTab} onChange={setSubTab} />
-      {subTab === 'top-picks' && <TopPicksView allApps={allApps} onStatusChange={onStatusChange} />}
-      {subTab === 'pipeline'  && <PipelineView  allApps={allApps} onStatusChange={onStatusChange} />}
-    </div>
-  );
-}
-
-function TopPicksView({ allApps, onStatusChange }) {
-  const [cap, setCap]             = useState(6);
-  const [filter, setFilter]       = useState('all');
-  const [selectedApp, setSelectedApp] = useState(null);
-  const filtered = useMemo(() => {
-    let list = [...allApps].sort((a, b) => (b.match_score || 0) - (a.match_score || 0));
-    if (filter === 'unreviewed')  list = list.filter(a => !a.status || a.status === 'pending');
-    if (filter === 'shortlisted') list = list.filter(a => a.status === 'shortlisted');
-    if (filter === 'high-match')  list = list.filter(a => (a.match_score || 0) >= 80);
-    return list.slice(0, Math.min(cap, list.length));
-  }, [allApps, filter, cap]);
-  return (
-    <div>
-      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 18, flexWrap: 'wrap', gap: 12 }}>
-        <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
-          {[{ id: 'all', label: 'All' }, { id: 'unreviewed', label: 'Unreviewed' }, { id: 'shortlisted', label: 'Shortlisted' }, { id: 'high-match', label: '80%+ match' }].map(t => (
-            <button key={t.id} onClick={() => setFilter(t.id)} style={{ padding: '6px 12px', borderRadius: 16, fontSize: 11, fontFamily: 'inherit', cursor: 'pointer', background: filter === t.id ? 'var(--text)' : 'transparent', border: `1px solid ${filter === t.id ? 'var(--text)' : 'var(--border)'}`, color: filter === t.id ? 'var(--bg)' : 'var(--text-mid)', fontWeight: filter === t.id ? 500 : 400 }}>{t.label}</button>
-          ))}
-        </div>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-          <span style={{ fontSize: 11, color: 'var(--text-dim)' }}>Show top</span>
-          {[6, 10, 15].map(n => (
-            <button key={n} onClick={() => setCap(n)} disabled={allApps.length < n && n !== 6} style={{ padding: '5px 10px', borderRadius: 6, fontSize: 11, fontFamily: 'inherit', cursor: allApps.length < n && n !== 6 ? 'not-allowed' : 'pointer', opacity: allApps.length < n && n !== 6 ? 0.4 : 1, background: cap === n ? 'var(--text)' : 'transparent', color: cap === n ? 'var(--bg)' : 'var(--text-mid)', border: `1px solid ${cap === n ? 'var(--text)' : 'var(--border)'}` }}>{n}</button>
-          ))}
-        </div>
-      </div>
-      {filtered.length === 0 ? <EmptyState icon="🎯" title="No candidates in this view." message="Adjust filters or wait for more applications to come in." /> : (
-        <div style={{ display: 'grid', gridTemplateColumns: selectedApp ? '1fr 380px' : '1fr', gap: 16 }}>
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(220px, 1fr))', gap: 12 }}>
-            {filtered.map(app => <CandidateHighlightCard key={app.id} app={app} onClick={() => setSelectedApp(selectedApp?.id === app.id ? null : app)} isSelected={selectedApp?.id === app.id} />)}
-          </div>
-          {selectedApp && (
-            <ApplicantSnapshot app={selectedApp}
-              onStatusChange={async (id, status, note) => { await onStatusChange(id, status, note); setSelectedApp(s => ({ ...s, status, recruiter_message: note || s.recruiter_message })); }}
-              onClose={() => setSelectedApp(null)} />
-          )}
-        </div>
-      )}
+      <PageHeader eyebrow="Pipeline" title={<>Hiring <em>pipeline.</>} subtitle="Track candidates as they move through your process." />
+      <PipelineView allApps={allApps} onStatusChange={onStatusChange} />
     </div>
   );
 }
@@ -1309,7 +1501,7 @@ function PipelineView({ allApps, onStatusChange }) {
 }
 
 // ═══════════════════════════════════════════════════════════════════════════
-// 13. TAB: PROFILE
+// 12. TAB: PROFILE
 // ═══════════════════════════════════════════════════════════════════════════
 function ProfileTab({ recruiter, onUpdate, showToast }) {
   const [subTab, setSubTab] = useState('startup');
@@ -1318,7 +1510,7 @@ function ProfileTab({ recruiter, onUpdate, showToast }) {
   const SUBTABS   = [{ id: 'startup', label: 'Startup' }, { id: 'recruiter', label: 'You' }];
   return (
     <div>
-      <PageHeader eyebrow="Profile" title={<>Your <em>profile.</em></>} />
+      <PageHeader eyebrow="Profile" title={<>Your <em>profile.</>} />
       <SubTabStrip tabs={SUBTABS} active={subTab} onChange={setSubTab} />
       {subTab === 'startup'   && <StartupProfileForm   startup={startup} canEdit={isFounder} onUpdate={onUpdate} showToast={showToast} />}
       {subTab === 'recruiter' && <RecruiterProfileForm recruiter={recruiter}                  onUpdate={onUpdate} showToast={showToast} />}
@@ -1385,19 +1577,19 @@ function RecruiterProfileForm({ recruiter, onUpdate, showToast }) {
 }
 
 // ═══════════════════════════════════════════════════════════════════════════
-// 14. TAB: NETWORK
+// 13. TAB: NETWORK
 // ═══════════════════════════════════════════════════════════════════════════
 function NetworkTab() {
   return (
     <div>
-      <PageHeader eyebrow="Network" title={<>Connect with <em>builders.</em></>} />
+      <PageHeader eyebrow="Network" title={<>Connect with <em>builders.</>} />
       <EmptyState icon="🌐" title="Coming soon." message="Connect with other startups, recruiters, and high-signal builders. We're building this carefully — quality over quantity, like everything else on HUNT." />
     </div>
   );
 }
 
 // ═══════════════════════════════════════════════════════════════════════════
-// 15. SETTINGS MODAL
+// 14. SETTINGS MODAL
 // ═══════════════════════════════════════════════════════════════════════════
 function SettingsModal({ theme, setTheme, onClose, onSignOut }) {
   return (
@@ -1423,7 +1615,7 @@ function SettingsModal({ theme, setTheme, onClose, onSignOut }) {
 }
 
 // ═══════════════════════════════════════════════════════════════════════════
-// 16. MAIN SHELL
+// 15. MAIN SHELL
 // ═══════════════════════════════════════════════════════════════════════════
 export default function RecruiterDashboard() {
   const navigate = useNavigate();
@@ -1437,6 +1629,8 @@ export default function RecruiterDashboard() {
   const [showAccountMenu, setShowAccountMenu] = useState(false);
   const [showSettings, setShowSettings]       = useState(false);
   const [showPostDrawer, setShowPostDrawer]   = useState(false);
+  // When clicking a role from home, open roles tab with that role pre-selected
+  const [pendingOpenRole, setPendingOpenRole] = useState(null);
 
   useEffect(() => { applyTokens(theme); localStorage.setItem('hunt-theme', theme); }, [theme]);
 
@@ -1467,6 +1661,11 @@ export default function RecruiterDashboard() {
   };
   const refreshRecruiter = async () => { const r = await getRecruiterProfile(); setRecruiter(r); };
 
+  const handleOpenRole = (job) => {
+    setPendingOpenRole(job);
+    setActiveTab('roles');
+  };
+
   const handleTogglePause = async (job) => {
     const status = job.status || (job.is_active ? 'live' : 'paused');
     const next   = status === 'live' ? 'paused' : 'live';
@@ -1491,15 +1690,11 @@ export default function RecruiterDashboard() {
     } catch (e) { showToast(e.message || 'Delete failed', 'error'); }
   };
 
-  // ── UPDATED: accepts note, passes student ID + job meta to updateApplicationStatus ──
   const handleStatusChange = async (appId, status, note = '') => {
     const app = allApps.find(a => a.id === appId);
     try {
       await updateApplicationStatus(
-        appId,
-        status,
-        app?.students?.id,
-        note,
+        appId, status, app?.students?.id, note,
         { role: app?.jobs?.role, company: app?.jobs?.company || recruiter?.startups?.name },
       );
       setAllApps(a => a.map(x => x.id === appId ? { ...x, status, recruiter_message: note || x.recruiter_message } : x));
@@ -1561,16 +1756,43 @@ export default function RecruiterDashboard() {
         <div style={{ padding: '20px 18px 16px', borderBottom: '1px solid var(--border)' }}>
           <span style={{ fontSize: 15, fontWeight: 700, letterSpacing: '0.16em', color: 'var(--text)' }}>HUNT</span>
         </div>
-        <nav style={{ padding: '10px 8px', flex: 1 }}>
+
+        <nav style={{ padding: '10px 8px', flex: 1, display: 'flex', flexDirection: 'column' }}>
+          {/* Post a Role — prominent CTA in sidebar */}
+          <button
+            onClick={() => setShowPostDrawer(true)}
+            style={{
+              display: 'flex', alignItems: 'center', gap: 9, width: '100%',
+              padding: '9px 11px', borderRadius: 7, border: 'none', cursor: 'pointer',
+              marginBottom: 8,
+              background: 'var(--text)', color: 'var(--bg)',
+              fontSize: 12, fontWeight: 600, textAlign: 'left',
+              fontFamily: 'inherit', transition: 'opacity 0.12s',
+            }}
+          >
+            <Plus size={14} style={{ flexShrink: 0 }} /> Post a role
+          </button>
+
+          {/* Divider */}
+          <div style={{ height: 1, background: 'var(--border)', margin: '4px 0 8px' }} />
+
           {NAV_ITEMS.map(({ id, label, icon: Icon }) => {
             const active = activeTab === id;
             return (
-              <button key={id} className="hn-item" onClick={() => setActiveTab(id)} style={{ display: 'flex', alignItems: 'center', gap: 9, width: '100%', padding: '9px 11px', borderRadius: 7, border: 'none', cursor: 'pointer', marginBottom: 1, background: active ? 'var(--bg-subtle)' : 'transparent', color: active ? 'var(--text)' : 'var(--text-dim)', fontSize: 13, fontWeight: active ? 600 : 400, textAlign: 'left', transition: 'background 0.12s, color 0.12s', fontFamily: 'inherit' }}>
+              <button key={id} className="hn-item" onClick={() => { setActiveTab(id); if (id !== 'roles') setPendingOpenRole(null); }} style={{
+                display: 'flex', alignItems: 'center', gap: 9, width: '100%',
+                padding: '9px 11px', borderRadius: 7, border: 'none', cursor: 'pointer', marginBottom: 1,
+                background: active ? 'var(--bg-subtle)' : 'transparent',
+                color: active ? 'var(--text)' : 'var(--text-dim)',
+                fontSize: 13, fontWeight: active ? 600 : 400, textAlign: 'left',
+                transition: 'background 0.12s, color 0.12s', fontFamily: 'inherit',
+              }}>
                 <Icon size={15} style={{ flexShrink: 0 }} />{label}
               </button>
             );
           })}
         </nav>
+
         <div style={{ padding: '10px 8px', borderTop: '1px solid var(--border)', position: 'relative' }}>
           <div style={{ padding: '9px 11px', borderRadius: 7, background: 'var(--bg-subtle)', marginBottom: 8 }}>
             <p style={{ fontSize: 9, color: 'var(--text-dim)', marginBottom: 2, textTransform: 'uppercase', letterSpacing: '0.08em', fontWeight: 600 }}>Company</p>
@@ -1612,8 +1834,8 @@ export default function RecruiterDashboard() {
       {/* MAIN CONTENT */}
       <main style={{ flex: 1, minWidth: 0, overflowY: 'auto', maxHeight: '100vh' }}>
         <div style={{ padding: '32px 40px 80px', maxWidth: 1280, margin: '0 auto', animation: 'hunt-fade-in 0.3s ease' }}>
-          {activeTab === 'home'    && <HomeTab recruiter={recruiter} jobs={jobs} allApps={allApps} onNavigate={setActiveTab} onPostRole={() => setShowPostDrawer(true)} />}
-          {activeTab === 'roles'   && <RolesTab jobs={jobs} onCopyLink={handleCopyLink} onTogglePause={handleTogglePause} onDelete={handleDelete} onPostRole={() => setShowPostDrawer(true)} recruiter={recruiter} showToast={showToast} />}
+          {activeTab === 'home'    && <HomeTab recruiter={recruiter} jobs={jobs} allApps={allApps} onPostRole={() => setShowPostDrawer(true)} onOpenRole={handleOpenRole} />}
+          {activeTab === 'roles'   && <RolesTab jobs={jobs} onCopyLink={handleCopyLink} onTogglePause={handleTogglePause} onDelete={handleDelete} onPostRole={() => setShowPostDrawer(true)} recruiter={recruiter} showToast={showToast} initialOpenJob={pendingOpenRole} />}
           {activeTab === 'hiring'  && <HiringTab allApps={allApps} onStatusChange={handleStatusChange} />}
           {activeTab === 'profile' && <ProfileTab recruiter={recruiter} onUpdate={refreshRecruiter} showToast={showToast} />}
           {activeTab === 'network' && <NetworkTab />}
