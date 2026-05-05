@@ -1,5 +1,5 @@
 // src/components/RecruiterDashboard.jsx
-// HUNT — RECRUITER DASHBOARD (v7 — brutalist redesign, recent roles home, hunt score in snapshots, send msg)
+// HUNT — RECRUITER DASHBOARD (v6 — lean sidebar, recent roles home, hunt sort, pipeline-only hiring)
 
 import React, { useState, useEffect, useMemo } from 'react';
 import {
@@ -8,62 +8,58 @@ import {
   ArrowLeft, Pause, Play, ExternalLink, Github, Building2, Home,
   Layers, UserCheck, GitBranch, Network, Sparkles,
   Bookmark, ThumbsDown, Phone, Award, Bell, Lock, MessageSquare,
-  LayoutGrid, List, Send, Star, TrendingUp, Zap,
+  LayoutGrid, List,
 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { supabase, getCurrentUser, signOut } from '../services/supabase';
 
 // ═══════════════════════════════════════════════════════════════════════════
-// 1. DESIGN TOKENS — BRUTALIST EDITORIAL
+// 1. DESIGN TOKENS
 // ═══════════════════════════════════════════════════════════════════════════
 const tokens = {
   light: {
-    '--bg':           '#F2EFE8',
-    '--bg-card':      '#FAFAF6',
-    '--bg-subtle':    '#ECEAE2',
-    '--bg-hover':     '#E4E1D8',
-    '--border':       '#1A1A18',
-    '--border-mid':   '#1A1A18',
-    '--text':         '#0A0A08',
-    '--text-mid':     '#3A3A36',
-    '--text-dim':     '#7A7A74',
-    '--green':        '#0A5C35',
-    '--green-tint':   '#D4EDE0',
-    '--green-text':   '#0A5C35',
-    '--red':          '#8B1A0A',
-    '--red-tint':     '#F5DDD9',
-    '--amber':        '#6B4500',
-    '--amber-tint':   '#F5E8CC',
-    '--blue':         '#0A2E6E',
-    '--blue-tint':    '#D4DFFA',
-    '--purple':       '#3A0A6E',
-    '--purple-tint':  '#E8D4FA',
-    '--accent':       '#1A1AFF',
-    '--accent-tint':  '#E0E0FF',
+    '--bg':          '#FAFAF8',
+    '--bg-card':     '#FFFFFF',
+    '--bg-subtle':   '#F5F5F2',
+    '--bg-hover':    '#F0EFEA',
+    '--border':      '#EBEBEA',
+    '--border-mid':  '#D6D6D3',
+    '--text':        '#0A0A0A',
+    '--text-mid':    '#5A5A56',
+    '--text-dim':    '#9B9B97',
+    '--green':       '#1A7A4A',
+    '--green-tint':  '#E8F5EE',
+    '--green-text':  '#1A7A4A',
+    '--red':         '#C0392B',
+    '--red-tint':    '#FDECEA',
+    '--amber':       '#92600A',
+    '--amber-tint':  '#FDF3E3',
+    '--blue':        '#2563EB',
+    '--blue-tint':   'rgba(37,99,235,0.08)',
+    '--purple':      '#7C3AED',
+    '--purple-tint': 'rgba(124,58,237,0.08)',
   },
   dark: {
-    '--bg':           '#0C0C0A',
-    '--bg-card':      '#141412',
-    '--bg-subtle':    '#1C1C1A',
-    '--bg-hover':     '#242420',
-    '--border':       '#E8E5DC',
-    '--border-mid':   '#B0ADA4',
-    '--text':         '#F5F2E8',
-    '--text-mid':     '#B8B5AA',
-    '--text-dim':     '#6A6A64',
-    '--green':        '#2ECC80',
-    '--green-tint':   '#0A2A1A',
-    '--green-text':   '#2ECC80',
-    '--red':          '#E05040',
-    '--red-tint':     '#2A0E08',
-    '--amber':        '#E0A030',
-    '--amber-tint':   '#2A1C08',
-    '--blue':         '#5080F0',
-    '--blue-tint':    '#0A1835',
-    '--purple':       '#A060F0',
-    '--purple-tint':  '#1A0835',
-    '--accent':       '#4040FF',
-    '--accent-tint':  '#0A0A2A',
+    '--bg':          '#0A0A0A',
+    '--bg-card':     '#111110',
+    '--bg-subtle':   '#1A1A18',
+    '--bg-hover':    '#222220',
+    '--border':      '#2A2A28',
+    '--border-mid':  '#3A3A38',
+    '--text':        '#FAFAF8',
+    '--text-mid':    '#9B9B97',
+    '--text-dim':    '#5A5A56',
+    '--green':       '#2EAD6A',
+    '--green-tint':  '#0D2B1A',
+    '--green-text':  '#2EAD6A',
+    '--red':         '#E05C4B',
+    '--red-tint':    '#2B1210',
+    '--amber':       '#D4A84B',
+    '--amber-tint':  '#2B2010',
+    '--blue':        '#60A5FA',
+    '--blue-tint':   'rgba(96,165,250,0.1)',
+    '--purple':      '#A78BFA',
+    '--purple-tint': 'rgba(167,139,250,0.12)',
   },
 };
 const applyTokens = (theme) =>
@@ -71,7 +67,7 @@ const applyTokens = (theme) =>
     document.documentElement.style.setProperty(k, v));
 
 // ═══════════════════════════════════════════════════════════════════════════
-// 2. SUPABASE HELPERS (unchanged from v6)
+// 2. SUPABASE HELPERS
 // ═══════════════════════════════════════════════════════════════════════════
 function cleanPatch(patch, { drop = [] } = {}) {
   const out = {};
@@ -149,24 +145,24 @@ async function getAllApplicationsForRecruiter(recruiterId) {
 
 const NOTIF_META = {
   shortlisted: {
-    type: 'success',
+    type:  'success',
     title: (role, company) => `Shortlisted by ${company}`,
-    body: (role, company) => `You're in their top picks for ${role}. Keep an eye on your Offers tab.`,
+    body:  (role, company) => `You're in their top picks for ${role}. Keep an eye on your Offers tab.`,
   },
   interview: {
-    type: 'alert',
+    type:  'alert',
     title: (role, company) => `Interview invite — ${company}`,
-    body: (role, company) => `${company} wants to interview you for ${role}. Check your Offers tab for details.`,
+    body:  (role, company) => `${company} wants to interview you for ${role}. Check your Offers tab for details.`,
   },
   hired: {
-    type: 'success',
+    type:  'success',
     title: (role, company) => `Offer from ${company} 🎉`,
-    body: (role, company) => `You received an offer for ${role}. Head to your Offers tab to respond.`,
+    body:  (role, company) => `You received an offer for ${role}. Head to your Offers tab to respond.`,
   },
   rejected: {
-    type: 'info',
+    type:  'info',
     title: (role, company) => `Application update — ${company}`,
-    body: (role, company) => `${company} has made a decision on your ${role} application.`,
+    body:  (role, company) => `${company} has made a decision on your ${role} application.`,
   },
 };
 
@@ -198,6 +194,7 @@ async function updateApplicationStatus(appId, status, studentId, recruiterMessag
       console.warn('Notification insert failed (non-fatal):', e);
     }
   }
+
   return data;
 }
 
@@ -244,7 +241,7 @@ const NAV_ITEMS = [
 ];
 
 const STATUS_META = {
-  pending:     { label: 'Pending',     color: 'var(--text-dim)',   bg: 'var(--bg-subtle)',   border: 'var(--border-mid)' },
+  pending:     { label: 'Pending',     color: 'var(--text-dim)',   bg: 'var(--bg-subtle)',   border: 'var(--border)' },
   shortlisted: { label: 'Shortlisted', color: 'var(--green-text)', bg: 'var(--green-tint)',  border: 'var(--green)' },
   interview:   { label: 'Interview',   color: 'var(--blue)',       bg: 'var(--blue-tint)',   border: 'var(--blue)' },
   hired:       { label: 'Hired',       color: 'var(--purple)',     bg: 'var(--purple-tint)', border: 'var(--purple)' },
@@ -252,32 +249,32 @@ const STATUS_META = {
 };
 
 // ═══════════════════════════════════════════════════════════════════════════
-// 4. ATOMS — BRUTALIST STYLE
+// 4. ATOMS
 // ═══════════════════════════════════════════════════════════════════════════
 const inp = {
-  width: '100%', padding: '10px 14px', borderRadius: 0,
-  border: '1.5px solid var(--border)', background: 'var(--bg)',
+  width: '100%', padding: '10px 14px', borderRadius: 8,
+  border: '1px solid var(--border)', background: 'var(--bg-subtle)',
   color: 'var(--text)', fontSize: 13, fontFamily: 'inherit',
-  outline: 'none', boxSizing: 'border-box', transition: 'border-color 0.1s',
+  outline: 'none', boxSizing: 'border-box', transition: 'border-color 0.15s',
 };
 function FocusInput({ style, ...props }) {
   return <input {...props} style={{ ...inp, ...style }}
-    onFocus={e => e.target.style.borderColor = 'var(--accent)'}
+    onFocus={e => e.target.style.borderColor = 'var(--text)'}
     onBlur={e  => e.target.style.borderColor = 'var(--border)'} />;
 }
 function FocusSelect({ style, children, ...props }) {
   return <select {...props} style={{ ...inp, ...style }}
-    onFocus={e => e.target.style.borderColor = 'var(--accent)'}
+    onFocus={e => e.target.style.borderColor = 'var(--text)'}
     onBlur={e  => e.target.style.borderColor = 'var(--border)'}>{children}</select>;
 }
 function FocusTextarea({ style, ...props }) {
-  return <textarea {...props} style={{ ...inp, resize: 'vertical', minHeight: 70, borderRadius: 0, ...style }}
-    onFocus={e => e.target.style.borderColor = 'var(--accent)'}
+  return <textarea {...props} style={{ ...inp, resize: 'vertical', minHeight: 70, ...style }}
+    onFocus={e => e.target.style.borderColor = 'var(--text)'}
     onBlur={e  => e.target.style.borderColor = 'var(--border)'} />;
 }
 function Label({ children, required }) {
   return (
-    <p style={{ fontSize: 9, fontWeight: 700, letterSpacing: '0.12em', textTransform: 'uppercase', color: 'var(--text-dim)', marginBottom: 6 }}>
+    <p style={{ fontSize: 10, fontWeight: 600, letterSpacing: '0.1em', textTransform: 'uppercase', color: 'var(--text-dim)', marginBottom: 6 }}>
       {children}{required && <span style={{ color: 'var(--red)', marginLeft: 3 }}>*</span>}
     </p>
   );
@@ -286,23 +283,21 @@ function Toast({ msg, type }) {
   return (
     <div style={{
       position: 'fixed', top: 20, left: '50%', transform: 'translateX(-50%)',
-      zIndex: 9999, padding: '10px 20px', fontSize: 12, fontWeight: 600,
-      background: type === 'error' ? 'var(--red)' : 'var(--text)',
-      color: 'var(--bg)', border: '2px solid var(--border)',
-      letterSpacing: '0.05em', textTransform: 'uppercase',
+      zIndex: 9999, padding: '9px 18px', borderRadius: 8, fontSize: 12, fontWeight: 500,
+      background: type === 'error' ? 'rgba(192,57,43,0.95)' : 'rgba(26,122,74,0.95)',
+      color: '#fff', boxShadow: '0 4px 20px rgba(0,0,0,0.2)', animation: 'fadeDown 0.2s ease',
       maxWidth: '90vw', textAlign: 'center',
     }}>{msg}</div>
   );
 }
 function Avatar({ name, size = 36 }) {
-  const initials = name?.split(' ').map(n => n[0]).join('').slice(0, 2).toUpperCase() || '??';
+  const initials = name?.split(' ').map(n => n[0]).join('').slice(0, 2).toUpperCase() || '?';
   return (
     <div style={{
-      width: size, height: size, flexShrink: 0,
-      background: 'var(--text)', color: 'var(--bg)',
+      width: size, height: size, borderRadius: '50%',
+      background: 'var(--green-tint)', border: `1px solid var(--green)`,
       display: 'flex', alignItems: 'center', justifyContent: 'center',
-      fontSize: size * 0.3, fontWeight: 700, letterSpacing: '0.05em',
-      fontFamily: 'inherit',
+      fontSize: size * 0.32, fontWeight: 700, color: 'var(--green)', flexShrink: 0,
     }}>{initials}</div>
   );
 }
@@ -310,82 +305,54 @@ function StatusPill({ status }) {
   const m = STATUS_META[status] || STATUS_META.pending;
   return (
     <span style={{
-      fontSize: 8, padding: '3px 7px', fontWeight: 700,
-      background: m.bg, color: m.color, border: `1.5px solid ${m.border}`,
-      textTransform: 'uppercase', letterSpacing: '0.1em',
+      fontSize: 9, padding: '3px 8px', borderRadius: 8, fontWeight: 500,
+      background: m.bg, color: m.color, border: `1px solid ${m.border}`,
+      textTransform: 'uppercase', letterSpacing: '0.05em',
     }}>{m.label}</span>
   );
 }
-function EmptyState({ icon = '—', title, message, cta }) {
+function EmptyState({ icon = '🎯', title, message, cta }) {
   return (
     <div style={{
       textAlign: 'center', padding: '64px 24px',
-      background: 'var(--bg-card)', border: '2px solid var(--border)',
+      background: 'var(--bg-card)', border: '1px solid var(--border)', borderRadius: 14,
     }}>
-      <div style={{ fontSize: 32, marginBottom: 14, fontFamily: 'Georgia, serif' }}>{icon}</div>
-      <p style={{ fontFamily: 'Georgia, "Times New Roman", serif', fontSize: 20, color: 'var(--text)', marginBottom: 6, fontWeight: 400 }}>{title}</p>
-      <p style={{ fontSize: 12, color: 'var(--text-dim)', marginBottom: cta ? 18 : 0, lineHeight: 1.6 }}>{message}</p>
+      <div style={{ fontSize: 36, marginBottom: 14 }}>{icon}</div>
+      <p style={{ fontFamily: "'Editorial New', Georgia, serif", fontSize: 18, color: 'var(--text)', marginBottom: 6, fontWeight: 400 }}>{title}</p>
+      <p style={{ fontSize: 12, color: 'var(--text-dim)', marginBottom: cta ? 18 : 0, lineHeight: 1.5 }}>{message}</p>
       {cta}
     </div>
   );
 }
-
-// HUNT Score — the big number with ring
-function HuntScoreRing({ score, size = 56 }) {
-  const color = score >= 75 ? 'var(--green)' : score >= 50 ? 'var(--amber)' : 'var(--red)';
-  const r = (size / 2) - 4;
-  const circ = 2 * Math.PI * r;
-  const pct = (score / 100) * circ;
-  return (
-    <div style={{ position: 'relative', width: size, height: size, flexShrink: 0 }}>
-      <svg width={size} height={size} style={{ transform: 'rotate(-90deg)' }}>
-        <circle cx={size/2} cy={size/2} r={r} fill="none" stroke="var(--bg-subtle)" strokeWidth="3" />
-        <circle cx={size/2} cy={size/2} r={r} fill="none" stroke={color} strokeWidth="3"
-          strokeDasharray={`${pct} ${circ}`} strokeLinecap="square" />
-      </svg>
-      <div style={{
-        position: 'absolute', inset: 0, display: 'flex', flexDirection: 'column',
-        alignItems: 'center', justifyContent: 'center',
-      }}>
-        <span style={{ fontSize: size * 0.22, fontWeight: 700, color, lineHeight: 1, fontFamily: 'Georgia, serif' }}>{score}</span>
-        <span style={{ fontSize: size * 0.12, color: 'var(--text-dim)', fontWeight: 600, letterSpacing: '0.08em', textTransform: 'uppercase' }}>HUNT</span>
-      </div>
-    </div>
-  );
-}
-
 function ScoreNumber({ score, size = 16 }) {
   const color = score >= 75 ? 'var(--green)' : score >= 50 ? 'var(--amber)' : 'var(--red)';
-  return <span style={{ fontFamily: 'Georgia, "Times New Roman", serif', fontSize: size, color, lineHeight: 1, fontWeight: 400 }}>{score}%</span>;
+  return <span style={{ fontFamily: "'Editorial New', Georgia, serif", fontSize: size, color, lineHeight: 1, fontWeight: 400 }}>{score}%</span>;
 }
 function btnPrimary(disabled) {
   return {
-    padding: '10px 16px', borderRadius: 0,
-    border: `2px solid ${disabled ? 'var(--border-mid)' : 'var(--text)'}`,
-    background: disabled ? 'var(--bg-subtle)' : 'var(--text)', color: 'var(--bg)',
-    fontSize: 11, fontWeight: 700, cursor: disabled ? 'default' : 'pointer',
+    padding: '10px 16px', borderRadius: 8, border: 'none',
+    background: disabled ? 'var(--text-dim)' : 'var(--text)', color: 'var(--bg)',
+    fontSize: 12, fontWeight: 500, cursor: disabled ? 'default' : 'pointer',
     fontFamily: 'inherit', display: 'inline-flex', alignItems: 'center', gap: 6,
-    textTransform: 'uppercase', letterSpacing: '0.08em',
-    transition: 'opacity 0.1s',
+    transition: 'opacity 0.15s',
   };
 }
 function btnGhost() {
   return {
-    padding: '10px 16px', borderRadius: 0, border: '1.5px solid var(--border)',
+    padding: '10px 16px', borderRadius: 8, border: '1px solid var(--border)',
     background: 'transparent', color: 'var(--text-mid)',
-    fontSize: 11, cursor: 'pointer', fontFamily: 'inherit',
+    fontSize: 12, cursor: 'pointer', fontFamily: 'inherit',
     display: 'inline-flex', alignItems: 'center', gap: 6,
-    textTransform: 'uppercase', letterSpacing: '0.08em',
-    transition: 'border-color 0.1s, color 0.1s',
+    transition: 'border-color 0.15s, color 0.15s',
   };
 }
 function PageHeader({ eyebrow, title, subtitle, action }) {
   return (
-    <div style={{ marginBottom: 32, display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', borderBottom: '2px solid var(--border)', paddingBottom: 20 }}>
+    <div style={{ marginBottom: 28, display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between' }}>
       <div>
-        <p style={{ fontSize: 9, fontWeight: 700, letterSpacing: '0.15em', textTransform: 'uppercase', color: 'var(--text-dim)', marginBottom: 8 }}>{eyebrow}</p>
-        <h1 style={{ fontFamily: 'Georgia, "Times New Roman", serif', fontSize: 32, fontWeight: 400, color: 'var(--text)', margin: 0, lineHeight: 1.15 }}>{title}</h1>
-        {subtitle && <p style={{ fontSize: 13, color: 'var(--text-mid)', marginTop: 10, lineHeight: 1.6, maxWidth: 560 }}>{subtitle}</p>}
+        <p style={{ fontSize: 10, fontWeight: 600, letterSpacing: '0.1em', textTransform: 'uppercase', color: 'var(--text-dim)', marginBottom: 6 }}>{eyebrow}</p>
+        <h1 style={{ fontFamily: "'Editorial New', Georgia, serif", fontSize: 28, fontWeight: 400, color: 'var(--text)', margin: 0, lineHeight: 1.2 }}>{title}</h1>
+        {subtitle && <p style={{ fontSize: 13, color: 'var(--text-mid)', marginTop: 8, lineHeight: 1.5, maxWidth: 560 }}>{subtitle}</p>}
       </div>
       {action && <div style={{ flexShrink: 0, marginTop: 4 }}>{action}</div>}
     </div>
@@ -393,35 +360,33 @@ function PageHeader({ eyebrow, title, subtitle, action }) {
 }
 function SubTabStrip({ tabs, active, onChange }) {
   return (
-    <div style={{ display: 'flex', borderBottom: '2px solid var(--border)', marginBottom: 24 }}>
+    <div style={{ display: 'flex', borderBottom: '1px solid var(--border)', marginBottom: 22 }}>
       {tabs.map(t => (
         <button key={t.id} onClick={() => onChange(t.id)} style={{
-          padding: '10px 18px', fontSize: 11, fontFamily: 'inherit', cursor: 'pointer',
+          padding: '10px 18px', fontSize: 13, fontFamily: 'inherit', cursor: 'pointer',
           background: 'transparent', border: 'none',
-          borderBottom: `3px solid ${active === t.id ? 'var(--text)' : 'transparent'}`,
+          borderBottom: `2px solid ${active === t.id ? 'var(--text)' : 'transparent'}`,
           color: active === t.id ? 'var(--text)' : 'var(--text-dim)',
-          fontWeight: active === t.id ? 700 : 400, marginBottom: -2,
-          textTransform: 'uppercase', letterSpacing: '0.1em',
-          transition: 'color 0.1s',
+          fontWeight: active === t.id ? 600 : 400, marginBottom: -1,
+          transition: 'color 0.15s, border-color 0.15s', whiteSpace: 'nowrap',
         }}>{t.label}</button>
       ))}
     </div>
   );
 }
 const linkChip = {
-  display: 'inline-flex', alignItems: 'center', gap: 4, fontSize: 10, color: 'var(--text-mid)',
-  padding: '4px 10px', border: '1.5px solid var(--border)', textDecoration: 'none',
-  fontWeight: 600, letterSpacing: '0.05em', textTransform: 'uppercase',
+  display: 'flex', alignItems: 'center', gap: 4, fontSize: 11, color: 'var(--text-mid)',
+  padding: '4px 10px', borderRadius: 20, border: '1px solid var(--border)', textDecoration: 'none',
 };
 const iconBtn = {
-  padding: '7px 10px', borderRadius: 0, border: '1.5px solid var(--border)',
+  padding: '7px 10px', borderRadius: 6, border: '1px solid var(--border)',
   background: 'transparent', color: 'var(--text-dim)', cursor: 'pointer', fontFamily: 'inherit',
   display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 4,
-  transition: 'border-color 0.1s, color 0.1s',
+  transition: 'border-color 0.15s, color 0.15s',
 };
 
 // ═══════════════════════════════════════════════════════════════════════════
-// 5. POST ROLE DRAWER (brutalist styled)
+// 5. POST ROLE DRAWER
 // ═══════════════════════════════════════════════════════════════════════════
 function PostRoleDrawer({ recruiter, open, onClose, onSuccess, showToast }) {
   const [skillInput, setSkillInput]         = useState('');
@@ -499,10 +464,10 @@ function PostRoleDrawer({ recruiter, open, onClose, onSuccess, showToast }) {
   }));
 
   const handleSubmit = async () => {
-    if (!form.role.trim())     return showToast('Role title required.', 'error');
-    if (!form.stipend.trim())  return showToast('Stipend required.', 'error');
-    if (!form.duration.trim()) return showToast('Duration required.', 'error');
-    if (!form.location.trim()) return showToast('Location required.', 'error');
+    if (!form.role.trim())     return showToast('Role title is required.', 'error');
+    if (!form.stipend.trim())  return showToast('Stipend is required.', 'error');
+    if (!form.duration.trim()) return showToast('Duration is required.', 'error');
+    if (!form.location.trim()) return showToast('Location is required.', 'error');
     if (form.required_skills.length === 0) return showToast('Add at least one required skill.', 'error');
     setSaving(true);
     try {
@@ -524,21 +489,20 @@ function PostRoleDrawer({ recruiter, open, onClose, onSuccess, showToast }) {
       onSuccess();
       onClose();
     } catch (e) { showToast('Failed: ' + (e.message || 'Unknown error'), 'error'); }
-    finally { setSaving(false); }
+    finally     { setSaving(false); }
   };
 
   const chipBtn = (active) => ({
-    flex: 1, padding: '8px', fontSize: 10, fontFamily: 'inherit', cursor: 'pointer',
-    background: active ? 'var(--text)' : 'transparent',
-    border: `1.5px solid ${active ? 'var(--text)' : 'var(--border)'}`,
-    color: active ? 'var(--bg)' : 'var(--text-mid)',
-    fontWeight: active ? 700 : 400, borderRadius: 0,
-    textTransform: 'uppercase', letterSpacing: '0.08em',
+    flex: 1, padding: '8px', borderRadius: 8, fontSize: 11, fontFamily: 'inherit', cursor: 'pointer',
+    background: active ? 'var(--bg-subtle)' : 'transparent',
+    border: `1px solid ${active ? 'var(--text)' : 'var(--border)'}`,
+    color: active ? 'var(--text)' : 'var(--text-mid)',
+    fontWeight: active ? 600 : 400,
   });
 
   const ListItemRow = ({ item, onRemove }) => (
-    <div style={{ display: 'flex', alignItems: 'flex-start', gap: 8, padding: '7px 10px', border: '1px solid var(--border)', background: 'var(--bg-subtle)', marginBottom: 4 }}>
-      <div style={{ width: 3, height: 3, background: 'var(--text-dim)', flexShrink: 0, marginTop: 7 }} />
+    <div style={{ display: 'flex', alignItems: 'flex-start', gap: 8, padding: '7px 10px', borderRadius: 7, border: '1px solid var(--border)', background: 'var(--bg-subtle)', marginBottom: 4 }}>
+      <div style={{ width: 4, height: 4, background: 'var(--text-dim)', flexShrink: 0, marginTop: 6 }} />
       <span style={{ flex: 1, fontSize: 12, color: 'var(--text)', lineHeight: 1.5 }}>{item}</span>
       <button onClick={onRemove} style={{ background: 'transparent', border: 'none', cursor: 'pointer', color: 'var(--text-dim)', display: 'flex', padding: 0, flexShrink: 0 }}><X size={12} /></button>
     </div>
@@ -546,32 +510,33 @@ function PostRoleDrawer({ recruiter, open, onClose, onSuccess, showToast }) {
 
   return (
     <>
-      {open && <div onClick={onClose} style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.5)', zIndex: 9000 }} />}
+      {open && <div onClick={onClose} style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.35)', zIndex: 9000, backdropFilter: 'blur(2px)' }} />}
       <div style={{
         position: 'fixed', top: 0, right: 0, bottom: 0, width: 520,
-        background: 'var(--bg-card)', borderLeft: '2px solid var(--border)',
+        background: 'var(--bg-card)', borderLeft: '1px solid var(--border)',
         zIndex: 9001, display: 'flex', flexDirection: 'column',
         transform: open ? 'translateX(0)' : 'translateX(100%)',
         transition: 'transform 0.28s cubic-bezier(0.4,0,0.2,1)',
+        boxShadow: open ? '-8px 0 40px rgba(0,0,0,0.12)' : 'none',
       }}>
-        <div style={{ padding: '20px 24px', borderBottom: '2px solid var(--border)', display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexShrink: 0 }}>
+        <div style={{ padding: '18px 22px', borderBottom: '1px solid var(--border)', display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexShrink: 0 }}>
           <div>
-            <p style={{ fontSize: 9, fontWeight: 700, letterSpacing: '0.15em', textTransform: 'uppercase', color: 'var(--text-dim)', margin: 0, marginBottom: 6 }}>Post a role</p>
-            <h2 style={{ fontFamily: 'Georgia, "Times New Roman", serif', fontSize: 22, fontWeight: 400, color: 'var(--text)', margin: 0 }}>Hire your next <em>intern.</em></h2>
+            <p style={{ fontSize: 10, fontWeight: 600, letterSpacing: '0.1em', textTransform: 'uppercase', color: 'var(--text-dim)', margin: 0, marginBottom: 4 }}>Post a role</p>
+            <h2 style={{ fontFamily: "'Editorial New', Georgia, serif", fontSize: 20, fontWeight: 400, color: 'var(--text)', margin: 0 }}>Hire your next <em>intern.</em></h2>
           </div>
-          <button onClick={onClose} style={{ background: 'transparent', border: '1.5px solid var(--border)', cursor: 'pointer', color: 'var(--text-dim)', display: 'flex', alignItems: 'center', justifyContent: 'center', width: 32, height: 32, flexShrink: 0 }}>
+          <button onClick={onClose} style={{ background: 'transparent', border: '1px solid var(--border)', borderRadius: 7, cursor: 'pointer', color: 'var(--text-dim)', display: 'flex', alignItems: 'center', justifyContent: 'center', width: 32, height: 32, flexShrink: 0 }}>
             <X size={14} />
           </button>
         </div>
 
-        <div style={{ flex: 1, overflowY: 'auto', padding: '24px' }}>
+        <div style={{ flex: 1, overflowY: 'auto', padding: '22px' }}>
           <div style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
             <div style={{ display: 'flex', gap: 14, alignItems: 'flex-end' }}>
               <div style={{ flexShrink: 0 }}>
                 <Label>Logo</Label>
-                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 4, width: 152 }}>
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 5, width: 152 }}>
                   {LOGO_EMOJIS.slice(0, 8).map(e => (
-                    <button key={e} onClick={() => set('logo')(e)} style={{ width: 34, height: 34, fontSize: 17, cursor: 'pointer', border: `2px solid ${form.logo === e ? 'var(--text)' : 'var(--border)'}`, background: 'var(--bg-subtle)', borderRadius: 0 }}>{e}</button>
+                    <button key={e} onClick={() => set('logo')(e)} style={{ width: 34, height: 34, borderRadius: 6, fontSize: 17, cursor: 'pointer', border: `1.5px solid ${form.logo === e ? 'var(--text)' : 'var(--border)'}`, background: 'var(--bg-subtle)' }}>{e}</button>
                   ))}
                 </div>
               </div>
@@ -593,10 +558,10 @@ function PostRoleDrawer({ recruiter, open, onClose, onSuccess, showToast }) {
             </div>
             <div>
               <Label>Description</Label>
-              <FocusTextarea value={form.description} onChange={e => set('description')(e.target.value)} rows={3} placeholder="What will the intern actually work on? Be specific." />
+              <FocusTextarea value={form.description} onChange={e => set('description')(e.target.value)} rows={3} placeholder="What will the intern actually work on? Be specific — 2-3 sentences." />
             </div>
-            <div style={{ borderTop: '1.5px solid var(--border)', paddingTop: 16 }}>
-              <p style={{ fontSize: 9, fontWeight: 700, color: 'var(--text-dim)', letterSpacing: '0.15em', textTransform: 'uppercase', marginBottom: 16 }}>Role content</p>
+            <div style={{ borderTop: '1px solid var(--border)', paddingTop: 4 }}>
+              <p style={{ fontSize: 10, fontWeight: 600, color: 'var(--text-dim)', letterSpacing: '0.1em', textTransform: 'uppercase', marginBottom: 16 }}>Role content sections</p>
               <div style={{ marginBottom: 18 }}>
                 <Label>What you'll do</Label>
                 <div style={{ display: 'flex', gap: 8, marginBottom: 8 }}>
@@ -608,24 +573,51 @@ function PostRoleDrawer({ recruiter, open, onClose, onSuccess, showToast }) {
               <div style={{ marginBottom: 18 }}>
                 <Label>Perks & benefits</Label>
                 <div style={{ display: 'flex', gap: 8, marginBottom: 8 }}>
-                  <FocusInput value={perkInput} onChange={e => setPerkInput(e.target.value)} placeholder="Flexible hours · Certificate" onKeyDown={e => e.key === 'Enter' && (e.preventDefault(), addPerk())} style={{ flex: 1 }} />
+                  <FocusInput value={perkInput} onChange={e => setPerkInput(e.target.value)} placeholder="e.g. Flexible hours · Certificate of completion" onKeyDown={e => e.key === 'Enter' && (e.preventDefault(), addPerk())} style={{ flex: 1 }} />
                   <button onClick={addPerk} style={{ ...btnGhost(), padding: '10px 14px' }}>Add</button>
                 </div>
                 {form.perks.length > 0 && (
                   <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>
                     {form.perks.map((p, i) => (
-                      <span key={i} style={{ display: 'flex', alignItems: 'center', gap: 5, fontSize: 10, padding: '4px 10px', border: '1.5px solid var(--border)', color: 'var(--text-mid)', background: 'var(--bg-subtle)', textTransform: 'uppercase', letterSpacing: '0.06em' }}>
-                        {p}
+                      <span key={i} style={{ display: 'flex', alignItems: 'center', gap: 5, fontSize: 11, padding: '4px 10px', borderRadius: 20, border: '1px solid var(--border)', color: 'var(--text-mid)', background: 'var(--bg-subtle)' }}>
+                        ✦ {p}
                         <button onClick={() => removePerk(i)} style={{ background: 'transparent', border: 'none', cursor: 'pointer', color: 'var(--text-dim)', display: 'flex', padding: 0 }}><X size={10} /></button>
                       </span>
                     ))}
                   </div>
                 )}
               </div>
+              <div>
+                <Label>Custom sections</Label>
+                {form.sections.map((sec, si) => (
+                  <div key={si} style={{ marginBottom: 12, padding: '12px 14px', borderRadius: 10, border: '1px solid var(--border)', background: 'var(--bg-subtle)' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 8 }}>
+                      <span style={{ fontSize: 12, fontWeight: 600, color: 'var(--text)' }}>▲ {sec.heading}</span>
+                      <button onClick={() => removeSection(si)} style={{ background: 'transparent', border: 'none', cursor: 'pointer', color: 'var(--text-dim)', display: 'flex', padding: 0 }}><Trash2 size={12} /></button>
+                    </div>
+                    {sec.items.map((item, ii) => (
+                      <div key={ii} style={{ display: 'flex', alignItems: 'flex-start', gap: 8, padding: '5px 0', borderBottom: '1px solid var(--border)', marginBottom: 4 }}>
+                        <div style={{ width: 4, height: 4, background: 'var(--text-dim)', flexShrink: 0, marginTop: 6 }} />
+                        <span style={{ flex: 1, fontSize: 11, color: 'var(--text)' }}>{item}</span>
+                        <button onClick={() => removeSectionItem(si, ii)} style={{ background: 'transparent', border: 'none', cursor: 'pointer', color: 'var(--text-dim)', display: 'flex', padding: 0, flexShrink: 0 }}><X size={10} /></button>
+                      </div>
+                    ))}
+                    <div style={{ display: 'flex', gap: 6, marginTop: 8 }}>
+                      <FocusInput value={newSecItemText[si] || ''} onChange={e => setNewSecItemText(prev => ({ ...prev, [si]: e.target.value }))} placeholder="Add a point…" onKeyDown={e => e.key === 'Enter' && (e.preventDefault(), addSectionItem(si))} style={{ flex: 1, fontSize: 11, padding: '6px 10px' }} />
+                      <button onClick={() => addSectionItem(si)} style={{ ...btnPrimary(false), padding: '6px 12px', fontSize: 11 }}>Add</button>
+                    </div>
+                  </div>
+                ))}
+                <div style={{ display: 'flex', gap: 8 }}>
+                  <FocusInput value={newSecHeading} onChange={e => setNewSecHeading(e.target.value)} placeholder="Heading — e.g. Who we're looking for" onKeyDown={e => e.key === 'Enter' && (e.preventDefault(), addSection())} style={{ flex: 1 }} />
+                  <button onClick={addSection} style={{ ...btnGhost(), whiteSpace: 'nowrap' }}><Plus size={12} /> Add section</button>
+                </div>
+              </div>
             </div>
-            <div style={{ borderTop: '1.5px solid var(--border)', paddingTop: 16 }}>
-              <p style={{ fontSize: 9, fontWeight: 700, color: 'var(--text-dim)', letterSpacing: '0.15em', textTransform: 'uppercase', marginBottom: 12 }}>Skills & config</p>
+            <div style={{ borderTop: '1px solid var(--border)', paddingTop: 4 }}>
+              <p style={{ fontSize: 10, fontWeight: 600, color: 'var(--text-dim)', letterSpacing: '0.1em', textTransform: 'uppercase', marginBottom: 12 }}>Skills & config</p>
               <Label required>Required skills</Label>
+              <p style={{ fontSize: 11, color: 'var(--text-dim)', marginBottom: 8 }}>Type a skill and press Enter. Set level 1–5 for each.</p>
               <div style={{ display: 'flex', gap: 8, marginBottom: 10 }}>
                 <FocusInput value={skillInput} onChange={e => setSkillInput(e.target.value)} placeholder="React, Node.js, Python…" onKeyDown={e => e.key === 'Enter' && (e.preventDefault(), addSkill())} list="skill-suggestions-drawer" style={{ flex: 1 }} />
                 <datalist id="skill-suggestions-drawer">{SKILL_OPTIONS.map(s => <option key={s} value={s} />)}</datalist>
@@ -634,13 +626,13 @@ function PostRoleDrawer({ recruiter, open, onClose, onSuccess, showToast }) {
               {form.required_skills.length > 0 && (
                 <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
                   {form.required_skills.map(skill => (
-                    <div key={skill.name} style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '8px 12px', border: '1.5px solid var(--border)', background: 'var(--bg-subtle)' }}>
-                      <span style={{ fontSize: 12, fontWeight: 600, color: 'var(--text)', flex: 1 }}>{skill.name}</span>
-                      <span style={{ fontSize: 9, color: 'var(--text-dim)', textTransform: 'uppercase', letterSpacing: '0.08em' }}>Level</span>
+                    <div key={skill.name} style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '8px 12px', borderRadius: 8, border: '1px solid var(--border)', background: 'var(--bg-subtle)' }}>
+                      <span style={{ fontSize: 12, fontWeight: 500, color: 'var(--text)', flex: 1 }}>{skill.name}</span>
+                      <span style={{ fontSize: 10, color: 'var(--text-dim)' }}>Level</span>
                       <div style={{ display: 'flex', gap: 3 }}>
                         {[1,2,3,4,5].map(lv => (
                           <button key={lv} onClick={() => setForm(f => ({ ...f, required_skills: f.required_skills.map(s => s.name === skill.name ? { ...s, level: lv } : s) }))}
-                            style={{ width: 22, height: 22, fontSize: 10, fontWeight: 700, cursor: 'pointer', fontFamily: 'inherit', border: 'none', background: skill.level >= lv ? 'var(--text)' : 'var(--bg-card)', color: skill.level >= lv ? 'var(--bg)' : 'var(--text-dim)', outline: skill.level >= lv ? 'none' : '1.5px solid var(--border)' }}>{lv}</button>
+                            style={{ width: 22, height: 22, borderRadius: 4, fontSize: 10, fontWeight: 600, cursor: 'pointer', fontFamily: 'inherit', border: 'none', background: skill.level >= lv ? 'var(--text)' : 'var(--bg-card)', color: skill.level >= lv ? 'var(--bg)' : 'var(--text-dim)', outline: skill.level >= lv ? 'none' : '1px solid var(--border)' }}>{lv}</button>
                         ))}
                       </div>
                       <button onClick={() => removeSkill(skill.name)} style={{ background: 'transparent', border: 'none', cursor: 'pointer', color: 'var(--text-dim)', display: 'flex', padding: 0 }}><X size={14} /></button>
@@ -650,7 +642,7 @@ function PostRoleDrawer({ recruiter, open, onClose, onSuccess, showToast }) {
               )}
             </div>
             <div>
-              <Label>Nice to have</Label>
+              <Label>Nice to have (optional)</Label>
               <div style={{ display: 'flex', gap: 8, marginBottom: 8 }}>
                 <FocusInput value={niceInput} onChange={e => setNiceInput(e.target.value)} placeholder="Docker, AWS…" onKeyDown={e => e.key === 'Enter' && (e.preventDefault(), addNice())} list="skill-suggestions-drawer" style={{ flex: 1 }} />
                 <button onClick={addNice} style={btnGhost()}>Add</button>
@@ -658,7 +650,7 @@ function PostRoleDrawer({ recruiter, open, onClose, onSuccess, showToast }) {
               {form.nice_to_have.length > 0 && (
                 <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>
                   {form.nice_to_have.map(s => (
-                    <span key={s} style={{ display: 'flex', alignItems: 'center', gap: 4, fontSize: 10, padding: '3px 10px', border: '1.5px solid var(--border)', color: 'var(--text-mid)', textTransform: 'uppercase', letterSpacing: '0.06em' }}>
+                    <span key={s} style={{ display: 'flex', alignItems: 'center', gap: 4, fontSize: 11, padding: '3px 10px', borderRadius: 20, border: '1px solid var(--border)', color: 'var(--text-mid)' }}>
                       {s}
                       <button onClick={() => setForm(f => ({ ...f, nice_to_have: f.nice_to_have.filter(x => x !== s) }))} style={{ background: 'transparent', border: 'none', cursor: 'pointer', color: 'var(--text-dim)', display: 'flex', padding: 0 }}><X size={10} /></button>
                     </span>
@@ -669,7 +661,7 @@ function PostRoleDrawer({ recruiter, open, onClose, onSuccess, showToast }) {
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 12 }}>
               <div>
                 <Label>Visibility</Label>
-                <div style={{ display: 'flex', gap: 4 }}>
+                <div style={{ display: 'flex', gap: 6 }}>
                   {['public','private'].map(v => (
                     <button key={v} onClick={() => set('visibility')(v)} style={chipBtn(form.visibility === v)}>
                       {v === 'public' ? 'Public' : 'Link only'}
@@ -693,9 +685,9 @@ function PostRoleDrawer({ recruiter, open, onClose, onSuccess, showToast }) {
           </div>
         </div>
 
-        <div style={{ padding: '16px 24px', borderTop: '2px solid var(--border)', flexShrink: 0, background: 'var(--bg-card)' }}>
-          <button onClick={handleSubmit} disabled={saving} style={{ ...btnPrimary(saving), width: '100%', justifyContent: 'center', padding: '14px 16px', fontSize: 12 }}>
-            {saving ? 'Posting…' : <><Plus size={13} /> Post role</>}
+        <div style={{ padding: '14px 22px', borderTop: '1px solid var(--border)', flexShrink: 0, background: 'var(--bg-card)' }}>
+          <button onClick={handleSubmit} disabled={saving} style={{ ...btnPrimary(saving), width: '100%', justifyContent: 'center', padding: '13px 16px', fontSize: 13 }}>
+            {saving ? 'Posting…' : 'Post role'} {!saving && <ChevronRight size={14} />}
           </button>
         </div>
       </div>
@@ -704,220 +696,20 @@ function PostRoleDrawer({ recruiter, open, onClose, onSuccess, showToast }) {
 }
 
 // ═══════════════════════════════════════════════════════════════════════════
-// 6. APPLICANT SNAPSHOT — BRUTALIST + HUNT SCORE + SEND MESSAGE
+// 6. APPLICANT SNAPSHOT (Card version for HUNT Sort grid)
 // ═══════════════════════════════════════════════════════════════════════════
-function ApplicantSnapshot({ app, onStatusChange, onClose, compact = false }) {
-  const s         = app.students || {};
-  const skills    = s.skills    || [];
-  const projects  = s.projects  || [];
-  const score     = app.match_score    || 0;
-  const breakdown = app.match_breakdown || {};
-  // HUNT Score — derived from match + profile completeness
-  const huntScore = Math.min(100, Math.round(score * 0.7 + (s.profile_completeness || 70) * 0.3));
-  const [recruiterNote, setRecruiterNote] = useState('');
-  const [sending, setSending]             = useState(false);
-  const [msgSent, setMsgSent]             = useState(false);
-
-  const ACTIONS = [
-    { key: 'shortlisted', label: 'Shortlist',  icon: Bookmark,   color: 'var(--green)',  bg: 'var(--green-tint)' },
-    { key: 'interview',   label: 'Interview',  icon: Phone,      color: 'var(--blue)',   bg: 'var(--blue-tint)' },
-    { key: 'hired',       label: 'Hire',       icon: Award,      color: 'var(--purple)', bg: 'var(--purple-tint)' },
-    { key: 'rejected',    label: 'Pass',       icon: ThumbsDown, color: 'var(--red)',    bg: 'var(--red-tint)' },
-  ];
-
-  const handleAction = async (key) => {
-    setSending(true);
-    try { await onStatusChange(app.id, key, recruiterNote); setRecruiterNote(''); }
-    finally { setSending(false); }
-  };
-
-  const handleSendMessage = async () => {
-    if (!recruiterNote.trim()) return;
-    setSending(true);
-    try {
-      // Send message without changing status
-      await onStatusChange(app.id, app.status || 'pending', recruiterNote);
-      setMsgSent(true);
-      setTimeout(() => setMsgSent(false), 2500);
-      setRecruiterNote('');
-    } finally { setSending(false); }
-  };
-
-  return (
-    <div style={{ background: 'var(--bg-card)', border: '2px solid var(--border)', overflow: 'hidden', display: 'flex', flexDirection: 'column' }}>
-      {/* Header */}
-      <div style={{ padding: '14px 18px', borderBottom: '1.5px solid var(--border)', display: 'flex', alignItems: 'center', justifyContent: 'space-between', background: 'var(--bg-subtle)' }}>
-        <p style={{ fontSize: 9, fontWeight: 700, color: 'var(--text-dim)', textTransform: 'uppercase', letterSpacing: '0.15em', margin: 0 }}>Candidate Profile</p>
-        {onClose && <button onClick={onClose} style={{ background: 'transparent', border: 'none', cursor: 'pointer', color: 'var(--text-dim)', display: 'flex' }}><X size={16} /></button>}
-      </div>
-
-      <div style={{ padding: 18, overflowY: 'auto', flex: 1 }}>
-
-        {/* Identity + HUNT Score */}
-        <div style={{ display: 'flex', alignItems: 'flex-start', gap: 14, marginBottom: 20, paddingBottom: 20, borderBottom: '1.5px solid var(--border)' }}>
-          <Avatar name={s.full_name} size={52} />
-          <div style={{ flex: 1, minWidth: 0 }}>
-            <p style={{ fontFamily: 'Georgia, "Times New Roman", serif', fontSize: 18, color: 'var(--text)', margin: 0, fontWeight: 400, lineHeight: 1.2 }}>{s.full_name || 'Candidate'}</p>
-            <p style={{ fontSize: 11, color: 'var(--text-dim)', margin: '4px 0 0' }}>{s.college || '—'} · Year {s.year || '?'}</p>
-            {app.jobs?.role && <p style={{ fontSize: 10, color: 'var(--text-mid)', margin: '4px 0 0', textTransform: 'uppercase', letterSpacing: '0.06em', fontWeight: 600 }}>Applied → {app.jobs.role}</p>}
-          </div>
-          {/* HUNT Score Ring */}
-          <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 4 }}>
-            <HuntScoreRing score={huntScore} size={60} />
-          </div>
-        </div>
-
-        {/* Match score + status row */}
-        <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 16 }}>
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
-            <span style={{ fontSize: 9, fontWeight: 700, color: 'var(--text-dim)', textTransform: 'uppercase', letterSpacing: '0.1em' }}>Match Score</span>
-            <ScoreNumber score={score} size={22} />
-          </div>
-          <div style={{ width: 1, height: 32, background: 'var(--border)' }} />
-          {app.status && <StatusPill status={app.status} />}
-        </div>
-
-        {/* Score breakdown */}
-        {Object.keys(breakdown).length > 0 && (
-          <div style={{ background: 'var(--bg-subtle)', border: '1.5px solid var(--border)', padding: '14px 16px', marginBottom: 16 }}>
-            <p style={{ fontSize: 9, fontWeight: 700, letterSpacing: '0.12em', textTransform: 'uppercase', color: 'var(--text-dim)', marginBottom: 10 }}>Score breakdown</p>
-            {Object.entries(breakdown).map(([k, v]) => (
-              <div key={k} style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 6 }}>
-                <span style={{ fontSize: 9, color: 'var(--text-mid)', width: 120, flexShrink: 0, textTransform: 'capitalize', letterSpacing: '0.04em' }}>{k.replace(/([A-Z])/g, ' $1').trim()}</span>
-                <div style={{ flex: 1, height: 3, background: 'var(--bg-hover)', overflow: 'hidden' }}>
-                  <div style={{ height: '100%', width: `${Math.min(v, 40) * 2.5}%`, background: 'var(--text)' }} />
-                </div>
-                <span style={{ fontSize: 10, fontWeight: 700, color: 'var(--text)', width: 28, textAlign: 'right' }}>{v}%</span>
-              </div>
-            ))}
-          </div>
-        )}
-
-        {/* Skills */}
-        {skills.length > 0 && (
-          <div style={{ marginBottom: 16 }}>
-            <p style={{ fontSize: 9, fontWeight: 700, letterSpacing: '0.12em', textTransform: 'uppercase', color: 'var(--text-dim)', marginBottom: 8 }}>Skills</p>
-            <div style={{ display: 'flex', flexWrap: 'wrap', gap: 5 }}>
-              {skills.map((sk, i) => (
-                <span key={i} style={{ fontSize: 10, padding: '3px 9px', border: '1.5px solid var(--border)', color: 'var(--text)', fontWeight: 600, letterSpacing: '0.04em' }}>
-                  {sk.name} <span style={{ color: 'var(--text-dim)', fontWeight: 400 }}>L{sk.level}</span>
-                </span>
-              ))}
-            </div>
-          </div>
-        )}
-
-        {/* Projects */}
-        {projects.length > 0 && !compact && (
-          <div style={{ marginBottom: 16 }}>
-            <p style={{ fontSize: 9, fontWeight: 700, letterSpacing: '0.12em', textTransform: 'uppercase', color: 'var(--text-dim)', marginBottom: 8 }}>Projects</p>
-            {projects.slice(0, 3).map((p, i) => (
-              <div key={i} style={{ padding: '10px 12px', border: '1.5px solid var(--border)', background: 'var(--bg-subtle)', marginBottom: 6 }}>
-                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 4 }}>
-                  <p style={{ fontSize: 12, fontWeight: 600, color: 'var(--text)', margin: 0 }}>{p.title || p.name}</p>
-                  <div style={{ display: 'flex', gap: 6 }}>
-                    {(p.githubUrl || p.github_url) && <a href={p.githubUrl || p.github_url} target="_blank" rel="noopener noreferrer" style={{ color: 'var(--text-dim)' }}><Github size={12} /></a>}
-                    {(p.projectUrl || p.link) && <a href={p.projectUrl || p.link} target="_blank" rel="noopener noreferrer" style={{ color: 'var(--text-dim)' }}><ExternalLink size={12} /></a>}
-                  </div>
-                </div>
-                <div style={{ display: 'flex', flexWrap: 'wrap', gap: 4 }}>
-                  {(Array.isArray(p.techStack) ? p.techStack : [p.techStack]).filter(Boolean).map((t, j) => (
-                    <span key={j} style={{ fontSize: 9, padding: '1px 6px', border: '1px solid var(--border)', color: 'var(--text-dim)', textTransform: 'uppercase', letterSpacing: '0.06em' }}>{t}</span>
-                  ))}
-                </div>
-              </div>
-            ))}
-          </div>
-        )}
-
-        {/* Links */}
-        <div style={{ display: 'flex', gap: 6, marginBottom: 20, flexWrap: 'wrap' }}>
-          {s.github_url    && <a href={s.github_url}    target="_blank" rel="noopener noreferrer" style={linkChip}><Github size={11} /> GitHub</a>}
-          {s.linkedin_url  && <a href={s.linkedin_url}  target="_blank" rel="noopener noreferrer" style={linkChip}><ExternalLink size={11} /> LinkedIn</a>}
-          {s.portfolio_url && <a href={s.portfolio_url} target="_blank" rel="noopener noreferrer" style={linkChip}><ExternalLink size={11} /> Portfolio</a>}
-          {s.resume_url    && <a href={s.resume_url}    target="_blank" rel="noopener noreferrer" style={{ ...linkChip, color: 'var(--text)', borderColor: 'var(--text)', borderWidth: 2 }}>↗ Resume</a>}
-        </div>
-
-        {/* ─── MESSAGE BOX ─── */}
-        <div style={{ border: '2px solid var(--border)', background: 'var(--bg-subtle)', marginBottom: 14 }}>
-          <div style={{ padding: '10px 14px', borderBottom: '1.5px solid var(--border)', display: 'flex', alignItems: 'center', gap: 6 }}>
-            <MessageSquare size={11} style={{ color: 'var(--text-dim)' }} />
-            <p style={{ fontSize: 9, fontWeight: 700, letterSpacing: '0.12em', textTransform: 'uppercase', color: 'var(--text-dim)', margin: 0 }}>Message to candidate</p>
-          </div>
-          <div style={{ padding: 12 }}>
-            <textarea
-              value={recruiterNote}
-              onChange={e => setRecruiterNote(e.target.value)}
-              placeholder="e.g. Great projects! We'd love to chat — sending a Calendly link shortly."
-              rows={3}
-              style={{ ...inp, fontSize: 12, padding: '9px 12px', minHeight: 'unset', resize: 'none', background: 'var(--bg-card)', marginBottom: 8 }}
-              onFocus={e => e.target.style.borderColor = 'var(--accent)'}
-              onBlur={e  => e.target.style.borderColor = 'var(--border)'}
-            />
-            <button
-              onClick={handleSendMessage}
-              disabled={sending || !recruiterNote.trim()}
-              style={{
-                ...btnPrimary(!recruiterNote.trim()),
-                width: '100%', justifyContent: 'center', padding: '10px',
-                background: msgSent ? 'var(--green)' : (!recruiterNote.trim() ? 'var(--bg-subtle)' : 'var(--text)'),
-                borderColor: msgSent ? 'var(--green)' : undefined,
-              }}
-            >
-              {msgSent ? '✓ Sent' : <><Send size={12} /> Send Message</>}
-            </button>
-          </div>
-        </div>
-
-        {/* Action buttons */}
-        <p style={{ fontSize: 9, fontWeight: 700, letterSpacing: '0.12em', textTransform: 'uppercase', color: 'var(--text-dim)', marginBottom: 8 }}>Move to stage</p>
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: 6 }}>
-          {ACTIONS.map(opt => {
-            const active = app.status === opt.key;
-            const Icon   = opt.icon;
-            return (
-              <button key={opt.key} disabled={sending} onClick={() => handleAction(opt.key)} style={{
-                padding: '10px', fontSize: 11, fontWeight: 700,
-                cursor: sending ? 'wait' : 'pointer', fontFamily: 'inherit',
-                display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 5,
-                border:     `2px solid ${active ? opt.color : 'var(--border)'}`,
-                background: active ? opt.color : 'transparent',
-                color:      active ? '#fff'    : opt.color,
-                opacity:    sending ? 0.6      : 1,
-                textTransform: 'uppercase', letterSpacing: '0.08em',
-              }}>
-                <Icon size={12} /> {opt.label}
-              </button>
-            );
-          })}
-        </div>
-
-        {/* Last message sent */}
-        {app.recruiter_message && (
-          <div style={{ marginTop: 14, padding: '10px 12px', background: 'var(--bg-subtle)', border: '1.5px solid var(--border)', borderLeft: '3px solid var(--accent)' }}>
-            <p style={{ fontSize: 9, fontWeight: 700, color: 'var(--text-dim)', letterSpacing: '0.1em', textTransform: 'uppercase', marginBottom: 4 }}>Last message sent</p>
-            <p style={{ fontSize: 11, color: 'var(--text)', margin: 0, lineHeight: 1.5, fontStyle: 'italic' }}>"{app.recruiter_message}"</p>
-          </div>
-        )}
-      </div>
-    </div>
-  );
-}
-
-// Grid card version for HUNT Sort
 function ApplicantSnapshotCard({ app, rank, onStatusChange, isGridView }) {
   const s         = app.students || {};
   const skills    = s.skills    || [];
   const projects  = s.projects  || [];
   const score     = app.match_score    || 0;
-  const huntScore = Math.min(100, Math.round(score * 0.7 + (s.profile_completeness || 70) * 0.3));
+  const breakdown = app.match_breakdown || {};
   const [recruiterNote, setRecruiterNote] = useState('');
-  const [sending, setSending]             = useState(false);
-  const [msgSent, setMsgSent]             = useState(false);
-  const [expanded, setExpanded]           = useState(false);
+  const [sending, setSending] = useState(false);
+  const [expanded, setExpanded] = useState(false);
 
   const ACTIONS = [
-    { key: 'shortlisted', label: 'Shortlist', icon: Bookmark,   color: 'var(--green)' },
+    { key: 'shortlisted', label: 'Shortlist', icon: Bookmark,   color: 'var(--green-text)' },
     { key: 'interview',   label: 'Interview', icon: Phone,      color: 'var(--blue)' },
     { key: 'hired',       label: 'Hire',      icon: Award,      color: 'var(--purple)' },
     { key: 'rejected',    label: 'Pass',      icon: ThumbsDown, color: 'var(--red)' },
@@ -929,104 +721,97 @@ function ApplicantSnapshotCard({ app, rank, onStatusChange, isGridView }) {
     finally { setSending(false); }
   };
 
-  const handleSendMessage = async () => {
-    if (!recruiterNote.trim()) return;
-    setSending(true);
-    try {
-      await onStatusChange(app.id, app.status || 'pending', recruiterNote);
-      setMsgSent(true);
-      setTimeout(() => setMsgSent(false), 2500);
-      setRecruiterNote('');
-    } finally { setSending(false); }
-  };
-
   if (isGridView) {
+    // Grid snapshot card
     return (
-      <div style={{ background: 'var(--bg-card)', border: '2px solid var(--border)', display: 'flex', flexDirection: 'column' }}>
-        {/* Rank + scores header */}
-        <div style={{ padding: '10px 14px', borderBottom: '1.5px solid var(--border)', background: 'var(--bg-subtle)', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-          <span style={{ fontSize: 11, fontWeight: 700, color: 'var(--text-dim)', fontFamily: 'Georgia, serif' }}>#{rank}</span>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-            <div style={{ textAlign: 'right' }}>
-              <div style={{ fontSize: 8, color: 'var(--text-dim)', textTransform: 'uppercase', letterSpacing: '0.1em', fontWeight: 700 }}>Match</div>
-              <ScoreNumber score={score} size={16} />
-            </div>
-            <HuntScoreRing score={huntScore} size={44} />
-          </div>
+      <div style={{
+        background: 'var(--bg-card)', border: '1px solid var(--border)', borderRadius: 14,
+        overflow: 'hidden', display: 'flex', flexDirection: 'column',
+        transition: 'border-color 0.15s, box-shadow 0.15s',
+      }}>
+        {/* Rank badge + score */}
+        <div style={{ padding: '14px 16px 10px', borderBottom: '1px solid var(--border)', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+          <span style={{ fontSize: 10, fontWeight: 700, color: 'var(--text-dim)', fontFamily: "'Editorial New', Georgia, serif" }}>#{rank}</span>
+          <ScoreNumber score={score} size={20} />
         </div>
 
-        <div style={{ padding: '14px 14px', flex: 1 }}>
+        {/* Candidate info */}
+        <div style={{ padding: '14px 16px', flex: 1 }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 12 }}>
-            <Avatar name={s.full_name} size={38} />
+            <Avatar name={s.full_name} size={40} />
             <div>
-              <p style={{ fontFamily: 'Georgia, "Times New Roman", serif', fontSize: 14, color: 'var(--text)', margin: 0, fontWeight: 400 }}>{s.full_name || 'Student'}</p>
-              <p style={{ fontSize: 9, color: 'var(--text-dim)', margin: '2px 0 0', textTransform: 'uppercase', letterSpacing: '0.06em' }}>{s.college || '—'} · Y{s.year || '?'}</p>
+              <p style={{ fontFamily: "'Editorial New', Georgia, serif", fontSize: 14, color: 'var(--text)', margin: 0, fontWeight: 400 }}>{s.full_name || 'Student'}</p>
+              <p style={{ fontSize: 10, color: 'var(--text-dim)', margin: '2px 0 0' }}>{s.college || '—'} · Y{s.year || '?'}</p>
             </div>
           </div>
 
+          {/* Skills */}
           {skills.length > 0 && (
             <div style={{ display: 'flex', flexWrap: 'wrap', gap: 4, marginBottom: 10 }}>
               {skills.slice(0, 4).map((sk, i) => (
-                <span key={i} style={{ fontSize: 9, padding: '2px 7px', border: '1.5px solid var(--border)', color: 'var(--text)', fontWeight: 600, letterSpacing: '0.04em' }}>
-                  {sk.name} <span style={{ color: 'var(--text-dim)' }}>L{sk.level}</span>
+                <span key={i} style={{ fontSize: 9, padding: '2px 7px', borderRadius: 5, background: 'var(--green-tint)', border: '1px solid var(--green)', color: 'var(--green-text)' }}>
+                  {sk.name} <span style={{ opacity: 0.6 }}>L{sk.level}</span>
                 </span>
               ))}
               {skills.length > 4 && <span style={{ fontSize: 9, padding: '2px 5px', color: 'var(--text-dim)' }}>+{skills.length - 4}</span>}
             </div>
           )}
 
+          {/* Projects preview */}
+          {projects.length > 0 && (
+            <div style={{ marginBottom: 10 }}>
+              {projects.slice(0, 2).map((p, i) => (
+                <div key={i} style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '5px 0', borderBottom: i < Math.min(projects.length, 2) - 1 ? '1px solid var(--border)' : 'none' }}>
+                  <div style={{ width: 3, height: 3, borderRadius: '50%', background: 'var(--text-dim)', flexShrink: 0 }} />
+                  <span style={{ fontSize: 11, color: 'var(--text)', flex: 1, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{p.title || p.name}</span>
+                  {(p.githubUrl || p.github_url) && <a href={p.githubUrl || p.github_url} target="_blank" rel="noopener noreferrer" style={{ color: 'var(--text-dim)' }} onClick={e => e.stopPropagation()}><Github size={10} /></a>}
+                </div>
+              ))}
+            </div>
+          )}
+
+          {/* Links */}
           <div style={{ display: 'flex', gap: 5, flexWrap: 'wrap', marginBottom: 10 }}>
-            {s.github_url    && <a href={s.github_url}    target="_blank" rel="noopener noreferrer" style={{ ...linkChip, fontSize: 9, padding: '2px 7px' }}><Github size={9} /> GitHub</a>}
-            {s.resume_url    && <a href={s.resume_url}    target="_blank" rel="noopener noreferrer" style={{ ...linkChip, fontSize: 9, padding: '2px 7px', color: 'var(--text)', borderColor: 'var(--text)', borderWidth: 2 }}>↗ Resume</a>}
-            {s.portfolio_url && <a href={s.portfolio_url} target="_blank" rel="noopener noreferrer" style={{ ...linkChip, fontSize: 9, padding: '2px 7px' }}><ExternalLink size={9} /> Portfolio</a>}
+            {s.github_url    && <a href={s.github_url}    target="_blank" rel="noopener noreferrer" style={{ ...linkChip, fontSize: 10, padding: '3px 8px' }}><Github size={10} /> GitHub</a>}
+            {s.resume_url    && <a href={s.resume_url}    target="_blank" rel="noopener noreferrer" style={{ ...linkChip, fontSize: 10, padding: '3px 8px', color: 'var(--text)', borderColor: 'var(--text)' }}>📄 Resume</a>}
+            {s.portfolio_url && <a href={s.portfolio_url} target="_blank" rel="noopener noreferrer" style={{ ...linkChip, fontSize: 10, padding: '3px 8px' }}><ExternalLink size={10} /> Portfolio</a>}
           </div>
 
-          {app.status && app.status !== 'pending' && <StatusPill status={app.status} />}
+          {/* Status */}
+          {app.status && app.status !== 'pending' && (
+            <div style={{ marginBottom: 10 }}>
+              <StatusPill status={app.status} />
+            </div>
+          )}
         </div>
 
         {/* Actions */}
-        <div style={{ padding: '10px 12px', borderTop: '1.5px solid var(--border)', background: 'var(--bg-subtle)' }}>
-          <div style={{ display: 'flex', gap: 6, marginBottom: 8 }}>
-            <textarea
-              value={recruiterNote}
-              onChange={e => setRecruiterNote(e.target.value)}
-              placeholder="Optional message…"
-              rows={2}
-              style={{ ...inp, fontSize: 10, padding: '6px 8px', flex: 1, minHeight: 'unset', resize: 'none' }}
-              onFocus={e => e.target.style.borderColor = 'var(--accent)'}
-              onBlur={e  => e.target.style.borderColor = 'var(--border)'}
-            />
-            <button
-              onClick={handleSendMessage}
-              disabled={sending || !recruiterNote.trim()}
-              title="Send message"
-              style={{
-                ...iconBtn,
-                background: msgSent ? 'var(--green)' : 'var(--text)',
-                borderColor: msgSent ? 'var(--green)' : 'var(--text)',
-                color: 'var(--bg)',
-                opacity: !recruiterNote.trim() ? 0.4 : 1,
-                alignSelf: 'flex-end',
-              }}
-            >
-              {msgSent ? '✓' : <Send size={11} />}
-            </button>
-          </div>
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: 4 }}>
+        <div style={{ padding: '10px 14px', borderTop: '1px solid var(--border)', background: 'var(--bg-subtle)' }}>
+          <textarea
+            value={recruiterNote}
+            onChange={e => setRecruiterNote(e.target.value)}
+            placeholder="Optional message…"
+            rows={2}
+            style={{ ...inp, fontSize: 11, padding: '7px 10px', marginBottom: 8, minHeight: 'unset', resize: 'none' }}
+            onFocus={e => e.target.style.borderColor = 'var(--text)'}
+            onBlur={e  => e.target.style.borderColor = 'var(--border)'}
+          />
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: 5 }}>
             {ACTIONS.map(opt => {
               const active = app.status === opt.key;
               const Icon = opt.icon;
               return (
                 <button key={opt.key} disabled={sending} onClick={() => handleAction(opt.key)} style={{
-                  padding: '6px', fontSize: 9, fontWeight: 700,
+                  padding: '7px 6px', borderRadius: 7, fontSize: 10, fontWeight: 500,
                   cursor: sending ? 'wait' : 'pointer', fontFamily: 'inherit',
                   display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 4,
-                  border:     `1.5px solid ${active ? opt.color : 'var(--border)'}`,
+                  border:     `1px solid ${active ? opt.color : 'var(--border)'}`,
                   background: active ? opt.color : 'transparent',
                   color:      active ? '#fff'    : opt.color,
-                  textTransform: 'uppercase', letterSpacing: '0.06em',
+                  opacity:    sending ? 0.6      : 1,
+                  transition: 'all 0.15s',
                 }}>
-                  <Icon size={10} /> {opt.label}
+                  <Icon size={11} /> {opt.label}
                 </button>
               );
             })}
@@ -1038,32 +823,35 @@ function ApplicantSnapshotCard({ app, rank, onStatusChange, isGridView }) {
 
   // List view row
   return (
-    <div style={{ background: 'var(--bg-card)', border: '1.5px solid var(--border)', overflow: 'hidden' }}>
+    <div style={{
+      background: 'var(--bg-card)', border: '1px solid var(--border)', borderRadius: 10,
+      overflow: 'hidden',
+    }}>
       <div style={{ padding: '12px 16px', display: 'flex', alignItems: 'center', gap: 12, cursor: 'pointer' }}
            onClick={() => setExpanded(e => !e)}>
-        <span style={{ fontSize: 10, color: 'var(--text-dim)', width: 22, textAlign: 'center', fontFamily: 'Georgia, serif', flexShrink: 0 }}>#{rank}</span>
-        <Avatar name={s.full_name} size={32} />
+        <span style={{ fontSize: 10, color: 'var(--text-dim)', width: 22, textAlign: 'center', fontFamily: "'Editorial New', Georgia, serif", flexShrink: 0 }}>#{rank}</span>
+        <Avatar name={s.full_name} size={34} />
         <div style={{ flex: 1, minWidth: 0 }}>
           <p style={{ fontSize: 13, fontWeight: 500, color: 'var(--text)', margin: 0 }}>{s.full_name || 'Student'}</p>
-          <p style={{ fontSize: 9, color: 'var(--text-dim)', margin: '2px 0 0', textTransform: 'uppercase', letterSpacing: '0.06em', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{s.college || '—'} · Year {s.year || '?'}</p>
+          <p style={{ fontSize: 10, color: 'var(--text-dim)', margin: '2px 0 0', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{s.college || '—'} · Year {s.year || '?'}</p>
         </div>
-        <div style={{ display: 'flex', flexWrap: 'wrap', gap: 4, maxWidth: 180 }}>
+        <div style={{ display: 'flex', flexWrap: 'wrap', gap: 4, maxWidth: 200 }}>
           {skills.slice(0, 3).map((sk, i) => (
-            <span key={i} style={{ fontSize: 8, padding: '2px 6px', border: '1px solid var(--border)', color: 'var(--text)', fontWeight: 600, letterSpacing: '0.04em', textTransform: 'uppercase' }}>{sk.name}</span>
+            <span key={i} style={{ fontSize: 9, padding: '2px 7px', borderRadius: 5, background: 'var(--green-tint)', border: '1px solid var(--green)', color: 'var(--green-text)' }}>{sk.name}</span>
           ))}
         </div>
-        <HuntScoreRing score={huntScore} size={38} />
-        <ScoreNumber score={score} size={16} />
+        <ScoreNumber score={score} size={18} />
         {app.status && app.status !== 'pending' && <StatusPill status={app.status} />}
         <ChevronRight size={14} style={{ color: 'var(--text-dim)', transform: expanded ? 'rotate(90deg)' : 'none', transition: 'transform 0.15s', flexShrink: 0 }} />
       </div>
+
       {expanded && (
-        <div style={{ padding: '0 16px 14px 16px', borderTop: '1.5px solid var(--border)' }}>
+        <div style={{ padding: '0 16px 14px 16px', borderTop: '1px solid var(--border)' }}>
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16, paddingTop: 14 }}>
             <div>
               {projects.length > 0 && (
                 <div style={{ marginBottom: 10 }}>
-                  <p style={{ fontSize: 9, fontWeight: 700, letterSpacing: '0.12em', textTransform: 'uppercase', color: 'var(--text-dim)', marginBottom: 6 }}>Projects</p>
+                  <p style={{ fontSize: 9, fontWeight: 600, letterSpacing: '0.1em', textTransform: 'uppercase', color: 'var(--text-dim)', marginBottom: 6 }}>Projects</p>
                   {projects.slice(0, 3).map((p, i) => (
                     <div key={i} style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '5px 0', borderBottom: '1px solid var(--border)' }}>
                       <span style={{ fontSize: 11, color: 'var(--text)', flex: 1 }}>{p.title || p.name}</span>
@@ -1073,42 +861,37 @@ function ApplicantSnapshotCard({ app, rank, onStatusChange, isGridView }) {
                 </div>
               )}
               <div style={{ display: 'flex', gap: 5, flexWrap: 'wrap' }}>
-                {s.github_url    && <a href={s.github_url}    target="_blank" rel="noopener noreferrer" style={{ ...linkChip, fontSize: 9, padding: '2px 7px' }}><Github size={9} /> GitHub</a>}
-                {s.resume_url    && <a href={s.resume_url}    target="_blank" rel="noopener noreferrer" style={{ ...linkChip, fontSize: 9, padding: '2px 7px', color: 'var(--text)', borderColor: 'var(--text)', borderWidth: 2 }}>↗ Resume</a>}
-                {s.portfolio_url && <a href={s.portfolio_url} target="_blank" rel="noopener noreferrer" style={{ ...linkChip, fontSize: 9, padding: '2px 7px' }}><ExternalLink size={9} /> Portfolio</a>}
+                {s.github_url    && <a href={s.github_url}    target="_blank" rel="noopener noreferrer" style={{ ...linkChip, fontSize: 10, padding: '3px 8px' }}><Github size={10} /> GitHub</a>}
+                {s.resume_url    && <a href={s.resume_url}    target="_blank" rel="noopener noreferrer" style={{ ...linkChip, fontSize: 10, padding: '3px 8px', color: 'var(--text)', borderColor: 'var(--text)' }}>📄 Resume</a>}
+                {s.portfolio_url && <a href={s.portfolio_url} target="_blank" rel="noopener noreferrer" style={{ ...linkChip, fontSize: 10, padding: '3px 8px' }}><ExternalLink size={10} /> Portfolio</a>}
               </div>
             </div>
             <div>
-              <div style={{ display: 'flex', gap: 6, marginBottom: 8 }}>
-                <textarea
-                  value={recruiterNote}
-                  onChange={e => setRecruiterNote(e.target.value)}
-                  placeholder="Message to candidate…"
-                  rows={2}
-                  style={{ ...inp, fontSize: 11, padding: '7px 10px', flex: 1, minHeight: 'unset', resize: 'none' }}
-                  onFocus={e => e.target.style.borderColor = 'var(--accent)'}
-                  onBlur={e  => e.target.style.borderColor = 'var(--border)'}
-                />
-                <button onClick={handleSendMessage} disabled={sending || !recruiterNote.trim()} title="Send message"
-                  style={{ ...iconBtn, background: msgSent ? 'var(--green)' : 'var(--text)', borderColor: msgSent ? 'var(--green)' : 'var(--text)', color: 'var(--bg)', opacity: !recruiterNote.trim() ? 0.4 : 1, alignSelf: 'flex-end' }}>
-                  {msgSent ? '✓' : <Send size={11} />}
-                </button>
-              </div>
+              <textarea
+                value={recruiterNote}
+                onChange={e => setRecruiterNote(e.target.value)}
+                placeholder="Optional message to candidate…"
+                rows={2}
+                style={{ ...inp, fontSize: 11, padding: '7px 10px', marginBottom: 8, minHeight: 'unset', resize: 'none' }}
+                onFocus={e => e.target.style.borderColor = 'var(--text)'}
+                onBlur={e  => e.target.style.borderColor = 'var(--border)'}
+              />
               <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: 5 }}>
                 {ACTIONS.map(opt => {
                   const active = app.status === opt.key;
                   const Icon = opt.icon;
                   return (
                     <button key={opt.key} disabled={sending} onClick={() => handleAction(opt.key)} style={{
-                      padding: '7px 6px', fontSize: 9, fontWeight: 700,
+                      padding: '7px 6px', borderRadius: 7, fontSize: 10, fontWeight: 500,
                       cursor: sending ? 'wait' : 'pointer', fontFamily: 'inherit',
                       display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 4,
-                      border:     `1.5px solid ${active ? opt.color : 'var(--border)'}`,
+                      border:     `1px solid ${active ? opt.color : 'var(--border)'}`,
                       background: active ? opt.color : 'transparent',
                       color:      active ? '#fff'    : opt.color,
-                      textTransform: 'uppercase', letterSpacing: '0.06em',
+                      opacity:    sending ? 0.6      : 1,
+                      transition: 'all 0.15s',
                     }}>
-                      <Icon size={10} /> {opt.label}
+                      <Icon size={11} /> {opt.label}
                     </button>
                   );
                 })}
@@ -1121,36 +904,196 @@ function ApplicantSnapshotCard({ app, rank, onStatusChange, isGridView }) {
   );
 }
 
+// Full snapshot panel (used in role detail all-applicants view)
+function ApplicantSnapshot({ app, onStatusChange, onClose, compact = false }) {
+  const s         = app.students || {};
+  const skills    = s.skills    || [];
+  const projects  = s.projects  || [];
+  const score     = app.match_score    || 0;
+  const breakdown = app.match_breakdown || {};
+  const [recruiterNote, setRecruiterNote] = useState('');
+  const [sending, setSending] = useState(false);
+
+  const ACTIONS = [
+    { key: 'shortlisted', label: 'Shortlist',  icon: Bookmark,   color: 'var(--green-text)' },
+    { key: 'interview',   label: 'Interview',  icon: Phone,      color: 'var(--blue)' },
+    { key: 'hired',       label: 'Hire',       icon: Award,      color: 'var(--purple)' },
+    { key: 'rejected',    label: 'Pass',       icon: ThumbsDown, color: 'var(--red)' },
+  ];
+
+  const handleAction = async (key) => {
+    setSending(true);
+    try { await onStatusChange(app.id, key, recruiterNote); setRecruiterNote(''); }
+    finally { setSending(false); }
+  };
+
+  return (
+    <div style={{ background: 'var(--bg-card)', border: '1px solid var(--border)', borderRadius: 14, overflow: 'hidden', display: 'flex', flexDirection: 'column' }}>
+      <div style={{ padding: '14px 18px', borderBottom: '1px solid var(--border)', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+        <p style={{ fontSize: 10, fontWeight: 600, color: 'var(--text-dim)', textTransform: 'uppercase', letterSpacing: '0.1em', margin: 0 }}>Candidate</p>
+        {onClose && <button onClick={onClose} style={{ background: 'transparent', border: 'none', cursor: 'pointer', color: 'var(--text-dim)', display: 'flex' }}><X size={16} /></button>}
+      </div>
+
+      <div style={{ padding: 18, overflowY: 'auto', flex: 1 }}>
+        <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', marginBottom: 18 }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+            <Avatar name={s.full_name} size={46} />
+            <div>
+              <p style={{ fontFamily: "'Editorial New', Georgia, serif", fontSize: 16, color: 'var(--text)', margin: 0, fontWeight: 400 }}>{s.full_name || 'Student'}</p>
+              <p style={{ fontSize: 11, color: 'var(--text-dim)', margin: '2px 0 0' }}>{s.college || '—'} · Year {s.year || '?'}</p>
+              {app.jobs?.role && <p style={{ fontSize: 10, color: 'var(--text-mid)', margin: '4px 0 0' }}>Applied for: <strong>{app.jobs.role}</strong></p>}
+            </div>
+          </div>
+          <div style={{ textAlign: 'right' }}>
+            <ScoreNumber score={score} size={26} />
+            <p style={{ fontSize: 9, color: 'var(--text-dim)', marginTop: 2, textTransform: 'uppercase', letterSpacing: '0.08em' }}>match</p>
+          </div>
+        </div>
+
+        {Object.keys(breakdown).length > 0 && (
+          <div style={{ background: 'var(--bg-subtle)', border: '1px solid var(--border)', borderRadius: 10, padding: '14px 16px', marginBottom: 14 }}>
+            <p style={{ fontSize: 9, fontWeight: 600, letterSpacing: '0.1em', textTransform: 'uppercase', color: 'var(--text-dim)', marginBottom: 10 }}>Score breakdown</p>
+            {Object.entries(breakdown).map(([k, v]) => (
+              <div key={k} style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 6 }}>
+                <span style={{ fontSize: 10, color: 'var(--text-mid)', width: 110, flexShrink: 0, textTransform: 'capitalize' }}>{k.replace(/([A-Z])/g, ' $1').trim()}</span>
+                <div style={{ flex: 1, height: 3, background: 'var(--border)', borderRadius: 2, overflow: 'hidden' }}>
+                  <div style={{ height: '100%', width: `${Math.min(v, 40) * 2.5}%`, background: 'var(--green)', borderRadius: 2 }} />
+                </div>
+                <span style={{ fontSize: 10, fontWeight: 600, color: 'var(--text)', width: 28, textAlign: 'right' }}>{v}%</span>
+              </div>
+            ))}
+          </div>
+        )}
+
+        {skills.length > 0 && (
+          <div style={{ marginBottom: 14 }}>
+            <p style={{ fontSize: 9, fontWeight: 600, letterSpacing: '0.1em', textTransform: 'uppercase', color: 'var(--text-dim)', marginBottom: 8 }}>Skills</p>
+            <div style={{ display: 'flex', flexWrap: 'wrap', gap: 5 }}>
+              {skills.map((sk, i) => (
+                <span key={i} style={{ fontSize: 10, padding: '3px 9px', borderRadius: 6, background: 'var(--green-tint)', border: '1px solid var(--green)', color: 'var(--green-text)' }}>
+                  {sk.name} <span style={{ opacity: 0.6 }}>L{sk.level}</span>
+                </span>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {projects.length > 0 && !compact && (
+          <div style={{ marginBottom: 14 }}>
+            <p style={{ fontSize: 9, fontWeight: 600, letterSpacing: '0.1em', textTransform: 'uppercase', color: 'var(--text-dim)', marginBottom: 8 }}>Projects</p>
+            {projects.slice(0, 3).map((p, i) => (
+              <div key={i} style={{ padding: '10px 12px', borderRadius: 8, border: '1px solid var(--border)', background: 'var(--bg-subtle)', marginBottom: 6 }}>
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 4 }}>
+                  <p style={{ fontSize: 12, fontWeight: 500, color: 'var(--text)', margin: 0 }}>{p.title || p.name}</p>
+                  <div style={{ display: 'flex', gap: 6 }}>
+                    {(p.githubUrl || p.github_url) && <a href={p.githubUrl || p.github_url} target="_blank" rel="noopener noreferrer" style={{ color: 'var(--text-dim)' }}><Github size={12} /></a>}
+                    {(p.projectUrl || p.link)      && <a href={p.projectUrl || p.link}      target="_blank" rel="noopener noreferrer" style={{ color: 'var(--text-dim)' }}><ExternalLink size={12} /></a>}
+                  </div>
+                </div>
+                <div style={{ display: 'flex', flexWrap: 'wrap', gap: 4 }}>
+                  {(Array.isArray(p.techStack) ? p.techStack : [p.techStack]).filter(Boolean).map((t, j) => (
+                    <span key={j} style={{ fontSize: 9, padding: '1px 6px', borderRadius: 4, border: '1px solid var(--border)', color: 'var(--text-dim)' }}>{t}</span>
+                  ))}
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
+
+        <div style={{ display: 'flex', gap: 6, marginBottom: 16, flexWrap: 'wrap' }}>
+          {s.github_url    && <a href={s.github_url}    target="_blank" rel="noopener noreferrer" style={linkChip}><Github size={11} /> GitHub</a>}
+          {s.linkedin_url  && <a href={s.linkedin_url}  target="_blank" rel="noopener noreferrer" style={linkChip}><ExternalLink size={11} /> LinkedIn</a>}
+          {s.portfolio_url && <a href={s.portfolio_url} target="_blank" rel="noopener noreferrer" style={linkChip}><ExternalLink size={11} /> Portfolio</a>}
+          {s.resume_url    && <a href={s.resume_url}    target="_blank" rel="noopener noreferrer" style={{ ...linkChip, color: 'var(--text)', borderColor: 'var(--text)' }}>📄 Resume</a>}
+        </div>
+
+        <div style={{ marginBottom: 10 }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 6 }}>
+            <MessageSquare size={11} style={{ color: 'var(--text-dim)' }} />
+            <p style={{ fontSize: 9, fontWeight: 600, letterSpacing: '0.1em', textTransform: 'uppercase', color: 'var(--text-dim)', margin: 0 }}>
+              Message to candidate <span style={{ fontWeight: 400, textTransform: 'none', letterSpacing: 0 }}>(optional)</span>
+            </p>
+          </div>
+          <textarea
+            value={recruiterNote}
+            onChange={e => setRecruiterNote(e.target.value)}
+            placeholder="e.g. Great projects! We'd love to chat — sending a Calendly link shortly."
+            rows={3}
+            style={{ width: '100%', padding: '9px 11px', fontSize: 12, lineHeight: 1.5, background: 'var(--bg-subtle)', border: '1px solid var(--border)', color: 'var(--text)', resize: 'vertical', fontFamily: 'inherit', borderRadius: 7, boxSizing: 'border-box', outline: 'none', transition: 'border-color 0.15s' }}
+            onFocus={e => e.target.style.borderColor = 'var(--text)'}
+            onBlur={e  => e.target.style.borderColor = 'var(--border)'}
+          />
+        </div>
+
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: 6 }}>
+          {ACTIONS.map(opt => {
+            const active = app.status === opt.key;
+            const Icon   = opt.icon;
+            return (
+              <button key={opt.key} disabled={sending} onClick={() => handleAction(opt.key)} style={{
+                padding: '10px', borderRadius: 8, fontSize: 11, fontWeight: 500,
+                cursor: sending ? 'wait' : 'pointer', fontFamily: 'inherit',
+                display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 5,
+                border:     `1px solid ${active ? opt.color : 'var(--border)'}`,
+                background: active ? opt.color : 'transparent',
+                color:      active ? '#fff'    : opt.color,
+                opacity:    sending ? 0.6      : 1,
+                transition: 'all 0.15s',
+              }}>
+                <Icon size={12} /> {opt.label}
+              </button>
+            );
+          })}
+        </div>
+
+        {app.status && app.status !== 'pending' && (
+          <div style={{ marginTop: 10, display: 'flex', alignItems: 'center', gap: 6 }}>
+            <span style={{ fontSize: 10, color: 'var(--text-dim)' }}>Current status:</span>
+            <StatusPill status={app.status} />
+          </div>
+        )}
+
+        {app.recruiter_message && (
+          <div style={{ marginTop: 10, padding: '9px 11px', background: 'var(--bg-subtle)', border: '1px solid var(--border)', borderRadius: 7, borderLeft: '3px solid var(--blue)' }}>
+            <p style={{ fontSize: 9, fontWeight: 600, color: 'var(--text-dim)', letterSpacing: '0.08em', textTransform: 'uppercase', marginBottom: 4 }}>Last message sent</p>
+            <p style={{ fontSize: 11, color: 'var(--text)', margin: 0, lineHeight: 1.5, fontStyle: 'italic' }}>"{app.recruiter_message}"</p>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
+
 // ═══════════════════════════════════════════════════════════════════════════
-// 7. ROLE CARD — BRUTALIST
+// 7. ROLE CARD
 // ═══════════════════════════════════════════════════════════════════════════
 function RoleCard({ job, onClick, onTogglePause, onCopyLink, onDelete }) {
   const filled = (job.current_applicants || 0) / (job.max_applicants || 50);
   const status = job.status || (job.is_active ? 'live' : 'paused');
   const statusStyle = status === 'live'
-    ? { color: 'var(--green)', border: 'var(--green)', label: '● Live' }
+    ? { color: 'var(--green-text)', bg: 'var(--green-tint)', border: 'var(--green)', label: '● Live' }
     : status === 'paused'
-    ? { color: 'var(--amber)', border: 'var(--amber)', label: '⏸ Paused' }
-    : { color: 'var(--text-dim)', border: 'var(--border)', label: '✕ Closed' };
+    ? { color: 'var(--amber)', bg: 'var(--amber-tint)', border: 'var(--amber)', label: '⏸ Paused' }
+    : { color: 'var(--text-dim)', bg: 'var(--bg-subtle)', border: 'var(--border)', label: 'Closed' };
   return (
-    <div onClick={onClick} className="hn-card" style={{ background: 'var(--bg-card)', border: '2px solid var(--border)', padding: 18, cursor: 'pointer', display: 'flex', flexDirection: 'column', gap: 12, minHeight: 180 }}>
+    <div onClick={onClick} className="hn-card" style={{ background: 'var(--bg-card)', border: '1px solid var(--border)', borderRadius: 12, padding: 18, cursor: 'pointer', transition: 'border-color 0.15s', display: 'flex', flexDirection: 'column', gap: 12, minHeight: 180 }}>
       <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between' }}>
         <div style={{ display: 'flex', alignItems: 'flex-start', gap: 11 }}>
-          <span style={{ fontSize: 26, lineHeight: 1 }}>{job.logo || '🚀'}</span>
+          <span style={{ fontSize: 28, lineHeight: 1 }}>{job.logo || '🚀'}</span>
           <div>
-            <p style={{ fontFamily: 'Georgia, "Times New Roman", serif', fontSize: 15, fontWeight: 400, color: 'var(--text)', margin: 0, lineHeight: 1.25 }}>{job.role}</p>
-            <p style={{ fontSize: 10, color: 'var(--text-dim)', marginTop: 4, textTransform: 'uppercase', letterSpacing: '0.06em' }}>{job.stipend} · {job.duration}</p>
+            <p style={{ fontFamily: "'Editorial New', Georgia, serif", fontSize: 15, fontWeight: 400, color: 'var(--text)', margin: 0, lineHeight: 1.25 }}>{job.role}</p>
+            <p style={{ fontSize: 10, color: 'var(--text-dim)', marginTop: 4 }}>{job.stipend} · {job.duration}</p>
           </div>
         </div>
-        <span style={{ fontSize: 8, padding: '2px 8px', fontWeight: 700, color: statusStyle.color, border: `1.5px solid ${statusStyle.border}`, textTransform: 'uppercase', letterSpacing: '0.1em', whiteSpace: 'nowrap', flexShrink: 0 }}>{statusStyle.label}</span>
+        <span style={{ fontSize: 9, padding: '2px 8px', borderRadius: 10, fontWeight: 500, background: statusStyle.bg, color: statusStyle.color, border: `1px solid ${statusStyle.border}`, textTransform: 'uppercase', letterSpacing: '0.05em', whiteSpace: 'nowrap', flexShrink: 0 }}>{statusStyle.label}</span>
       </div>
-      <div style={{ display: 'flex', gap: 12, fontSize: 10, color: 'var(--text-mid)', flexWrap: 'wrap', textTransform: 'uppercase', letterSpacing: '0.06em' }}>
-        <span style={{ display: 'flex', alignItems: 'center', gap: 4 }}><MapPin size={9} /> {job.location}</span>
-        <span style={{ display: 'flex', alignItems: 'center', gap: 4 }}><Users size={9} /> {job.current_applicants || 0}/{job.max_applicants || 50}</span>
+      <div style={{ display: 'flex', gap: 12, fontSize: 10, color: 'var(--text-mid)', flexWrap: 'wrap' }}>
+        <span style={{ display: 'flex', alignItems: 'center', gap: 4 }}><MapPin size={10} /> {job.location}</span>
+        <span style={{ display: 'flex', alignItems: 'center', gap: 4 }}><Users size={10} /> {job.current_applicants || 0}/{job.max_applicants || 50}</span>
       </div>
       <div>
-        <div style={{ height: 2, background: 'var(--bg-hover)', overflow: 'hidden' }}>
-          <div style={{ height: '100%', width: `${Math.min(filled, 1) * 100}%`, background: filled > 0.8 ? 'var(--red)' : filled > 0.5 ? 'var(--amber)' : 'var(--text)' }} />
+        <div style={{ height: 3, borderRadius: 2, background: 'var(--border)', overflow: 'hidden' }}>
+          <div style={{ height: '100%', width: `${Math.min(filled, 1) * 100}%`, background: filled > 0.8 ? 'var(--red)' : filled > 0.5 ? 'var(--amber)' : 'var(--green)', borderRadius: 2, transition: 'width 0.4s' }} />
         </div>
       </div>
       <div onClick={e => e.stopPropagation()} style={{ display: 'flex', gap: 4, marginTop: 'auto' }}>
@@ -1163,7 +1106,7 @@ function RoleCard({ job, onClick, onTogglePause, onCopyLink, onDelete }) {
 }
 
 // ═══════════════════════════════════════════════════════════════════════════
-// 8. ROLE DETAIL VIEW
+// 8. ROLE DETAIL VIEW — with HUNT Sort
 // ═══════════════════════════════════════════════════════════════════════════
 function RoleDetailView({ job, onBack, onCopyLink, recruiter, showToast }) {
   const [apps, setApps]               = useState([]);
@@ -1171,7 +1114,7 @@ function RoleDetailView({ job, onBack, onCopyLink, recruiter, showToast }) {
   const [selectedApp, setSelectedApp] = useState(null);
   const [statusFilter, setStatusFilter] = useState('all');
   const [huntSortActive, setHuntSortActive] = useState(false);
-  const [huntSortView, setHuntSortView]     = useState('grid');
+  const [huntSortView, setHuntSortView]     = useState('grid'); // 'grid' | 'list'
 
   useEffect(() => {
     (async () => {
@@ -1190,11 +1133,12 @@ function RoleDetailView({ job, onBack, onCopyLink, recruiter, showToast }) {
       );
       setApps(a => a.map(x => x.id === appId ? { ...x, status, recruiter_message: note || x.recruiter_message } : x));
       if (selectedApp?.id === appId) setSelectedApp(s => ({ ...s, status, recruiter_message: note || s.recruiter_message }));
-      const labels = { shortlisted: 'Shortlisted ✓', interview: 'Moved to interview', hired: 'Hired!', rejected: 'Passed' };
+      const labels = { shortlisted: 'Shortlisted ✓', interview: 'Moved to interview', hired: 'Hired! 🎉', rejected: 'Passed' };
       showToast(labels[status] || 'Updated');
     } catch (e) { showToast(e.message || 'Update failed', 'error'); }
   };
 
+  // Top 6 by match score
   const huntSortedApps = useMemo(() =>
     [...apps].sort((a, b) => (b.match_score || 0) - (a.match_score || 0)).slice(0, 6),
     [apps]
@@ -1206,18 +1150,19 @@ function RoleDetailView({ job, onBack, onCopyLink, recruiter, showToast }) {
 
   return (
     <div>
-      <button onClick={onBack} style={{ ...btnGhost(), marginBottom: 20, padding: '7px 14px', fontSize: 10 }}><ArrowLeft size={11} /> All roles</button>
+      <button onClick={onBack} style={{ ...btnGhost(), marginBottom: 18, padding: '6px 12px' }}><ArrowLeft size={12} /> All roles</button>
 
-      <div style={{ background: 'var(--bg-card)', border: '2px solid var(--border)', padding: 22, marginBottom: 20 }}>
-        <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', marginBottom: 20 }}>
+      {/* Role header */}
+      <div style={{ background: 'var(--bg-card)', border: '1px solid var(--border)', borderRadius: 14, padding: 22, marginBottom: 18 }}>
+        <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', marginBottom: 18 }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: 14 }}>
-            <span style={{ fontSize: 36 }}>{job.logo || '🚀'}</span>
+            <span style={{ fontSize: 38 }}>{job.logo || '🚀'}</span>
             <div>
-              <h2 style={{ fontFamily: 'Georgia, "Times New Roman", serif', fontSize: 26, color: 'var(--text)', margin: 0, fontWeight: 400 }}>{job.role}</h2>
-              <p style={{ fontSize: 11, color: 'var(--text-dim)', margin: '4px 0 0', textTransform: 'uppercase', letterSpacing: '0.06em' }}>{job.company} · {job.location} · {job.stipend}</p>
+              <h2 style={{ fontFamily: "'Editorial New', Georgia, serif", fontSize: 24, color: 'var(--text)', margin: 0, fontWeight: 400 }}>{job.role}</h2>
+              <p style={{ fontSize: 12, color: 'var(--text-dim)', margin: '4px 0 0' }}>{job.company} · {job.location} · {job.stipend}</p>
             </div>
           </div>
-          <button onClick={() => onCopyLink(job)} style={btnGhost()}><Link2 size={11} /> Share</button>
+          <button onClick={() => onCopyLink(job)} style={btnGhost()}><Link2 size={12} /> Share</button>
         </div>
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 10 }}>
           {[
@@ -1226,45 +1171,49 @@ function RoleDetailView({ job, onBack, onCopyLink, recruiter, showToast }) {
             { label: 'Shortlisted',  val: counts.shortlisted || 0 },
             { label: 'Interviewing', val: counts.interview   || 0 },
           ].map(s => (
-            <div key={s.label} style={{ background: 'var(--bg-subtle)', border: '1.5px solid var(--border)', padding: '14px 16px' }}>
-              <p style={{ fontSize: 9, color: 'var(--text-dim)', textTransform: 'uppercase', letterSpacing: '0.12em', marginBottom: 8, fontWeight: 700 }}>{s.label}</p>
-              <p style={{ fontFamily: 'Georgia, "Times New Roman", serif', fontSize: 26, color: 'var(--text)', margin: 0, lineHeight: 1, fontWeight: 400 }}>{s.val}</p>
+            <div key={s.label} style={{ background: 'var(--bg-subtle)', border: '1px solid var(--border)', borderRadius: 8, padding: '12px 14px' }}>
+              <p style={{ fontSize: 9, color: 'var(--text-dim)', textTransform: 'uppercase', letterSpacing: '0.1em', marginBottom: 6, fontWeight: 600 }}>{s.label}</p>
+              <p style={{ fontFamily: "'Editorial New', Georgia, serif", fontSize: 24, color: 'var(--text)', margin: 0, lineHeight: 1, fontWeight: 400 }}>{s.val}</p>
             </div>
           ))}
         </div>
       </div>
 
-      {/* HUNT Sort */}
-      <div style={{ background: 'var(--bg-card)', border: '2px solid var(--green)', padding: 20, marginBottom: 20 }}>
-        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: huntSortActive ? 20 : 0 }}>
+      {/* HUNT Sort section */}
+      <div style={{ background: 'var(--bg-card)', border: '1.5px solid var(--green)', borderRadius: 14, padding: 20, marginBottom: 18 }}>
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: huntSortActive ? 18 : 0 }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-            <div style={{ width: 30, height: 30, background: 'var(--green-tint)', border: '1.5px solid var(--green)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-              <Sparkles size={14} style={{ color: 'var(--green)' }} />
+            <div style={{ width: 32, height: 32, borderRadius: 8, background: 'var(--green-tint)', border: '1px solid var(--green)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+              <Sparkles size={15} style={{ color: 'var(--green)' }} />
             </div>
             <div>
-              <p style={{ fontSize: 12, fontWeight: 700, color: 'var(--text)', margin: 0, letterSpacing: '0.06em', textTransform: 'uppercase' }}>HUNT Sort</p>
-              <p style={{ fontSize: 10, color: 'var(--text-dim)', margin: '1px 0 0' }}>Top 6 ranked by match + HUNT score</p>
+              <p style={{ fontSize: 13, fontWeight: 600, color: 'var(--text)', margin: 0 }}>HUNT Sort</p>
+              <p style={{ fontSize: 11, color: 'var(--text-dim)', margin: '1px 0 0' }}>Top 6 candidates ranked by match score</p>
             </div>
           </div>
           <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
             {huntSortActive && (
               <div style={{ display: 'flex', gap: 4 }}>
-                <button onClick={() => setHuntSortView('grid')} style={{ ...iconBtn, background: huntSortView === 'grid' ? 'var(--text)' : 'transparent', borderColor: 'var(--border)', color: huntSortView === 'grid' ? 'var(--bg)' : 'var(--text-dim)' }}><LayoutGrid size={12} /></button>
-                <button onClick={() => setHuntSortView('list')} style={{ ...iconBtn, background: huntSortView === 'list' ? 'var(--text)' : 'transparent', borderColor: 'var(--border)', color: huntSortView === 'list' ? 'var(--bg)' : 'var(--text-dim)' }}><List size={12} /></button>
+                <button onClick={() => setHuntSortView('grid')} style={{ ...iconBtn, background: huntSortView === 'grid' ? 'var(--bg-subtle)' : 'transparent', borderColor: huntSortView === 'grid' ? 'var(--text)' : 'var(--border)', color: huntSortView === 'grid' ? 'var(--text)' : 'var(--text-dim)' }}>
+                  <LayoutGrid size={13} />
+                </button>
+                <button onClick={() => setHuntSortView('list')} style={{ ...iconBtn, background: huntSortView === 'list' ? 'var(--bg-subtle)' : 'transparent', borderColor: huntSortView === 'list' ? 'var(--text)' : 'var(--border)', color: huntSortView === 'list' ? 'var(--text)' : 'var(--text-dim)' }}>
+                  <List size={13} />
+                </button>
               </div>
             )}
             <button
               onClick={() => setHuntSortActive(h => !h)}
               style={{
-                padding: '8px 16px', fontSize: 10, fontWeight: 700,
-                cursor: 'pointer', fontFamily: 'inherit', borderRadius: 0,
+                padding: '8px 14px', borderRadius: 8, fontSize: 12, fontWeight: 600,
+                cursor: 'pointer', fontFamily: 'inherit',
                 background: huntSortActive ? 'var(--green)' : 'var(--green-tint)',
-                color: huntSortActive ? '#fff' : 'var(--green)',
-                border: `2px solid var(--green)`,
-                textTransform: 'uppercase', letterSpacing: '0.1em',
+                color: huntSortActive ? '#fff' : 'var(--green-text)',
+                border: `1px solid var(--green)`,
+                display: 'flex', alignItems: 'center', gap: 6, transition: 'all 0.15s',
               }}
             >
-              <Sparkles size={11} style={{ display: 'inline', marginRight: 6 }} />
+              <Sparkles size={13} />
               {huntSortActive ? 'Hide' : 'Run HUNT Sort'}
             </button>
           </div>
@@ -1272,19 +1221,33 @@ function RoleDetailView({ job, onBack, onCopyLink, recruiter, showToast }) {
 
         {huntSortActive && (
           apps.length === 0 ? (
-            <p style={{ textAlign: 'center', color: 'var(--text-dim)', fontSize: 12, padding: '24px 0' }}>No applicants yet.</p>
+            <p style={{ textAlign: 'center', color: 'var(--text-dim)', fontSize: 13, padding: '24px 0' }}>No applicants yet.</p>
           ) : huntSortView === 'grid' ? (
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(260px, 1fr))', gap: 12 }}>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(260px, 1fr))', gap: 14 }}>
               {huntSortedApps.map((app, i) => (
-                <ApplicantSnapshotCard key={app.id} app={app} rank={i + 1} isGridView={true}
-                  onStatusChange={async (id, status, note) => { await handleStatusChange(id, status, note); }} />
+                <ApplicantSnapshotCard
+                  key={app.id}
+                  app={app}
+                  rank={i + 1}
+                  isGridView={true}
+                  onStatusChange={async (id, status, note) => {
+                    await handleStatusChange(id, status, note);
+                  }}
+                />
               ))}
             </div>
           ) : (
             <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
               {huntSortedApps.map((app, i) => (
-                <ApplicantSnapshotCard key={app.id} app={app} rank={i + 1} isGridView={false}
-                  onStatusChange={async (id, status, note) => { await handleStatusChange(id, status, note); }} />
+                <ApplicantSnapshotCard
+                  key={app.id}
+                  app={app}
+                  rank={i + 1}
+                  isGridView={false}
+                  onStatusChange={async (id, status, note) => {
+                    await handleStatusChange(id, status, note);
+                  }}
+                />
               ))}
             </div>
           )
@@ -1293,8 +1256,8 @@ function RoleDetailView({ job, onBack, onCopyLink, recruiter, showToast }) {
 
       {/* All applicants */}
       <div style={{ marginBottom: 14, display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 8 }}>
-        <p style={{ fontSize: 9, fontWeight: 700, letterSpacing: '0.15em', textTransform: 'uppercase', color: 'var(--text-dim)', margin: 0 }}>All applicants</p>
-        <div style={{ display: 'flex', gap: 4, flexWrap: 'wrap' }}>
+        <p style={{ fontSize: 10, fontWeight: 600, letterSpacing: '0.1em', textTransform: 'uppercase', color: 'var(--text-dim)', margin: 0 }}>All applicants</p>
+        <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
           {[
             { id: 'all',         label: `All (${counts.all || 0})` },
             { id: 'pending',     label: `Pending (${counts.pending || 0})` },
@@ -1304,24 +1267,23 @@ function RoleDetailView({ job, onBack, onCopyLink, recruiter, showToast }) {
             { id: 'rejected',    label: `Passed (${counts.rejected || 0})` },
           ].map(t => (
             <button key={t.id} onClick={() => setStatusFilter(t.id)} style={{
-              padding: '5px 10px', fontSize: 9, fontFamily: 'inherit', cursor: 'pointer',
+              padding: '5px 10px', borderRadius: 14, fontSize: 11, fontFamily: 'inherit', cursor: 'pointer',
               background: statusFilter === t.id ? 'var(--text)' : 'transparent',
-              border: `1.5px solid ${statusFilter === t.id ? 'var(--text)' : 'var(--border)'}`,
+              border: `1px solid ${statusFilter === t.id ? 'var(--text)' : 'var(--border)'}`,
               color: statusFilter === t.id ? 'var(--bg)' : 'var(--text-mid)',
-              fontWeight: statusFilter === t.id ? 700 : 400,
-              textTransform: 'uppercase', letterSpacing: '0.08em',
+              fontWeight: statusFilter === t.id ? 500 : 400,
             }}>{t.label}</button>
           ))}
         </div>
       </div>
 
       {loading ? (
-        <p style={{ textAlign: 'center', color: 'var(--text-dim)', padding: 40, fontSize: 12 }}>Loading applicants…</p>
+        <p style={{ textAlign: 'center', color: 'var(--text-dim)', padding: 40, fontSize: 13 }}>Loading applicants…</p>
       ) : filtered.length === 0 ? (
-        <EmptyState icon="—" title="No applicants in this view." message="Try a different filter or share your role link." />
+        <EmptyState icon="🎯" title="No applicants in this view." message="Try a different filter or share your role link." />
       ) : (
-        <div style={{ display: 'grid', gridTemplateColumns: selectedApp ? '1fr 380px' : '1fr', gap: 14 }}>
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+        <div style={{ display: 'grid', gridTemplateColumns: selectedApp ? '1fr 380px' : '1fr', gap: 16 }}>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
             {filtered.map((app, i) => (
               <ApplicantRow key={app.id} app={app} rank={i + 1}
                 onClick={() => setSelectedApp(selectedApp?.id === app.id ? null : app)}
@@ -1340,186 +1302,109 @@ function RoleDetailView({ job, onBack, onCopyLink, recruiter, showToast }) {
 function ApplicantRow({ app, rank, onClick, isSelected }) {
   const s     = app.students || {};
   const score = app.match_score || 0;
-  const huntScore = Math.min(100, Math.round(score * 0.7 + (s.profile_completeness || 70) * 0.3));
   return (
     <div onClick={onClick} className="hn-card" style={{
       background: 'var(--bg-card)',
-      border: `${isSelected ? '2px' : '1.5px'} solid ${isSelected ? 'var(--text)' : 'var(--border)'}`,
-      padding: '12px 16px', cursor: 'pointer',
-      display: 'flex', alignItems: 'center', gap: 12,
+      border: isSelected ? '1.5px solid var(--text)' : '1px solid var(--border)',
+      borderRadius: 10, padding: '13px 16px', cursor: 'pointer',
+      display: 'flex', alignItems: 'center', gap: 12, transition: 'border-color 0.15s',
     }}>
-      <span style={{ fontSize: 10, color: 'var(--text-dim)', width: 22, flexShrink: 0, textAlign: 'center', fontFamily: 'Georgia, serif' }}>#{rank}</span>
-      <Avatar name={s.full_name} size={32} />
+      <span style={{ fontSize: 10, color: 'var(--text-dim)', width: 22, flexShrink: 0, textAlign: 'center', fontFamily: "'Editorial New', Georgia, serif" }}>#{rank}</span>
+      <Avatar name={s.full_name} size={34} />
       <div style={{ flex: 1, minWidth: 0 }}>
         <p style={{ fontSize: 12, fontWeight: 500, color: 'var(--text)', margin: 0, lineHeight: 1.2 }}>{s.full_name || 'Student'}</p>
-        <p style={{ fontSize: 9, color: 'var(--text-dim)', margin: '2px 0 0', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', textTransform: 'uppercase', letterSpacing: '0.06em' }}>{s.college || '—'} · Year {s.year || '?'}</p>
+        <p style={{ fontSize: 10, color: 'var(--text-dim)', margin: '2px 0 0', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{s.college || '—'} · Year {s.year || '?'}</p>
       </div>
-      <HuntScoreRing score={huntScore} size={36} />
-      <ScoreNumber score={score} size={15} />
+      <ScoreNumber score={score} size={16} />
       <StatusPill status={app.status || 'pending'} />
     </div>
   );
 }
 
 // ═══════════════════════════════════════════════════════════════════════════
-// 9. HOME TAB — recent roles + 2 quick actions (NO top picks)
+// 9. TAB: HOME — shows recent roles, no top candidates / quick actions
 // ═══════════════════════════════════════════════════════════════════════════
-function HomeTab({ recruiter, jobs, allApps, onPostRole, onOpenRole, onOpenPipeline }) {
+function HomeTab({ recruiter, jobs, allApps, onPostRole, onOpenRole }) {
   const liveJobs    = jobs.filter(j => (j.status || (j.is_active ? 'live' : 'paused')) === 'live');
   const totalApps   = allApps.length;
   const shortlisted = allApps.filter(a => a.status === 'shortlisted').length;
   const hired       = allApps.filter(a => a.status === 'hired').length;
   const recentJobs  = [...jobs].sort((a, b) => new Date(b.created_at) - new Date(a.created_at)).slice(0, 6);
-  const firstName   = recruiter.contact_name?.split(' ')[0] || 'there';
-  const startupName = recruiter.startups?.name || recruiter.company_name || 'your startup';
+  const firstName   = recruiter.contact_name?.split(' ')[0] || 'recruiter';
+  const startupName = recruiter.startups?.name || recruiter.company_name || 'there';
 
   return (
     <div>
-      {/* Header */}
-      <div style={{ marginBottom: 32, borderBottom: '2px solid var(--border)', paddingBottom: 24 }}>
-        <p style={{ fontSize: 9, fontWeight: 700, letterSpacing: '0.15em', textTransform: 'uppercase', color: 'var(--text-dim)', marginBottom: 10 }}>Home</p>
-        <h1 style={{ fontFamily: 'Georgia, "Times New Roman", serif', fontSize: 36, fontWeight: 400, color: 'var(--text)', margin: 0, lineHeight: 1.15 }}>
-          Welcome back, <em style={{ fontStyle: 'italic', color: 'var(--accent)' }}>{firstName}.</em>
-        </h1>
-        <p style={{ fontSize: 13, color: 'var(--text-mid)', marginTop: 10, lineHeight: 1.6 }}>
-          {liveJobs.length} live role{liveJobs.length !== 1 ? 's' : ''}. {totalApps} applicants total.
-        </p>
+      <div style={{ marginBottom: 28 }}>
+        <p style={{ fontSize: 10, fontWeight: 600, letterSpacing: '0.1em', textTransform: 'uppercase', color: 'var(--text-dim)', marginBottom: 6 }}>Home</p>
+        <h1 style={{ fontFamily: "'Editorial New', Georgia, serif", fontSize: 28, fontWeight: 400, color: 'var(--text)', margin: 0, lineHeight: 1.2 }}>Welcome back, <em>{firstName}.</em></h1>
+        <p style={{ fontSize: 13, color: 'var(--text-mid)', marginTop: 8 }}>Here's what's happening at {startupName}.</p>
       </div>
 
-      {/* Stats — brutalist grid with thick borders */}
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 0, marginBottom: 40, border: '2px solid var(--border)' }}>
-        {[
-          { label: 'Active Roles',  val: String(liveJobs.length).padStart(2,'0'),   sub: '+1 this week' },
-          { label: 'Total Applicants', val: String(totalApps).padStart(2,'0'),       sub: '+12 this week' },
-          { label: 'Shortlisted',   val: String(shortlisted).padStart(2,'0'),        sub: `${Math.max(0, shortlisted - hired)} awaiting reply` },
-          { label: 'Hires Made',    val: String(hired).padStart(2,'0'),              sub: 'all-time' },
-        ].map((s, i) => (
-          <div key={s.label} style={{ padding: '20px 22px', borderRight: i < 3 ? '2px solid var(--border)' : 'none', background: 'var(--bg-card)' }}>
-            <p style={{ fontSize: 9, fontWeight: 700, color: 'var(--text-dim)', textTransform: 'uppercase', letterSpacing: '0.14em', margin: '0 0 10px' }}>{s.label}</p>
-            <p style={{ fontFamily: 'Georgia, "Times New Roman", serif', fontSize: 40, color: 'var(--text)', margin: '0 0 6px', lineHeight: 1, fontWeight: 400 }}>{s.val}</p>
-            <p style={{ fontSize: 10, color: 'var(--text-dim)', margin: 0 }}>{s.sub}</p>
+      {/* Stats */}
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 12, marginBottom: 36 }}>
+        {[{ label: 'Live roles', val: liveJobs.length }, { label: 'Applicants', val: totalApps }, { label: 'Shortlisted', val: shortlisted }, { label: 'Hired', val: hired }].map(s => (
+          <div key={s.label} style={{ background: 'var(--bg-card)', border: '1px solid var(--border)', borderRadius: 12, padding: '16px 20px' }}>
+            <p style={{ fontSize: 10, fontWeight: 600, letterSpacing: '0.1em', textTransform: 'uppercase', color: 'var(--text-dim)', marginBottom: 8 }}>{s.label}</p>
+            <p style={{ fontFamily: "'Editorial New', Georgia, serif", fontSize: 28, color: 'var(--text)', margin: 0, lineHeight: 1, fontWeight: 400 }}>{s.val}</p>
           </div>
         ))}
       </div>
 
-      {/* Two-column: Recent Roles + Quick Actions/Activity */}
-      <div style={{ display: 'grid', gridTemplateColumns: '1fr 320px', gap: 24 }}>
-
-        {/* LEFT: Recent Roles */}
-        <div>
-          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 16 }}>
-            <p style={{ fontSize: 9, fontWeight: 700, color: 'var(--text-dim)', textTransform: 'uppercase', letterSpacing: '0.15em', margin: 0 }}>Recent Roles</p>
-            <button onClick={onPostRole} style={{ ...btnPrimary(false), padding: '6px 12px', fontSize: 9 }}>
-              <Plus size={11} /> Post a role
-            </button>
-          </div>
-
-          {recentJobs.length === 0 ? (
-            <EmptyState icon="—" title="No roles posted yet." message="Post your first role to start receiving matched candidates."
-              cta={<button onClick={onPostRole} style={{ ...btnPrimary(false), margin: '0 auto' }}><Plus size={12} /> Post a role</button>} />
-          ) : (
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 0, border: '2px solid var(--border)' }}>
-              {recentJobs.map((job, idx) => {
-                const filled = (job.current_applicants || 0) / (job.max_applicants || 50);
-                const status = job.status || (job.is_active ? 'live' : 'paused');
-                const isLive = status === 'live';
-                const jobApps = allApps.filter(a => a.job_id === job.id);
-                return (
-                  <div key={job.id} onClick={() => onOpenRole(job)} className="hn-card" style={{
-                    padding: '16px 18px', cursor: 'pointer', background: 'var(--bg-card)',
-                    borderBottom: idx < recentJobs.length - 1 ? '1.5px solid var(--border)' : 'none',
-                    display: 'flex', alignItems: 'center', gap: 14,
-                  }}>
-                    <span style={{ fontSize: 24, lineHeight: 1, flexShrink: 0 }}>{job.logo || '🚀'}</span>
-                    <div style={{ flex: 1, minWidth: 0 }}>
-                      <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 3 }}>
-                        <p style={{ fontFamily: 'Georgia, "Times New Roman", serif', fontSize: 14, fontWeight: 400, color: 'var(--text)', margin: 0, lineHeight: 1.2 }}>{job.role}</p>
-                        <span style={{ fontSize: 8, padding: '1px 6px', fontWeight: 700, color: isLive ? 'var(--green)' : 'var(--amber)', border: `1.5px solid ${isLive ? 'var(--green)' : 'var(--amber)'}`, textTransform: 'uppercase', letterSpacing: '0.1em', flexShrink: 0 }}>{isLive ? '● Live' : '⏸ Paused'}</span>
-                      </div>
-                      <p style={{ fontSize: 10, color: 'var(--text-dim)', margin: '0 0 6px', textTransform: 'uppercase', letterSpacing: '0.06em' }}>{job.stipend} · {job.location}</p>
-                      <div style={{ height: 2, background: 'var(--bg-hover)', overflow: 'hidden', maxWidth: 200 }}>
-                        <div style={{ height: '100%', width: `${Math.min(filled, 1) * 100}%`, background: filled > 0.8 ? 'var(--red)' : filled > 0.5 ? 'var(--amber)' : 'var(--text)' }} />
-                      </div>
-                    </div>
-                    <div style={{ textAlign: 'right', flexShrink: 0 }}>
-                      <p style={{ fontFamily: 'Georgia, serif', fontSize: 20, color: 'var(--text)', margin: 0, lineHeight: 1, fontWeight: 400 }}>{jobApps.length}</p>
-                      <p style={{ fontSize: 8, color: 'var(--text-dim)', margin: '2px 0 0', textTransform: 'uppercase', letterSpacing: '0.08em' }}>applicants</p>
-                    </div>
-                    <ChevronRight size={13} style={{ color: 'var(--text-dim)', flexShrink: 0 }} />
-                  </div>
-                );
-              })}
-            </div>
-          )}
-        </div>
-
-        {/* RIGHT: Quick Actions + Recent Activity */}
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
-
-          {/* Quick Actions — 2 big brutalist buttons */}
-          <div>
-            <p style={{ fontSize: 9, fontWeight: 700, color: 'var(--text-dim)', textTransform: 'uppercase', letterSpacing: '0.15em', margin: '0 0 12px' }}>Quick Actions</p>
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
-              <button onClick={onPostRole} style={{
-                width: '100%', padding: '16px 20px',
-                background: 'var(--text)', color: 'var(--bg)',
-                border: '2px solid var(--text)', borderRadius: 0,
-                fontSize: 12, fontWeight: 700, cursor: 'pointer', fontFamily: 'inherit',
-                textTransform: 'uppercase', letterSpacing: '0.1em',
-                display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-              }}>
-                <span style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-                  <Plus size={14} /> Post a new role
-                </span>
-                <ChevronRight size={14} />
-              </button>
-              <button onClick={onOpenPipeline} style={{
-                width: '100%', padding: '16px 20px',
-                background: 'transparent', color: 'var(--text)',
-                border: '2px solid var(--border)', borderRadius: 0,
-                fontSize: 12, fontWeight: 700, cursor: 'pointer', fontFamily: 'inherit',
-                textTransform: 'uppercase', letterSpacing: '0.1em',
-                display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-              }}>
-                <span style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-                  <GitBranch size={14} /> Review pipeline
-                </span>
-                <ChevronRight size={14} />
-              </button>
-            </div>
-          </div>
-
-          {/* Recent Activity */}
-          <div>
-            <p style={{ fontSize: 9, fontWeight: 700, color: 'var(--text-dim)', textTransform: 'uppercase', letterSpacing: '0.15em', margin: '0 0 12px' }}>Recent Activity</p>
-            <div style={{ border: '2px solid var(--border)', background: 'var(--bg-card)' }}>
-              {allApps.slice(0, 5).map((app, i) => {
-                const s = app.students || {};
-                return (
-                  <div key={app.id} style={{ padding: '12px 14px', borderBottom: i < 4 ? '1px solid var(--border)' : 'none', display: 'flex', alignItems: 'flex-start', gap: 10 }}>
-                    <div style={{ width: 4, height: 4, background: 'var(--text-dim)', flexShrink: 0, marginTop: 5 }} />
-                    <div style={{ flex: 1 }}>
-                      <p style={{ fontSize: 11, color: 'var(--text)', margin: 0, lineHeight: 1.4 }}>
-                        <strong>{s.full_name || 'Someone'}</strong> applied to <strong>{app.jobs?.role || 'a role'}</strong>
-                      </p>
-                      <p style={{ fontSize: 9, color: 'var(--text-dim)', margin: '3px 0 0', textTransform: 'uppercase', letterSpacing: '0.06em' }}>just now</p>
-                    </div>
-                  </div>
-                );
-              })}
-              {allApps.length === 0 && (
-                <div style={{ padding: '24px', textAlign: 'center', color: 'var(--text-dim)', fontSize: 11 }}>No activity yet.</div>
-              )}
-            </div>
-          </div>
-        </div>
+      {/* Recent roles */}
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 16 }}>
+        <h3 style={{ fontFamily: "'Editorial New', Georgia, serif", fontSize: 18, color: 'var(--text)', margin: 0, fontWeight: 400 }}>Recent roles</h3>
+        <button onClick={onPostRole} style={{ ...btnPrimary(false), padding: '7px 12px', fontSize: 11 }}>
+          <Plus size={12} /> Post a role
+        </button>
       </div>
+
+      {recentJobs.length === 0 ? (
+        <EmptyState icon="📋" title="No roles posted yet." message="Post your first role to start receiving matched candidates."
+          cta={<button onClick={onPostRole} style={{ ...btnPrimary(false), margin: '0 auto' }}><Plus size={13} /> Post a role</button>} />
+      ) : (
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))', gap: 12 }}>
+          {recentJobs.map(job => {
+            const filled = (job.current_applicants || 0) / (job.max_applicants || 50);
+            const status = job.status || (job.is_active ? 'live' : 'paused');
+            const statusStyle = status === 'live'
+              ? { color: 'var(--green-text)', bg: 'var(--green-tint)', border: 'var(--green)', label: '● Live' }
+              : { color: 'var(--amber)', bg: 'var(--amber-tint)', border: 'var(--amber)', label: '⏸ Paused' };
+            const jobApps = allApps.filter(a => a.job_id === job.id);
+            return (
+              <div key={job.id} onClick={() => onOpenRole(job)} className="hn-card" style={{ background: 'var(--bg-card)', border: '1px solid var(--border)', borderRadius: 12, padding: 18, cursor: 'pointer', transition: 'border-color 0.15s', display: 'flex', flexDirection: 'column', gap: 10 }}>
+                <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between' }}>
+                  <div style={{ display: 'flex', alignItems: 'flex-start', gap: 10 }}>
+                    <span style={{ fontSize: 26, lineHeight: 1 }}>{job.logo || '🚀'}</span>
+                    <div>
+                      <p style={{ fontFamily: "'Editorial New', Georgia, serif", fontSize: 14, fontWeight: 400, color: 'var(--text)', margin: 0, lineHeight: 1.25 }}>{job.role}</p>
+                      <p style={{ fontSize: 10, color: 'var(--text-dim)', marginTop: 3 }}>{job.stipend} · {job.duration}</p>
+                    </div>
+                  </div>
+                  <span style={{ fontSize: 9, padding: '2px 7px', borderRadius: 8, fontWeight: 500, background: statusStyle.bg, color: statusStyle.color, border: `1px solid ${statusStyle.border}`, whiteSpace: 'nowrap', flexShrink: 0 }}>{statusStyle.label}</span>
+                </div>
+                <div style={{ display: 'flex', gap: 10, fontSize: 10, color: 'var(--text-mid)' }}>
+                  <span style={{ display: 'flex', alignItems: 'center', gap: 3 }}><MapPin size={10} /> {job.location}</span>
+                  <span style={{ display: 'flex', alignItems: 'center', gap: 3 }}><Users size={10} /> {job.current_applicants || 0}/{job.max_applicants || 50}</span>
+                </div>
+                <div style={{ height: 3, borderRadius: 2, background: 'var(--border)', overflow: 'hidden' }}>
+                  <div style={{ height: '100%', width: `${Math.min(filled, 1) * 100}%`, background: filled > 0.8 ? 'var(--red)' : filled > 0.5 ? 'var(--amber)' : 'var(--green)', borderRadius: 2 }} />
+                </div>
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', paddingTop: 4, borderTop: '1px solid var(--border)' }}>
+                  <span style={{ fontSize: 10, color: 'var(--text-dim)' }}>{jobApps.length} applicant{jobApps.length !== 1 ? 's' : ''}</span>
+                  <ChevronRight size={13} style={{ color: 'var(--text-dim)' }} />
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      )}
     </div>
   );
 }
 
 // ═══════════════════════════════════════════════════════════════════════════
-// 10. ROLES TAB
+// 10. TAB: ROLES
 // ═══════════════════════════════════════════════════════════════════════════
 function RolesTab({ jobs, onCopyLink, onTogglePause, onDelete, onPostRole, recruiter, showToast, initialOpenJob }) {
   const [subTab, setSubTab] = useState('live');
@@ -1544,13 +1429,13 @@ function RolesTab({ jobs, onCopyLink, onTogglePause, onDelete, onPostRole, recru
 
   return (
     <div>
-      <PageHeader eyebrow="Roles" title={<>Manage your <em>roles.</em></>} action={<button onClick={onPostRole} style={{ ...btnPrimary(false), padding: '10px 16px' }}><Plus size={12} /> Post a role</button>} />
+      <PageHeader eyebrow="Roles" title={<>Manage your <em>roles.</em></>} action={<button onClick={onPostRole} style={{ ...btnPrimary(false), padding: '10px 16px' }}><Plus size={13} /> Post a role</button>} />
       <SubTabStrip tabs={SUBTABS} active={subTab} onChange={setSubTab} />
       {grouped[subTab].length === 0 ? (
-        <EmptyState icon="—" title={`No ${subTab} roles.`} message={subTab === 'live' ? 'Post your first role to start receiving matched candidates.' : `Roles you ${subTab === 'paused' ? 'pause' : 'close'} will appear here.`}
-          cta={subTab === 'live' && <button onClick={onPostRole} style={{ ...btnPrimary(false), margin: '0 auto' }}><Plus size={12} /> Post a role</button>} />
+        <EmptyState icon={subTab === 'live' ? '📋' : subTab === 'paused' ? '⏸' : '✕'} title={`No ${subTab} roles.`} message={subTab === 'live' ? 'Post your first role to start receiving matched candidates.' : `Roles you ${subTab === 'paused' ? 'pause' : 'close'} will appear here.`}
+          cta={subTab === 'live' && <button onClick={onPostRole} style={{ ...btnPrimary(false), margin: '0 auto' }}><Plus size={13} /> Post a role</button>} />
       ) : (
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))', gap: 12 }}>
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))', gap: 14 }}>
           {grouped[subTab].map(job => <RoleCard key={job.id} job={job} onClick={() => setOpenJob(job)} onTogglePause={onTogglePause} onCopyLink={onCopyLink} onDelete={onDelete} />)}
         </div>
       )}
@@ -1559,12 +1444,12 @@ function RolesTab({ jobs, onCopyLink, onTogglePause, onDelete, onPostRole, recru
 }
 
 // ═══════════════════════════════════════════════════════════════════════════
-// 11. HIRING TAB
+// 11. TAB: HIRING — pipeline only
 // ═══════════════════════════════════════════════════════════════════════════
 function HiringTab({ allApps, onStatusChange }) {
   return (
     <div>
-      <PageHeader eyebrow="Pipeline" title={<>Hiring <em>pipeline.</em></>} subtitle="Track candidates through your hiring process." />
+      <PageHeader eyebrow="Pipeline" title={<>Hiring <em>pipeline.</em></>} subtitle="Track candidates as they move through your process." />
       <PipelineView allApps={allApps} onStatusChange={onStatusChange} />
     </div>
   );
@@ -1584,28 +1469,21 @@ function PipelineView({ allApps, onStatusChange }) {
           const candidates = allApps.filter(a => a.status === stage.id);
           const Icon = stage.icon;
           return (
-            <div key={stage.id} style={{ background: 'var(--bg-card)', border: '2px solid var(--border)', padding: 14, minHeight: 320, display: 'flex', flexDirection: 'column', gap: 10 }}>
-              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', paddingBottom: 12, borderBottom: '1.5px solid var(--border)' }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: 7 }}>
-                  <Icon size={13} style={{ color: stage.color }} />
-                  <span style={{ fontSize: 10, fontWeight: 700, color: 'var(--text)', textTransform: 'uppercase', letterSpacing: '0.1em' }}>{stage.label}</span>
-                </div>
-                <span style={{ fontFamily: 'Georgia, serif', fontSize: 16, fontWeight: 400, color: stage.color }}>{candidates.length}</span>
+            <div key={stage.id} style={{ background: 'var(--bg-card)', border: '1px solid var(--border)', borderRadius: 12, padding: 14, minHeight: 320, display: 'flex', flexDirection: 'column', gap: 10 }}>
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', paddingBottom: 12, borderBottom: '1px solid var(--border)' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 7 }}><Icon size={14} style={{ color: stage.color }} /><span style={{ fontSize: 12, fontWeight: 600, color: 'var(--text)' }}>{stage.label}</span></div>
+                <span style={{ fontFamily: "'Editorial New', Georgia, serif", fontSize: 14, fontWeight: 400, color: stage.color, padding: '2px 8px', borderRadius: 10, background: 'var(--bg-subtle)' }}>{candidates.length}</span>
               </div>
-              {candidates.length === 0 ? (
-                <p style={{ fontSize: 11, color: 'var(--text-dim)', textAlign: 'center', padding: '32px 0' }}>No candidates yet.</p>
-              ) : candidates.map(app => {
+              {candidates.length === 0 ? <p style={{ fontSize: 11, color: 'var(--text-dim)', textAlign: 'center', padding: '32px 0' }}>No candidates here yet.</p> : candidates.map(app => {
                 const s = app.students || {};
-                const score = app.match_score || 0;
-                const huntScore = Math.min(100, Math.round(score * 0.7 + (s.profile_completeness || 70) * 0.3));
                 return (
-                  <div key={app.id} onClick={() => setSelectedApp(selectedApp?.id === app.id ? null : app)} className="hn-card" style={{ padding: '10px 12px', border: `1.5px solid ${selectedApp?.id === app.id ? 'var(--text)' : 'var(--border)'}`, background: 'var(--bg-subtle)', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 8 }}>
+                  <div key={app.id} onClick={() => setSelectedApp(selectedApp?.id === app.id ? null : app)} className="hn-card" style={{ padding: '10px 12px', borderRadius: 8, border: `1px solid ${selectedApp?.id === app.id ? 'var(--text)' : 'var(--border)'}`, background: 'var(--bg-subtle)', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 8 }}>
                     <Avatar name={s.full_name} size={28} />
                     <div style={{ flex: 1, minWidth: 0 }}>
                       <p style={{ fontSize: 11, fontWeight: 500, color: 'var(--text)', margin: 0, lineHeight: 1.2, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{s.full_name || 'Student'}</p>
-                      <p style={{ fontSize: 9, color: 'var(--text-dim)', margin: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', textTransform: 'uppercase', letterSpacing: '0.06em' }}>{app.jobs?.role}</p>
+                      <p style={{ fontSize: 9, color: 'var(--text-dim)', margin: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{app.jobs?.role}</p>
                     </div>
-                    <HuntScoreRing score={huntScore} size={30} />
+                    <ScoreNumber score={app.match_score || 0} size={12} />
                   </div>
                 );
               })}
@@ -1623,7 +1501,7 @@ function PipelineView({ allApps, onStatusChange }) {
 }
 
 // ═══════════════════════════════════════════════════════════════════════════
-// 12. PROFILE TAB
+// 12. TAB: PROFILE
 // ═══════════════════════════════════════════════════════════════════════════
 function ProfileTab({ recruiter, onUpdate, showToast }) {
   const [subTab, setSubTab] = useState('startup');
@@ -1639,23 +1517,22 @@ function ProfileTab({ recruiter, onUpdate, showToast }) {
     </div>
   );
 }
-
 function StartupProfileForm({ startup, canEdit, onUpdate, showToast }) {
   const [form, setForm] = useState({ name: startup.name || '', logo_emoji: startup.logo_emoji || '🚀', tagline: startup.tagline || '', about: startup.about || '', website: startup.website || '', industry: startup.industry || '', stage: startup.stage || '', team_size: startup.team_size || '', founded_year: startup.founded_year || '', hq_location: startup.hq_location || '' });
   const [saving, setSaving] = useState(false);
   const set = k => v => setForm(f => ({ ...f, [k]: v }));
   const save = async () => {
-    if (!startup.id) { showToast('No startup linked.', 'error'); return; }
+    if (!startup.id) { showToast('No startup linked to this account yet.', 'error'); return; }
     setSaving(true);
     try { await updateStartupProfile(startup.id, form); showToast('Startup profile updated'); onUpdate(); }
-    catch (e) { showToast(e.message || 'Failed', 'error'); }
+    catch (e) { showToast(e.message || 'Failed to update', 'error'); }
     finally { setSaving(false); }
   };
   return (
-    <div style={{ background: 'var(--bg-card)', border: '2px solid var(--border)', padding: 24 }}>
-      {!canEdit && <div style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '10px 14px', background: 'var(--amber-tint)', border: '1.5px solid var(--amber)', marginBottom: 18 }}><Lock size={12} style={{ color: 'var(--amber)' }} /><p style={{ fontSize: 11, color: 'var(--amber)', margin: 0 }}>Read-only — only founders can edit the startup profile.</p></div>}
+    <div style={{ background: 'var(--bg-card)', border: '1px solid var(--border)', borderRadius: 14, padding: 24 }}>
+      {!canEdit && <div style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '10px 14px', borderRadius: 8, background: 'var(--amber-tint)', border: '1px solid var(--amber)', marginBottom: 18 }}><Lock size={13} style={{ color: 'var(--amber)' }} /><p style={{ fontSize: 11, color: 'var(--amber)', margin: 0 }}>Read-only. Only founders can edit the startup profile.</p></div>}
       <div style={{ display: 'flex', gap: 16, alignItems: 'center', marginBottom: 22 }}>
-        <div><Label>Logo</Label><div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 4, width: 152 }}>{LOGO_EMOJIS.slice(0, 8).map(e => <button key={e} disabled={!canEdit} onClick={() => set('logo_emoji')(e)} style={{ width: 34, height: 34, fontSize: 17, cursor: canEdit ? 'pointer' : 'not-allowed', opacity: canEdit ? 1 : 0.5, border: `2px solid ${form.logo_emoji === e ? 'var(--text)' : 'var(--border)'}`, background: 'var(--bg-subtle)', borderRadius: 0 }}>{e}</button>)}</div></div>
+        <div><Label>Logo</Label><div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 5, width: 152 }}>{LOGO_EMOJIS.slice(0, 8).map(e => <button key={e} disabled={!canEdit} onClick={() => set('logo_emoji')(e)} style={{ width: 34, height: 34, borderRadius: 6, fontSize: 17, cursor: canEdit ? 'pointer' : 'not-allowed', opacity: canEdit ? 1 : 0.5, border: `1.5px solid ${form.logo_emoji === e ? 'var(--text)' : 'var(--border)'}`, background: 'var(--bg-subtle)' }}>{e}</button>)}</div></div>
         <div style={{ flex: 1 }}><Label required>Startup name</Label><FocusInput value={form.name} disabled={!canEdit} onChange={e => set('name')(e.target.value)} placeholder="HUNT Labs" /><div style={{ height: 12 }} /><Label>Tagline</Label><FocusInput value={form.tagline} disabled={!canEdit} onChange={e => set('tagline')(e.target.value)} placeholder="Skill-first internships" /></div>
       </div>
       <Label>About</Label><FocusTextarea value={form.about} disabled={!canEdit} onChange={e => set('about')(e.target.value)} rows={4} placeholder="What does your startup do?" />
@@ -1672,7 +1549,6 @@ function StartupProfileForm({ startup, canEdit, onUpdate, showToast }) {
     </div>
   );
 }
-
 function RecruiterProfileForm({ recruiter, onUpdate, showToast }) {
   const [form, setForm] = useState({ contact_name: recruiter.contact_name || '', email: recruiter.email || '', phone: recruiter.phone || '', title: recruiter.title || '', linkedin_url: recruiter.linkedin_url || '', bio: recruiter.bio || '', role_in_company: recruiter.role_in_company || 'recruiter' });
   const [saving, setSaving] = useState(false);
@@ -1680,19 +1556,19 @@ function RecruiterProfileForm({ recruiter, onUpdate, showToast }) {
   const save = async () => {
     setSaving(true);
     try { await updateRecruiterProfile(recruiter.id, form); showToast('Profile updated'); onUpdate(); }
-    catch (e) { showToast(e.message || 'Failed', 'error'); }
+    catch (e) { showToast(e.message || 'Failed to update', 'error'); }
     finally { setSaving(false); }
   };
   return (
-    <div style={{ background: 'var(--bg-card)', border: '2px solid var(--border)', padding: 24 }}>
-      <div style={{ display: 'flex', gap: 16, alignItems: 'center', marginBottom: 24 }}><Avatar name={form.contact_name} size={52} /><div><p style={{ fontFamily: 'Georgia, serif', fontSize: 20, color: 'var(--text)', margin: 0, fontWeight: 400 }}>{form.contact_name || 'Your name'}</p><p style={{ fontSize: 11, color: 'var(--text-dim)', margin: '3px 0 0', textTransform: 'uppercase', letterSpacing: '0.06em' }}>{form.title || 'Your role'}</p></div></div>
+    <div style={{ background: 'var(--bg-card)', border: '1px solid var(--border)', borderRadius: 14, padding: 24 }}>
+      <div style={{ display: 'flex', gap: 16, alignItems: 'center', marginBottom: 24 }}><Avatar name={form.contact_name} size={56} /><div><p style={{ fontFamily: "'Editorial New', Georgia, serif", fontSize: 20, color: 'var(--text)', margin: 0, fontWeight: 400 }}>{form.contact_name || 'Your name'}</p><p style={{ fontSize: 12, color: 'var(--text-dim)', margin: '3px 0 0' }}>{form.title || 'Your role'} at {recruiter.startups?.name || 'your startup'}</p></div></div>
       <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
         <div><Label required>Full name</Label><FocusInput value={form.contact_name} onChange={e => set('contact_name')(e.target.value)} /></div>
         <div><Label>Title</Label><FocusInput value={form.title} onChange={e => set('title')(e.target.value)} placeholder="Head of Talent" /></div>
         <div><Label>Email</Label><FocusInput value={form.email} disabled type="email" /></div>
         <div><Label>Phone</Label><FocusInput value={form.phone} onChange={e => set('phone')(e.target.value)} placeholder="+91…" /></div>
         <div><Label>LinkedIn</Label><FocusInput value={form.linkedin_url} onChange={e => set('linkedin_url')(e.target.value)} placeholder="https://linkedin.com/in/…" /></div>
-        <div><Label>Role in company</Label><FocusSelect value={form.role_in_company} onChange={e => set('role_in_company')(e.target.value)}><option value="founder">Founder (full access)</option><option value="hiring_manager">Hiring manager</option><option value="recruiter">Recruiter</option></FocusSelect></div>
+        <div><Label>Role in company</Label><FocusSelect value={form.role_in_company} onChange={e => set('role_in_company')(e.target.value)}><option value="founder">Founder (full edit access)</option><option value="hiring_manager">Hiring manager</option><option value="recruiter">Recruiter</option></FocusSelect></div>
       </div>
       <div style={{ height: 16 }} /><Label>Bio</Label><FocusTextarea value={form.bio} onChange={e => set('bio')(e.target.value)} rows={3} placeholder="Short intro that candidates will see when you reach out." />
       <div style={{ marginTop: 22 }}><button onClick={save} disabled={saving} style={btnPrimary(saving)}>{saving ? 'Saving…' : 'Save changes'}</button></div>
@@ -1701,13 +1577,13 @@ function RecruiterProfileForm({ recruiter, onUpdate, showToast }) {
 }
 
 // ═══════════════════════════════════════════════════════════════════════════
-// 13. NETWORK TAB
+// 13. TAB: NETWORK
 // ═══════════════════════════════════════════════════════════════════════════
 function NetworkTab() {
   return (
     <div>
       <PageHeader eyebrow="Network" title={<>Connect with <em>builders.</em></>} />
-      <EmptyState icon="—" title="Coming soon." message="Connect with other startups, recruiters, and high-signal builders. Quality over quantity — like everything else on HUNT." />
+      <EmptyState icon="🌐" title="Coming soon." message="Connect with other startups, recruiters, and high-signal builders. We're building this carefully — quality over quantity, like everything else on HUNT." />
     </div>
   );
 }
@@ -1717,21 +1593,21 @@ function NetworkTab() {
 // ═══════════════════════════════════════════════════════════════════════════
 function SettingsModal({ theme, setTheme, onClose, onSignOut }) {
   return (
-    <div onClick={onClose} style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.5)', zIndex: 9998, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 20 }}>
-      <div onClick={e => e.stopPropagation()} style={{ background: 'var(--bg-card)', border: '2px solid var(--border)', padding: 28, maxWidth: 460, width: '100%' }}>
-        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 24 }}>
-          <h2 style={{ fontFamily: 'Georgia, serif', fontSize: 24, color: 'var(--text)', margin: 0, fontWeight: 400 }}>Settings</h2>
+    <div onClick={onClose} style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.4)', zIndex: 9998, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 20 }}>
+      <div onClick={e => e.stopPropagation()} style={{ background: 'var(--bg-card)', border: '1px solid var(--border)', borderRadius: 14, padding: 24, maxWidth: 480, width: '100%', boxShadow: '0 12px 48px rgba(0,0,0,0.18)' }}>
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 20 }}>
+          <h2 style={{ fontFamily: "'Editorial New', Georgia, serif", fontSize: 22, color: 'var(--text)', margin: 0, fontWeight: 400 }}>Settings</h2>
           <button onClick={onClose} style={{ background: 'transparent', border: 'none', cursor: 'pointer', color: 'var(--text-dim)' }}><X size={18} /></button>
         </div>
-        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', paddingBottom: 18, borderBottom: '1.5px solid var(--border)' }}>
-          <div><p style={{ fontSize: 13, fontWeight: 600, color: 'var(--text)', margin: 0 }}>Appearance</p><p style={{ fontSize: 11, color: 'var(--text-dim)', margin: '3px 0 0' }}>Light or dark mode.</p></div>
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', paddingBottom: 16, borderBottom: '1px solid var(--border)' }}>
+          <div><p style={{ fontSize: 13, fontWeight: 500, color: 'var(--text)', margin: 0 }}>Appearance</p><p style={{ fontSize: 11, color: 'var(--text-dim)', margin: '3px 0 0' }}>Light or dark mode.</p></div>
           <div style={{ display: 'flex', gap: 6 }}>
-            {['light', 'dark'].map(t => <button key={t} onClick={() => setTheme(t)} style={{ padding: '8px 14px', fontSize: 11, fontFamily: 'inherit', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 6, background: theme === t ? 'var(--text)' : 'transparent', border: `2px solid ${theme === t ? 'var(--text)' : 'var(--border)'}`, color: theme === t ? 'var(--bg)' : 'var(--text)', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.08em', borderRadius: 0 }}>{t === 'light' ? <><Sun size={11} /> Light</> : <><Moon size={11} /> Dark</>}</button>)}
+            {['light', 'dark'].map(t => <button key={t} onClick={() => setTheme(t)} style={{ padding: '8px 14px', borderRadius: 8, fontSize: 12, fontFamily: 'inherit', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 6, background: theme === t ? 'var(--bg-subtle)' : 'transparent', border: `1.5px solid ${theme === t ? 'var(--text)' : 'var(--border)'}`, color: 'var(--text)', fontWeight: theme === t ? 600 : 400 }}>{t === 'light' ? <><Sun size={12} /> Light</> : <><Moon size={12} /> Dark</>}</button>)}
           </div>
         </div>
-        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', paddingTop: 18 }}>
-          <div><p style={{ fontSize: 13, fontWeight: 600, color: 'var(--text)', margin: 0 }}>Sign out</p><p style={{ fontSize: 11, color: 'var(--text-dim)', margin: '3px 0 0' }}>You'll need to log in again.</p></div>
-          <button onClick={onSignOut} style={{ ...btnGhost(), color: 'var(--red)', borderColor: 'var(--red)' }}><LogOut size={11} /> Sign out</button>
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', paddingTop: 16 }}>
+          <div><p style={{ fontSize: 13, fontWeight: 500, color: 'var(--text)', margin: 0 }}>Sign out</p><p style={{ fontSize: 11, color: 'var(--text-dim)', margin: '3px 0 0' }}>You'll need to log in again.</p></div>
+          <button onClick={onSignOut} style={{ ...btnGhost(), color: 'var(--red)', borderColor: 'var(--red)' }}><LogOut size={12} /> Sign out</button>
         </div>
       </div>
     </div>
@@ -1753,6 +1629,7 @@ export default function RecruiterDashboard() {
   const [showAccountMenu, setShowAccountMenu] = useState(false);
   const [showSettings, setShowSettings]       = useState(false);
   const [showPostDrawer, setShowPostDrawer]   = useState(false);
+  // When clicking a role from home, open roles tab with that role pre-selected
   const [pendingOpenRole, setPendingOpenRole] = useState(null);
 
   useEffect(() => { applyTokens(theme); localStorage.setItem('hunt-theme', theme); }, [theme]);
@@ -1789,10 +1666,6 @@ export default function RecruiterDashboard() {
     setActiveTab('roles');
   };
 
-  const handleOpenPipeline = () => {
-    setActiveTab('hiring');
-  };
-
   const handleTogglePause = async (job) => {
     const status = job.status || (job.is_active ? 'live' : 'paused');
     const next   = status === 'live' ? 'paused' : 'live';
@@ -1825,7 +1698,7 @@ export default function RecruiterDashboard() {
         { role: app?.jobs?.role, company: app?.jobs?.company || recruiter?.startups?.name },
       );
       setAllApps(a => a.map(x => x.id === appId ? { ...x, status, recruiter_message: note || x.recruiter_message } : x));
-      const labels = { shortlisted: 'Shortlisted ✓', interview: 'Moved to interview', hired: 'Hired!', rejected: 'Passed' };
+      const labels = { shortlisted: 'Shortlisted ✓', interview: 'Moved to interview', hired: 'Hired! 🎉', rejected: 'Passed' };
       showToast(labels[status] || 'Updated');
     } catch (e) { showToast(e.message || 'Update failed', 'error'); }
   };
@@ -1837,8 +1710,8 @@ export default function RecruiterDashboard() {
   if (loading) return (
     <div style={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'var(--bg)', fontFamily: "'DM Sans', system-ui, sans-serif" }}>
       <div style={{ textAlign: 'center' }}>
-        <div style={{ fontSize: 20, fontWeight: 700, letterSpacing: '0.22em', color: 'var(--text)', marginBottom: 20, textTransform: 'uppercase' }}>HUNT</div>
-        <p style={{ fontSize: 11, color: 'var(--text-dim)', textTransform: 'uppercase', letterSpacing: '0.1em' }}>Loading…</p>
+        <div style={{ fontSize: 26, fontWeight: 700, letterSpacing: '0.18em', color: 'var(--text)', marginBottom: 20 }}>HUNT</div>
+        <p style={{ fontSize: 12, color: 'var(--text-dim)' }}>Loading dashboard…</p>
       </div>
     </div>
   );
@@ -1846,27 +1719,28 @@ export default function RecruiterDashboard() {
   if (!recruiter) return (
     <div style={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'var(--bg)', fontFamily: "'DM Sans', system-ui, sans-serif" }}>
       <div style={{ textAlign: 'center', maxWidth: 400, padding: 24 }}>
-        <p style={{ fontFamily: 'Georgia, serif', fontSize: 20, color: 'var(--text)', marginBottom: 8, fontWeight: 400 }}>Finish setting up your account</p>
+        <div style={{ fontSize: 36, marginBottom: 12 }}>👋</div>
+        <p style={{ fontFamily: "'Editorial New', Georgia, serif", fontSize: 20, color: 'var(--text)', marginBottom: 8, fontWeight: 400 }}>Finish setting up your account</p>
         <p style={{ fontSize: 13, color: 'var(--text-dim)' }}>We couldn't find your recruiter profile. Please complete onboarding to continue.</p>
       </div>
     </div>
   );
 
-  const initials = recruiter.contact_name?.split(' ').map(n => n[0]).join('').slice(0, 2).toUpperCase() || '??';
+  const initials = recruiter.contact_name?.split(' ').map(n => n[0]).join('').slice(0, 2).toUpperCase() || '?';
 
   return (
-    <div style={{ minHeight: '100vh', background: 'var(--bg)', color: 'var(--text)', fontFamily: "'DM Sans', system-ui, 'Helvetica Neue', sans-serif", display: 'flex', WebkitFontSmoothing: 'antialiased' }}>
+    <div style={{ minHeight: '100vh', background: 'var(--bg)', color: 'var(--text)', fontFamily: "'DM Sans', system-ui, sans-serif", display: 'flex', WebkitFontSmoothing: 'antialiased' }}>
       <style>{`
-        @keyframes hunt-fade-in { from { opacity: 0; transform: translateY(4px); } to { opacity: 1; transform: translateY(0); } }
+        @keyframes fadeDown { from { opacity:0; transform: translateX(-50%) translateY(-6px); } to { opacity:1; transform: translateX(-50%) translateY(0); } }
+        @keyframes hunt-fade-in { from { opacity: 0; transform: translateY(5px); } to { opacity: 1; transform: translateY(0); } }
         * { box-sizing: border-box; }
-        button:disabled { opacity: 0.45; }
-        .hn-item:hover { background: var(--bg-hover) !important; }
-        .hn-card:hover { border-color: var(--text) !important; }
-        ::-webkit-scrollbar { width: 6px; height: 6px; }
+        button:disabled { opacity: 0.5; }
+        .hn-item:hover { background: var(--bg-subtle) !important; }
+        .hn-card:hover { border-color: var(--border-mid) !important; }
+        ::-webkit-scrollbar { width: 8px; height: 8px; }
         ::-webkit-scrollbar-track { background: transparent; }
-        ::-webkit-scrollbar-thumb { background: var(--border-mid); }
+        ::-webkit-scrollbar-thumb { background: var(--border-mid); border-radius: 4px; }
         ::-webkit-scrollbar-thumb:hover { background: var(--text-dim); }
-        input:disabled, textarea:disabled, select:disabled { opacity: 0.5; cursor: not-allowed; }
       `}</style>
 
       {toast && <Toast msg={toast.msg} type={toast.type} />}
@@ -1874,94 +1748,93 @@ export default function RecruiterDashboard() {
 
       {recruiter && (
         <PostRoleDrawer recruiter={recruiter} open={showPostDrawer} onClose={() => setShowPostDrawer(false)} showToast={showToast}
-          onSuccess={async () => { await refreshAll(); showToast('Role posted'); setActiveTab('roles'); }} />
+          onSuccess={async () => { await refreshAll(); showToast('Role posted! 🚀'); setActiveTab('roles'); }} />
       )}
 
-      {/* ─── SIDEBAR ─── */}
-      <aside style={{ width: 200, flexShrink: 0, height: '100vh', position: 'sticky', top: 0, borderRight: '2px solid var(--border)', background: 'var(--bg-card)', display: 'flex', flexDirection: 'column' }}>
-        {/* Logo */}
-        <div style={{ padding: '22px 20px 18px', borderBottom: '2px solid var(--border)' }}>
-          <span style={{ fontSize: 13, fontWeight: 700, letterSpacing: '0.22em', color: 'var(--text)', textTransform: 'uppercase' }}>HUNT</span>
+      {/* SIDEBAR */}
+      <aside style={{ width: 210, flexShrink: 0, height: '100vh', position: 'sticky', top: 0, borderRight: '1px solid var(--border)', background: 'var(--bg-card)', display: 'flex', flexDirection: 'column' }}>
+        <div style={{ padding: '20px 18px 16px', borderBottom: '1px solid var(--border)' }}>
+          <span style={{ fontSize: 15, fontWeight: 700, letterSpacing: '0.16em', color: 'var(--text)' }}>HUNT</span>
         </div>
 
-        <nav style={{ padding: '12px 10px', flex: 1, display: 'flex', flexDirection: 'column' }}>
-          {/* Post CTA */}
+        <nav style={{ padding: '10px 8px', flex: 1, display: 'flex', flexDirection: 'column' }}>
+          {/* Post a Role — prominent CTA in sidebar */}
           <button
             onClick={() => setShowPostDrawer(true)}
             style={{
               display: 'flex', alignItems: 'center', gap: 9, width: '100%',
-              padding: '10px 12px', border: '2px solid var(--text)', cursor: 'pointer',
-              marginBottom: 10, background: 'var(--text)', color: 'var(--bg)',
-              fontSize: 10, fontWeight: 700, textAlign: 'left', fontFamily: 'inherit',
-              textTransform: 'uppercase', letterSpacing: '0.1em', borderRadius: 0,
+              padding: '9px 11px', borderRadius: 7, border: 'none', cursor: 'pointer',
+              marginBottom: 8,
+              background: 'var(--text)', color: 'var(--bg)',
+              fontSize: 12, fontWeight: 600, textAlign: 'left',
+              fontFamily: 'inherit', transition: 'opacity 0.12s',
             }}
           >
-            <Plus size={13} style={{ flexShrink: 0 }} /> Post a role
+            <Plus size={14} style={{ flexShrink: 0 }} /> Post a role
           </button>
 
-          <div style={{ height: 1, background: 'var(--border)', margin: '4px 0 10px' }} />
+          {/* Divider */}
+          <div style={{ height: 1, background: 'var(--border)', margin: '4px 0 8px' }} />
 
           {NAV_ITEMS.map(({ id, label, icon: Icon }) => {
             const active = activeTab === id;
             return (
               <button key={id} className="hn-item" onClick={() => { setActiveTab(id); if (id !== 'roles') setPendingOpenRole(null); }} style={{
                 display: 'flex', alignItems: 'center', gap: 9, width: '100%',
-                padding: '9px 12px', border: 'none', cursor: 'pointer', marginBottom: 1,
-                background: active ? 'var(--bg-hover)' : 'transparent',
-                borderLeft: `3px solid ${active ? 'var(--text)' : 'transparent'}`,
+                padding: '9px 11px', borderRadius: 7, border: 'none', cursor: 'pointer', marginBottom: 1,
+                background: active ? 'var(--bg-subtle)' : 'transparent',
                 color: active ? 'var(--text)' : 'var(--text-dim)',
-                fontSize: 11, fontWeight: active ? 700 : 400, textAlign: 'left',
-                fontFamily: 'inherit', textTransform: 'uppercase', letterSpacing: '0.08em',
-                borderRadius: 0,
+                fontSize: 13, fontWeight: active ? 600 : 400, textAlign: 'left',
+                transition: 'background 0.12s, color 0.12s', fontFamily: 'inherit',
               }}>
-                <Icon size={13} style={{ flexShrink: 0 }} />{label}
+                <Icon size={15} style={{ flexShrink: 0 }} />{label}
               </button>
             );
           })}
         </nav>
 
-        <div style={{ padding: '10px 10px', borderTop: '2px solid var(--border)', position: 'relative' }}>
-          <div style={{ padding: '8px 10px', background: 'var(--bg-subtle)', marginBottom: 8, border: '1px solid var(--border)' }}>
-            <p style={{ fontSize: 8, color: 'var(--text-dim)', marginBottom: 2, textTransform: 'uppercase', letterSpacing: '0.1em', fontWeight: 700 }}>Company</p>
-            <p style={{ fontSize: 11, fontWeight: 700, color: 'var(--text)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', margin: 0, textTransform: 'uppercase', letterSpacing: '0.06em' }}>{recruiter.startups?.name || recruiter.company_name || 'Your startup'}</p>
+        <div style={{ padding: '10px 8px', borderTop: '1px solid var(--border)', position: 'relative' }}>
+          <div style={{ padding: '9px 11px', borderRadius: 7, background: 'var(--bg-subtle)', marginBottom: 8 }}>
+            <p style={{ fontSize: 9, color: 'var(--text-dim)', marginBottom: 2, textTransform: 'uppercase', letterSpacing: '0.08em', fontWeight: 600 }}>Company</p>
+            <p style={{ fontSize: 11, fontWeight: 600, color: 'var(--text)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', margin: 0 }}>{recruiter.startups?.name || recruiter.company_name || 'Your startup'}</p>
           </div>
-          <div style={{ display: 'flex', gap: 4, marginBottom: 6 }}>
-            <button className="hn-item" style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'none', border: 'none', cursor: 'pointer', padding: 7, color: 'var(--text-dim)' }}><Bell size={12} /></button>
-            <button onClick={() => setTheme(t => t === 'light' ? 'dark' : 'light')} className="hn-item" style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'none', border: 'none', cursor: 'pointer', padding: 7, color: 'var(--text-dim)' }}>{theme === 'light' ? <Moon size={12} /> : <Sun size={12} />}</button>
+          <div style={{ display: 'flex', gap: 4, padding: '0 2px', marginBottom: 6 }}>
+            <button className="hn-item" style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'none', border: 'none', cursor: 'pointer', padding: 7, borderRadius: 6, color: 'var(--text-dim)' }}><Bell size={13} /></button>
+            <button onClick={() => setTheme(t => t === 'light' ? 'dark' : 'light')} className="hn-item" style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'none', border: 'none', cursor: 'pointer', padding: 7, borderRadius: 6, color: 'var(--text-dim)' }}>{theme === 'light' ? <Moon size={13} /> : <Sun size={13} />}</button>
           </div>
-          <div onClick={() => setShowAccountMenu(p => !p)} className="hn-item" style={{ display: 'flex', alignItems: 'center', gap: 9, padding: '8px 10px', cursor: 'pointer' }}>
-            <div style={{ width: 26, height: 26, flexShrink: 0, background: 'var(--text)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 9, fontWeight: 700, color: 'var(--bg)', letterSpacing: '0.05em' }}>{initials}</div>
+          <div onClick={() => setShowAccountMenu(p => !p)} className="hn-item" style={{ display: 'flex', alignItems: 'center', gap: 9, padding: '8px 11px', borderRadius: 7, cursor: 'pointer', transition: 'background 0.12s' }}>
+            <div style={{ width: 26, height: 26, borderRadius: '50%', flexShrink: 0, background: 'var(--green-tint)', border: '1px solid var(--green)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 10, fontWeight: 700, color: 'var(--green)' }}>{initials}</div>
             <div style={{ overflow: 'hidden', flex: 1 }}>
-              <p style={{ fontSize: 10, fontWeight: 700, color: 'var(--text)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', margin: 0, textTransform: 'uppercase', letterSpacing: '0.06em' }}>{recruiter.contact_name}</p>
-              <p style={{ fontSize: 9, color: 'var(--text-dim)', margin: 0, textTransform: 'capitalize' }}>{recruiter.role_in_company || 'Recruiter'}</p>
+              <p style={{ fontSize: 11, fontWeight: 600, color: 'var(--text)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', margin: 0 }}>{recruiter.contact_name}</p>
+              <p style={{ fontSize: 10, color: 'var(--text-dim)', margin: 0, textTransform: 'capitalize' }}>{recruiter.role_in_company || 'Recruiter'}</p>
             </div>
-            <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="var(--text-dim)" strokeWidth="2" style={{ flexShrink: 0, transform: showAccountMenu ? 'rotate(180deg)' : 'none' }}><polyline points="6 9 12 15 18 9"/></svg>
+            <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="var(--text-dim)" strokeWidth="2" style={{ flexShrink: 0, transform: showAccountMenu ? 'rotate(180deg)' : 'none', transition: 'transform 0.15s' }}><polyline points="6 9 12 15 18 9"/></svg>
           </div>
           {showAccountMenu && (
-            <div style={{ margin: '4px 0 0', background: 'var(--bg-card)', border: '2px solid var(--border)', overflow: 'hidden' }}>
+            <div style={{ margin: '4px 2px 0', background: 'var(--bg-card)', border: '1px solid var(--border)', borderRadius: 10, overflow: 'hidden', boxShadow: '0 4px 16px rgba(0,0,0,0.08)' }}>
               <div style={{ padding: '10px 12px', borderBottom: '1px solid var(--border)' }}>
-                <p style={{ fontSize: 9, color: 'var(--text-dim)', marginBottom: 1, textTransform: 'uppercase', letterSpacing: '0.08em', fontWeight: 700 }}>Signed in as</p>
-                <p style={{ fontSize: 10, fontWeight: 700, color: 'var(--text)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', margin: 0 }}>{recruiter.email || recruiter.contact_name}</p>
+                <p style={{ fontSize: 10, color: 'var(--text-dim)', marginBottom: 1 }}>Signed in as</p>
+                <p style={{ fontSize: 11, fontWeight: 600, color: 'var(--green)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', margin: 0 }}>{recruiter.email || recruiter.contact_name}</p>
               </div>
               {[
                 { label: 'Profile',  action: () => { setActiveTab('profile');  setShowAccountMenu(false); } },
                 { label: 'Settings', action: () => { setShowSettings(true);    setShowAccountMenu(false); } },
                 { label: 'Support',  action: () => { window.open('mailto:support@hunt.so'); setShowAccountMenu(false); } },
               ].map(item => (
-                <button key={item.label} onClick={item.action} className="hn-item" style={{ display: 'block', width: '100%', textAlign: 'left', padding: '9px 12px', fontSize: 10, color: 'var(--text-mid)', background: 'none', border: 'none', cursor: 'pointer', fontFamily: 'inherit', textTransform: 'uppercase', letterSpacing: '0.08em', fontWeight: 700 }}>{item.label}</button>
+                <button key={item.label} onClick={item.action} className="hn-item" style={{ display: 'block', width: '100%', textAlign: 'left', padding: '9px 12px', fontSize: 12, color: 'var(--text-mid)', background: 'none', border: 'none', cursor: 'pointer', fontFamily: 'inherit' }}>{item.label}</button>
               ))}
               <div style={{ borderTop: '1px solid var(--border)' }}>
-                <button onClick={handleSignOut} className="hn-item" style={{ display: 'block', width: '100%', textAlign: 'left', padding: '9px 12px', fontSize: 10, color: 'var(--red)', background: 'none', border: 'none', cursor: 'pointer', fontFamily: 'inherit', textTransform: 'uppercase', letterSpacing: '0.08em', fontWeight: 700 }}>Sign out</button>
+                <button onClick={handleSignOut} className="hn-item" style={{ display: 'block', width: '100%', textAlign: 'left', padding: '9px 12px', fontSize: 12, color: 'var(--red)', background: 'none', border: 'none', cursor: 'pointer', fontFamily: 'inherit' }}>Sign out</button>
               </div>
             </div>
           )}
         </div>
       </aside>
 
-      {/* ─── MAIN CONTENT ─── */}
+      {/* MAIN CONTENT */}
       <main style={{ flex: 1, minWidth: 0, overflowY: 'auto', maxHeight: '100vh' }}>
-        <div style={{ padding: '36px 44px 80px', maxWidth: 1320, margin: '0 auto', animation: 'hunt-fade-in 0.25s ease' }}>
-          {activeTab === 'home'    && <HomeTab recruiter={recruiter} jobs={jobs} allApps={allApps} onPostRole={() => setShowPostDrawer(true)} onOpenRole={handleOpenRole} onOpenPipeline={handleOpenPipeline} />}
+        <div style={{ padding: '32px 40px 80px', maxWidth: 1280, margin: '0 auto', animation: 'hunt-fade-in 0.3s ease' }}>
+          {activeTab === 'home'    && <HomeTab recruiter={recruiter} jobs={jobs} allApps={allApps} onPostRole={() => setShowPostDrawer(true)} onOpenRole={handleOpenRole} />}
           {activeTab === 'roles'   && <RolesTab jobs={jobs} onCopyLink={handleCopyLink} onTogglePause={handleTogglePause} onDelete={handleDelete} onPostRole={() => setShowPostDrawer(true)} recruiter={recruiter} showToast={showToast} initialOpenJob={pendingOpenRole} />}
           {activeTab === 'hiring'  && <HiringTab allApps={allApps} onStatusChange={handleStatusChange} />}
           {activeTab === 'profile' && <ProfileTab recruiter={recruiter} onUpdate={refreshRecruiter} showToast={showToast} />}
