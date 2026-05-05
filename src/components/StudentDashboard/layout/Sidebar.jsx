@@ -1,5 +1,5 @@
 // src/components/StudentDashboard/layout/Sidebar.jsx
-// ─── Brutalist sidebar — same props/state as before, new visual language ─────
+// ─── Brutalist sidebar — with Hunt Score replacing profile completeness ────────
 import React, { useState, useRef, useEffect } from 'react';
 import {
   Compass, Home, Users, User, Bell, Sun, Moon,
@@ -14,6 +14,20 @@ const NAV_ITEMS = [
   { id: 'profile', label: 'Profile', icon: User },
 ];
 
+// ─── Hunt Score colour (fixed blue always) ───────────────────────────────────
+const HUNT_SCORE_COLOR = 'var(--blue)';
+
+function huntScoreLabel(level) {
+  const MAP = {
+    elite:    'ELITE',
+    strong:   'STRONG',
+    building: 'BUILDING',
+    starter:  'STARTER',
+    unranked: 'UNRANKED',
+  };
+  return MAP[level] || 'UNRANKED';
+}
+
 export function Sidebar({
   activeTab, setActiveTab,
   remainingApplications,
@@ -26,6 +40,7 @@ export function Sidebar({
   handleSignOut,
   collapsed: collapsedProp,
   setCollapsed: setCollapsedProp,
+  huntScore,        // { score: number, level: string } — passed from parent
 }) {
   const [internalCollapsed, setInternalCollapsed] = useState(false);
   const collapsed = collapsedProp ?? internalCollapsed;
@@ -35,7 +50,8 @@ export function Sidebar({
   const accountWrapRef = useRef(null);
   const SIDEBAR_W = collapsed ? 72 : 220;
 
-  // Close account menu when clicking outside
+  const hs = huntScore || { score: 0, level: 'unranked' };
+
   useEffect(() => {
     if (!showAccountMenu) return;
     const onDocClick = (e) => {
@@ -155,7 +171,7 @@ export function Sidebar({
         )}
       </div>
 
-      {/* ── Profile snippet (only when expanded) ── */}
+      {/* ── Profile snippet + Hunt Score (only when expanded) ── */}
       {!collapsed && studentProfile && (
         <div
           style={{
@@ -163,12 +179,13 @@ export function Sidebar({
             borderBottom: '1px solid var(--border)',
           }}
         >
+          {/* Avatar + name row */}
           <div
             style={{
               display: 'flex',
               alignItems: 'center',
               gap: 10,
-              marginBottom: 10,
+              marginBottom: 12,
             }}
           >
             <div
@@ -216,32 +233,84 @@ export function Sidebar({
               </div>
             </div>
           </div>
-          {studentProfile?.profile_completeness != null && (
-            <>
-              <div
+
+          {/* ── Hunt Score block — display only, no click ── */}
+          <div
+            style={{
+              width: '100%',
+              background: 'var(--bg-subtle)',
+              border: '1px solid var(--border)',
+              padding: '9px 12px',
+              textAlign: 'left',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'space-between',
+              gap: 8,
+              boxSizing: 'border-box',
+            }}
+          >
+            <div>
+              <span
+                className="hunt-kicker"
+                style={{ display: 'block', marginBottom: 3 }}
+              >
+                ▲ Hunt Score
+              </span>
+              <span
+                className="hunt-mono"
                 style={{
-                  display: 'flex',
-                  justifyContent: 'space-between',
-                  alignItems: 'center',
-                  marginBottom: 6,
+                  fontSize: 9,
+                  color: 'var(--text-dim)',
+                  textTransform: 'uppercase',
+                  letterSpacing: '0.1em',
                 }}
               >
-                <span className="hunt-kicker">Profile</span>
-                <span
-                  className="hunt-mono"
-                  style={{ fontSize: 10, color: 'var(--text)' }}
-                >
-                  {studentProfile.profile_completeness}%
-                </span>
-              </div>
-              <div className="hunt-match-bar-track">
-                <div
-                  className="hunt-match-bar-fill"
-                  style={{ width: `${studentProfile.profile_completeness}%` }}
-                />
-              </div>
-            </>
-          )}
+                {huntScoreLabel(hs.level)}
+              </span>
+            </div>
+            <span
+              className="hunt-mono"
+              style={{
+                fontSize: 22,
+                fontWeight: 700,
+                color: HUNT_SCORE_COLOR,
+                lineHeight: 1,
+                letterSpacing: '-0.02em',
+              }}
+            >
+              {hs.score > 0 ? hs.score : '—'}
+            </span>
+          </div>
+
+
+        </div>
+      )}
+
+      {/* ── Collapsed: show score number only ── */}
+      {collapsed && studentProfile && hs.score > 0 && (
+        <div
+          title={`Hunt Score: ${hs.score} (${huntScoreLabel(hs.level)})`}
+          style={{
+            padding: '10px 0',
+            borderBottom: '1px solid var(--border-mid)',
+            display: 'flex',
+            flexDirection: 'column',
+            alignItems: 'center',
+            gap: 2,
+          }}
+        >
+          <span
+            className="hunt-mono"
+            style={{ fontSize: 7, color: 'var(--text-dim)', letterSpacing: '0.1em', textTransform: 'uppercase' }}
+          >
+            HS
+          </span>
+          <span
+            className="hunt-mono"
+            style={{ fontSize: 14, fontWeight: 700, color: HUNT_SCORE_COLOR, lineHeight: 1 }}
+          >
+            {hs.score}
+          </span>
         </div>
       )}
 
@@ -362,9 +431,8 @@ export function Sidebar({
         )}
       </div>
 
-      {/* ── Footer controls: bell / theme / account ── */}
+      {/* ── Footer controls ── */}
       <div style={{ borderTop: '1px solid var(--border-mid)' }}>
-        {/* Bell + theme toggle row */}
         <div style={{ display: 'flex' }}>
           <button
             onClick={() => setShowNotifications(p => !p)}
@@ -502,7 +570,6 @@ export function Sidebar({
             )}
           </div>
 
-          {/* Floating account menu — brutalist sharp-corner card */}
           {showAccountMenu && (
             <div
               role="menu"
@@ -517,11 +584,8 @@ export function Sidebar({
                 zIndex: 60,
               }}
             >
-              {/* Identity header */}
               <div style={{ padding: '12px 14px', borderBottom: '1px solid var(--border-mid)' }}>
-                <p className="hunt-kicker" style={{ marginBottom: 2 }}>
-                  Signed in as
-                </p>
+                <p className="hunt-kicker" style={{ marginBottom: 2 }}>Signed in as</p>
                 <p
                   className="hunt-mono"
                   style={{
@@ -536,44 +600,21 @@ export function Sidebar({
                   {studentProfile?.email || studentProfile?.full_name}
                 </p>
               </div>
-
-              {/* Safe actions */}
               <div style={{ padding: 4 }}>
                 {[
-                  {
-                    label: 'Profile',
-                    icon: UserCircle,
-                    action: () => { setActiveTab('profile'); setShowAccountMenu(false); },
-                  },
-                  {
-                    label: 'Settings',
-                    icon: Settings,
-                    action: () => { setShowSettings(true); setShowAccountMenu(false); },
-                  },
-                  {
-                    label: 'Support',
-                    icon: LifeBuoy,
-                    action: () => { window.open('mailto:support@hunt.so'); setShowAccountMenu(false); },
-                  },
+                  { label: 'Profile',  icon: UserCircle, action: () => { setActiveTab('profile'); setShowAccountMenu(false); } },
+                  { label: 'Settings', icon: Settings,   action: () => { setShowSettings(true);    setShowAccountMenu(false); } },
+                  { label: 'Support',  icon: LifeBuoy,   action: () => { window.open('mailto:support@hunt.so'); setShowAccountMenu(false); } },
                 ].map(({ label, icon: Icon, action }) => (
                   <button
                     key={label}
                     onClick={action}
                     style={{
-                      display: 'flex',
-                      alignItems: 'center',
-                      gap: 10,
-                      width: '100%',
-                      textAlign: 'left',
-                      padding: '9px 10px',
-                      fontSize: 11.5,
-                      fontFamily: "'JetBrains Mono', monospace",
-                      letterSpacing: '0.06em',
-                      textTransform: 'uppercase',
-                      color: 'var(--text-mid)',
-                      background: 'none',
-                      border: 'none',
-                      cursor: 'pointer',
+                      display: 'flex', alignItems: 'center', gap: 10,
+                      width: '100%', textAlign: 'left', padding: '9px 10px',
+                      fontSize: 11.5, fontFamily: "'JetBrains Mono', monospace",
+                      letterSpacing: '0.06em', textTransform: 'uppercase',
+                      color: 'var(--text-mid)', background: 'none', border: 'none', cursor: 'pointer',
                     }}
                     onMouseEnter={e => { e.currentTarget.style.background = 'var(--bg-subtle)'; }}
                     onMouseLeave={e => { e.currentTarget.style.background = 'transparent'; }}
@@ -583,38 +624,17 @@ export function Sidebar({
                   </button>
                 ))}
               </div>
-
-              {/* Visual gap before destructive action */}
-              <div
-                style={{
-                  height: 8,
-                  background: 'var(--bg-subtle)',
-                  borderTop: '1px solid var(--border-mid)',
-                  borderBottom: '1px solid var(--border-mid)',
-                }}
-              />
-
-              {/* Sign out — two-step confirmation */}
+              <div style={{ height: 8, background: 'var(--bg-subtle)', borderTop: '1px solid var(--border-mid)', borderBottom: '1px solid var(--border-mid)' }} />
               <div style={{ padding: 6 }}>
                 {!confirmingSignOut ? (
                   <button
                     onClick={() => setConfirmingSignOut(true)}
                     style={{
-                      display: 'flex',
-                      alignItems: 'center',
-                      gap: 10,
-                      width: '100%',
-                      textAlign: 'left',
-                      padding: '9px 10px',
-                      fontSize: 11.5,
-                      fontFamily: "'JetBrains Mono', monospace",
-                      letterSpacing: '0.06em',
-                      textTransform: 'uppercase',
-                      fontWeight: 500,
-                      color: 'var(--red)',
-                      background: 'none',
-                      border: 'none',
-                      cursor: 'pointer',
+                      display: 'flex', alignItems: 'center', gap: 10,
+                      width: '100%', textAlign: 'left', padding: '9px 10px',
+                      fontSize: 11.5, fontFamily: "'JetBrains Mono', monospace",
+                      letterSpacing: '0.06em', textTransform: 'uppercase', fontWeight: 500,
+                      color: 'var(--red)', background: 'none', border: 'none', cursor: 'pointer',
                     }}
                     onMouseEnter={e => { e.currentTarget.style.background = 'var(--red-tint)'; }}
                     onMouseLeave={e => { e.currentTarget.style.background = 'transparent'; }}
@@ -624,37 +644,15 @@ export function Sidebar({
                   </button>
                 ) : (
                   <div style={{ padding: '6px 4px' }}>
-                    <p
-                      style={{
-                        fontSize: 11,
-                        color: 'var(--text-mid)',
-                        marginBottom: 8,
-                        padding: '0 6px',
-                      }}
-                    >
+                    <p style={{ fontSize: 11, color: 'var(--text-mid)', marginBottom: 8, padding: '0 6px' }}>
                       Sign out of HUNT?
                     </p>
                     <div style={{ display: 'flex', gap: 6 }}>
+                      <button onClick={() => setConfirmingSignOut(false)} className="hunt-btn hunt-btn-sm hunt-btn-ghost" style={{ flex: 1 }}>Cancel</button>
                       <button
-                        onClick={() => setConfirmingSignOut(false)}
-                        className="hunt-btn hunt-btn-sm hunt-btn-ghost"
-                        style={{ flex: 1 }}
-                      >
-                        Cancel
-                      </button>
-                      <button
-                        onClick={() => {
-                          setShowAccountMenu(false);
-                          setConfirmingSignOut(false);
-                          handleSignOut();
-                        }}
+                        onClick={() => { setShowAccountMenu(false); setConfirmingSignOut(false); handleSignOut(); }}
                         className="hunt-btn hunt-btn-sm"
-                        style={{
-                          flex: 1,
-                          background: 'var(--red)',
-                          color: '#fff',
-                          borderColor: 'var(--red)',
-                        }}
+                        style={{ flex: 1, background: 'var(--red)', color: '#fff', borderColor: 'var(--red)' }}
                       >
                         Sign out
                       </button>
