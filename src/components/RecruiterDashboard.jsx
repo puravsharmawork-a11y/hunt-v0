@@ -79,6 +79,7 @@ function cleanPatch(patch, { drop = [] } = {}) {
   for (const [k, v] of Object.entries(patch)) {
     if (drop.includes(k)) continue;
     if (v === undefined || v === null) continue;
+    // Keep arrays (even empty []), numbers (even 0), booleans — only skip empty strings
     if (typeof v === 'string' && v.trim() === '') continue;
     out[k] = v;
   }
@@ -106,7 +107,10 @@ async function getRecruiterJobs(recruiterId) {
 }
 
 async function createJob(jobData) {
-  const safe = cleanPatch(jobData);
+  // Bypass cleanPatch for inserts — we must preserve empty arrays and numeric 0 values
+  const safe = Object.fromEntries(
+    Object.entries(jobData).filter(([, v]) => v !== undefined && v !== null)
+  );
   const { data, error } = await supabase.from('jobs').insert([safe]).select().single();
   if (error) throw new Error(error.message || 'Failed to create job');
   return data;
@@ -1961,7 +1965,9 @@ function RolesTab({ jobs, onCopyLink, onTogglePause, onDelete, onPostRole, onEdi
   const [openJob, setOpenJob] = useState(initialOpenJob || null);
 
   useEffect(() => {
+    // When parent clears pendingOpenRole (null), go back to the role list
     if (initialOpenJob) setOpenJob(initialOpenJob);
+    else setOpenJob(null);
   }, [initialOpenJob]);
 
   const grouped = {
@@ -2491,10 +2497,13 @@ export default function RecruiterDashboard() {
           onClose={() => { setShowPostDrawer(false); setEditJob(null); }}
           showToast={showToast}
           onSuccess={async () => {
-            await refreshAll();
-            showToast(editJob ? 'Role updated!' : 'Role posted! 🚀');
-            if (!editJob) setActiveTab('roles');
+            const wasEdit = !!editJob;
             setEditJob(null);
+            await refreshAll();
+            showToast(wasEdit ? 'Role updated!' : 'Role posted! 🚀');
+            // Reset any open role so RolesTab shows the fresh list
+            setPendingOpenRole(null);
+            setActiveTab('roles');
           }}
         />
       )}
@@ -2625,7 +2634,7 @@ export default function RecruiterDashboard() {
       <main style={{ flex: 1, minWidth: 0, overflowY: 'auto', maxHeight: '100vh' }}>
         <div style={{ padding: '32px 40px 80px', maxWidth: 1280, margin: '0 auto', animation: 'hunt-fade-in 0.3s ease' }}>
           {activeTab === 'home'    && <HomeTab recruiter={recruiter} jobs={jobs} allApps={allApps} onPostRole={() => setShowPostDrawer(true)} onOpenRole={handleOpenRole} />}
-          {activeTab === 'roles'   && <RolesTab jobs={jobs} onCopyLink={handleCopyLink} onTogglePause={handleTogglePause} onDelete={handleDelete} onEdit={handleEdit} onPostRole={() => setShowPostDrawer(true)} recruiter={recruiter} showToast={showToast} initialOpenJob={pendingOpenRole} />}
+          {activeTab === 'roles'   && <RolesTab key={jobs.length} jobs={jobs} onCopyLink={handleCopyLink} onTogglePause={handleTogglePause} onDelete={handleDelete} onEdit={handleEdit} onPostRole={() => setShowPostDrawer(true)} recruiter={recruiter} showToast={showToast} initialOpenJob={pendingOpenRole} />}
           {activeTab === 'hiring'  && <HiringTab allApps={allApps} jobs={jobs} onStatusChange={handleStatusChange} />}
           {activeTab === 'profile' && <ProfileTab recruiter={recruiter} onUpdate={refreshRecruiter} showToast={showToast} />}
         </div>
