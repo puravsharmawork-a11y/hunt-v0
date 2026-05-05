@@ -1876,7 +1876,7 @@ function RolesTab({ jobs, onCopyLink, onTogglePause, onDelete, onPostRole, onEdi
 
   return (
     <div>
-      <PageHeader eyebrow="Roles" title={<>Manage your <em>roles.</>} action={<button onClick={onPostRole} style={{ ...btnPrimary(false), padding: '10px 16px' }}><Plus size={13} /> Post a role</button>} />
+      <PageHeader eyebrow="Roles" title={<>Manage your <em>roles.</em></>} action={<button onClick={onPostRole} style={{ ...btnPrimary(false), padding: '10px 16px' }}><Plus size={13} /> Post a role</button>} />
       <SubTabStrip tabs={SUBTABS} active={subTab} onChange={setSubTab} />
       {grouped[subTab].length === 0 ? (
         <EmptyState icon={subTab === 'live' ? '📋' : subTab === 'paused' ? '⏸' : '✕'} title={`No ${subTab} roles.`} message={subTab === 'live' ? 'Post your first role to start receiving matched candidates.' : `Roles you ${subTab === 'paused' ? 'pause' : 'close'} will appear here.`}
@@ -1923,7 +1923,7 @@ function HiringTab({ allApps, jobs, onStatusChange }) {
         onClose={() => { setProfileDrawerOpen(false); setProfileDrawerStudent(null); }}
       />
 
-      <PageHeader eyebrow="Pipeline" title={<>Hiring <em>pipeline.</>} subtitle="Track candidates through your hiring process, by role." />
+      <PageHeader eyebrow="Pipeline" title={<>Hiring <em>pipeline.</em></>} subtitle="Track candidates through your hiring process, by role." />
 
       {jobsWithApps.length === 0 ? (
         <EmptyState icon="🎯" title="No active pipelines." message="Once candidates apply to your roles, you can manage them here." />
