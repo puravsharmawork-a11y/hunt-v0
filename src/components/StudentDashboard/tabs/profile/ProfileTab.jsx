@@ -1236,42 +1236,266 @@ export function ProfileTab({ studentProfile, setStudentProfile, theme, setTheme 
         )}
 
         {/* ═══════ HUNT SCORE (unchanged) ═══════ */}
-        {activeSection === 'huntscore' && (
-          <div style={{ maxWidth: 640 }}>
-            <div style={{ marginBottom: 32 }}>
-              <p style={{ fontSize: 10, fontWeight: 700, letterSpacing: '0.12em', textTransform: 'uppercase', color: 'var(--text-dim)', marginBottom: 6 }}>▲ hunt score</p>
-              <h1 style={{ fontFamily: "'Instrument Serif', Georgia, serif", fontSize: 28, fontWeight: 400, color: 'var(--text)', marginBottom: 8 }}>Your signal, scored.</h1>
-              <p style={{ fontSize: 13, color: 'var(--text-dim)', lineHeight: 1.6, maxWidth: 480 }}>Your HUNT Score is a dynamic credibility score built from verified skills, project proof, recruiter feedback, and consistency. Recruiters see it. Make it count.</p>
-            </div>
-            <div style={{ background: 'var(--bg-card)', border: '1px solid var(--border)', borderRadius: 0, padding: '32px', marginBottom: 16, display: 'flex', alignItems: 'center', gap: 28 }}>
-              <div style={{ width: 80, height: 80, background: 'var(--ink)', display: 'grid', placeItems: 'center', flexShrink: 0 }}>
-                <p style={{ fontFamily: "'Instrument Serif', Georgia, serif", fontSize: 30, color: 'var(--cream)', fontWeight: 400 }}>—</p>
+        {activeSection === 'huntscore' && (() => {
+          // ── Compute Hunt Score live from current profile state ────────────
+          // We inline a lightweight version so ProfileTab has no new import dep.
+          // The canonical version lives in src/services/matching.js
+
+          const p = studentProfile || {};
+          const skills   = p.skills   || [];
+          const projects = p.projects || [];
+          const tools    = p.tools    || [];
+
+          // 1. Profile completeness (max 20)
+          let pc = 0;
+          if (p.full_name)                          pc += 3;
+          if (p.email)                              pc += 2;
+          if (p.bio && p.bio.length > 20)           pc += 3;
+          if (p.avatar_url)                         pc += 2;
+          if (p.resume_url)                         pc += 4;
+          if (p.linkedin_url)                       pc += 3;
+          if ((p.preferred_roles||[]).length > 0)   pc += 2;
+          if (p.availability)                       pc += 1;
+          const profilePts = Math.min(pc, 20);
+
+          // 2. Skills — depth + breadth (max 25)
+          let skillPts = 0;
+          if (skills.length > 0) {
+            const avgDepth = skills.reduce((s, sk) => s + (sk.level || sk.proficiency_level || 1), 0) / skills.length;
+            skillPts = Math.round((avgDepth / 5) * 15 + Math.min((Math.log2(skills.length + 1) / Math.log2(11)) * 10, 10));
+          }
+          skillPts = Math.min(skillPts, 25);
+
+          // 3. GitHub (max 20)
+          let githubPts = 0;
+          if (p.github_url) {
+            githubPts += 8;
+            const withGH = projects.filter(pr => pr.githubUrl || pr.github_url || (pr.projectUrl||'').includes('github'));
+            githubPts += Math.min(withGH.length * 2, 6);
+          }
+          githubPts = Math.min(githubPts, 20);
+
+          // 4. Project quality (max 20)
+          let projPts = 0;
+          if (projects.length > 0) {
+            projPts += Math.min(projects.length * 3, 9);
+            projects.forEach(pr => {
+              if (pr.githubUrl || pr.github_url || (pr.projectUrl||'').includes('github')) projPts += 2;
+              if (pr.projectUrl && !(pr.projectUrl||'').includes('github'))                projPts += 2;
+              if (pr.description && pr.description.length > 40)                           projPts += 1;
+              if ((pr.techStack||[]).length >= 3)                                         projPts += 1;
+            });
+          }
+          projPts = Math.min(projPts, 20);
+
+          // 5. Recency (max 10)
+          let recencyPts = 3;
+          const now = Date.now();
+          const dateVals = [p.profile_updated_at, p.updated_at, ...projects.map(pr => pr.endDate||pr.end_date)]
+            .filter(Boolean).map(d => new Date(d).getTime()).filter(t => !isNaN(t));
+          if (dateVals.length > 0) {
+            const diff = now - Math.max(...dateVals);
+            const sixMo = 1000*60*60*24*180;
+            recencyPts = diff < sixMo ? 10 : diff < sixMo*2 ? 6 : 2;
+          }
+
+          // 6. Tools (max 5)
+          const toolPts = Math.min(tools.length, 5);
+
+          const totalScore = Math.min(profilePts + skillPts + githubPts + projPts + recencyPts + toolPts, 100);
+
+          const level =
+            totalScore >= 80 ? 'elite'    :
+            totalScore >= 60 ? 'strong'   :
+            totalScore >= 40 ? 'building' :
+            totalScore >= 20 ? 'starter'  : 'unranked';
+
+          const scoreColor = 'var(--blue)';
+
+          const levelLabel = {
+            elite: 'Elite Signal', strong: 'Strong Signal',
+            building: 'Building Signal', starter: 'Starter', unranked: 'Unranked',
+          }[level];
+
+          const BREAKDOWN_ROWS = [
+            {
+              key: 'profile',
+              label: 'Profile completeness',
+              desc: 'Name, bio, photo, resume, LinkedIn, preferred roles',
+              pts: profilePts,
+              max: 20,
+              done: profilePts >= 14,
+              tip: profilePts < 14 ? 'Add bio, upload resume, link LinkedIn to boost this' : null,
+            },
+            {
+              key: 'skills',
+              label: 'Skills & depth',
+              desc: 'Skill count and declared proficiency levels',
+              pts: skillPts,
+              max: 25,
+              done: skillPts >= 18,
+              tip: skillPts < 18 ? 'Add more skills and set accurate proficiency levels' : null,
+            },
+            {
+              key: 'github',
+              label: 'GitHub activity',
+              desc: 'GitHub URL connected + projects with repo links',
+              pts: githubPts,
+              max: 20,
+              done: githubPts >= 14,
+              tip: !p.github_url ? 'Add your GitHub profile URL to unlock this signal' : githubPts < 14 ? 'Link GitHub repos to your projects' : null,
+            },
+            {
+              key: 'projects',
+              label: 'Project quality',
+              desc: 'Project count, live demos, descriptions, tech stack',
+              pts: projPts,
+              max: 20,
+              done: projPts >= 14,
+              tip: projPts < 14 ? 'Add more projects with GitHub links and live demos' : null,
+            },
+            {
+              key: 'recency',
+              label: 'Recency',
+              desc: 'How recently you updated your profile or added projects',
+              pts: recencyPts,
+              max: 10,
+              done: recencyPts >= 8,
+              tip: recencyPts < 8 ? 'Keep your profile updated — activity signals current skill' : null,
+            },
+            {
+              key: 'tools',
+              label: 'Tools',
+              desc: 'Tools, IDEs, and platforms you work with',
+              pts: toolPts,
+              max: 5,
+              done: toolPts >= 4,
+              tip: toolPts < 4 ? 'Add the tools and IDEs you use daily' : null,
+            },
+          ];
+
+          return (
+            <div style={{ maxWidth: 640 }}>
+              {/* Header */}
+              <div style={{ marginBottom: 28 }}>
+                <p style={{ fontSize: 10, fontWeight: 700, letterSpacing: '0.12em', textTransform: 'uppercase', color: 'var(--text-dim)', marginBottom: 6 }}>▲ hunt score</p>
+                <h1 style={{ fontFamily: "'Instrument Serif', Georgia, serif", fontSize: 28, fontWeight: 400, color: 'var(--text)', marginBottom: 8 }}>Your signal, scored.</h1>
+                <p style={{ fontSize: 13, color: 'var(--text-dim)', lineHeight: 1.6, maxWidth: 480 }}>
+                  HUNT Score is your global credibility number — built from real profile signals, not college name. It grows as you grow. Recruiters see it alongside your match %.
+                </p>
               </div>
-              <div>
-                <p style={{ fontFamily: "'Instrument Serif', Georgia, serif", fontSize: 18, color: 'var(--text)', marginBottom: 4 }}>Not yet calculated</p>
-                <p style={{ fontSize: 13, color: 'var(--text-dim)', lineHeight: 1.6 }}>Complete your profile, add verified projects, and get your first recruiter rating to unlock your score.</p>
-              </div>
-            </div>
-            {[
-              { label: 'Profile completeness', desc: 'Name, college, bio, photo', done: false },
-              { label: 'Verified skills', desc: 'Skills with proof of work', done: false },
-              { label: 'Project portfolio', desc: 'At least 2 projects with links', done: false },
-              { label: 'First recruiter rating', desc: 'Complete an internship through HUNT', done: false },
-              { label: 'Response rate', desc: 'Reply to recruiter messages within 48h', done: false },
-            ].map((item, i) => (
-              <div key={i} style={{ display: 'flex', alignItems: 'center', gap: 14, padding: '12px 16px', borderRadius: 0, border: '1px solid var(--border)', background: 'var(--bg-card)', marginBottom: 8 }}>
-                <div style={{ width: 16, height: 16, border: `1px solid ${item.done ? 'var(--blue)' : 'var(--border-mid)'}`, background: item.done ? 'var(--blue)' : 'transparent', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
-                  {item.done && <span style={{ fontSize: 10, color: 'var(--cream)' }}>✓</span>}
+
+              {/* Big score card */}
+              <div style={{ background: 'var(--bg-card)', border: `1px solid ${totalScore > 0 ? 'var(--blue)' : 'var(--border)'}`, padding: '28px 32px', marginBottom: 20, display: 'flex', alignItems: 'center', gap: 28 }}>
+                {/* Score number */}
+                <div style={{ width: 88, height: 88, border: `2px solid var(--blue)`, flexShrink: 0, display: 'grid', placeItems: 'center' }}>
+                  <p style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: totalScore >= 100 ? 26 : 32, fontWeight: 700, color: 'var(--blue)', lineHeight: 1 }}>
+                    {totalScore > 0 ? totalScore : '—'}
+                  </p>
                 </div>
+
                 <div style={{ flex: 1 }}>
-                  <p style={{ fontSize: 13, fontWeight: 500, color: item.done ? 'var(--text)' : 'var(--text-mid)', marginBottom: 1 }}>{item.label}</p>
-                  <p style={{ fontSize: 11, color: 'var(--text-dim)' }}>{item.desc}</p>
+                  <p style={{ fontFamily: "'Instrument Serif', Georgia, serif", fontSize: 20, color: 'var(--text)', marginBottom: 4 }}>
+                    {levelLabel}
+                  </p>
+                  <p style={{ fontSize: 12, color: 'var(--text-dim)', lineHeight: 1.6, marginBottom: 10 }}>
+                    {level === 'unranked'  && 'Complete your profile to get your first score.'}
+                    {level === 'starter'   && 'Good start. Add projects and link GitHub to grow faster.'}
+                    {level === 'building'  && 'You\'re building signal. Keep adding verified proof of work.'}
+                    {level === 'strong'    && 'Strong profile. Recruiters will take you seriously.'}
+                    {level === 'elite'     && 'Elite signal. You stand out in any recruiter shortlist.'}
+                  </p>
+
                 </div>
-                <span style={{ fontSize: 11, color: item.done ? 'var(--green)' : 'var(--text-dim)', fontWeight: item.done ? 600 : 400 }}>{item.done ? 'Done' : 'Pending'}</span>
               </div>
-            ))}
-          </div>
-        )}
+
+              {/* Important note: college doesn't count */}
+              <div style={{ background: 'var(--bg-subtle)', border: '1px solid var(--border)', padding: '10px 14px', marginBottom: 20, display: 'flex', gap: 10, alignItems: 'flex-start' }}>
+                <span style={{ fontSize: 11, color: 'var(--text-dim)', lineHeight: 1, marginTop: 1 }}>ⓘ</span>
+                <p style={{ fontSize: 12, color: 'var(--text-dim)', lineHeight: 1.5, margin: 0 }}>
+                  College name is visible on your profile but <strong style={{ color: 'var(--text-mid)' }}>never</strong> factors into Hunt Score or match %. Only skills, activity, and proof of work count.
+                </p>
+              </div>
+
+              {/* Score breakdown rows */}
+              <p style={{ fontSize: 10, fontWeight: 700, letterSpacing: '0.12em', textTransform: 'uppercase', color: 'var(--text-dim)', marginBottom: 12 }}>Score breakdown</p>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 8, marginBottom: 24 }}>
+                {BREAKDOWN_ROWS.map(row => (
+                  <div key={row.key} style={{
+                    border: '1px solid var(--border)',
+                    background: 'var(--bg-card)',
+                    padding: '12px 16px',
+                  }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 6 }}>
+                      {/* checkbox */}
+                      <div style={{
+                        width: 16, height: 16, flexShrink: 0,
+                        border: `1px solid ${row.done ? 'var(--blue)' : 'var(--border-mid)'}`,
+                        background: row.done ? 'var(--blue)' : 'transparent',
+                        display: 'flex', alignItems: 'center', justifyContent: 'center',
+                      }}>
+                        {row.done && <span style={{ fontSize: 9, color: '#fff', lineHeight: 1 }}>✓</span>}
+                      </div>
+                      <div style={{ flex: 1 }}>
+                        <p style={{ fontSize: 13, fontWeight: 500, color: 'var(--text)', marginBottom: 1 }}>{row.label}</p>
+                        <p style={{ fontSize: 11, color: 'var(--text-dim)' }}>{row.desc}</p>
+                      </div>
+                      <div style={{ textAlign: 'right', flexShrink: 0 }}>
+                        <span style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: 13, color: row.pts > 0 ? 'var(--text)' : 'var(--text-dim)', fontWeight: 600 }}>
+                          {row.pts}
+                        </span>
+                        <span style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: 11, color: 'var(--text-dim)' }}>/{row.max}</span>
+                      </div>
+                    </div>
+                    {/* mini bar */}
+                    <div style={{ height: 2, background: 'var(--border)', marginLeft: 28, overflow: 'hidden' }}>
+                      <div style={{
+                        height: '100%',
+                        width: `${(row.pts / row.max) * 100}%`,
+                        background: 'var(--blue)',
+                        transition: 'width 0.5s ease',
+                      }} />
+                    </div>
+                    {/* tip */}
+                    {row.tip && (
+                      <p style={{ fontSize: 11, color: '#E8A020', marginTop: 6, marginLeft: 28, lineHeight: 1.4 }}>
+                        → {row.tip}
+                      </p>
+                    )}
+                  </div>
+                ))}
+              </div>
+
+              {/* Coming soon: future signals */}
+              <p style={{ fontSize: 10, fontWeight: 700, letterSpacing: '0.12em', textTransform: 'uppercase', color: 'var(--text-dim)', marginBottom: 12 }}>Coming soon</p>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+                {[
+                  { label: 'AI skill badge', desc: 'Pass a skill assessment → unlock verified badge (+3 pts)', tag: 'SOON' },
+                  { label: 'Trajectory physics', desc: 'Velocity + momentum of your growth — computed each quarter', tag: 'SOON' },
+                  { label: 'Recruiter ratings', desc: 'Post-internship feedback from recruiters affects score', tag: 'SOON' },
+                  { label: 'Friction events', desc: 'Confirmed fake-skill reports permanently reduce score', tag: 'PERMANENT' },
+                ].map((item, i) => (
+                  <div key={i} style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '10px 14px', border: '1px dashed var(--border)', background: 'transparent' }}>
+                    <div style={{ flex: 1 }}>
+                      <p style={{ fontSize: 12, fontWeight: 500, color: 'var(--text-dim)', marginBottom: 1 }}>{item.label}</p>
+                      <p style={{ fontSize: 11, color: 'var(--text-dim)', opacity: 0.7 }}>{item.desc}</p>
+                    </div>
+                    <span style={{
+                      fontFamily: "'JetBrains Mono', monospace",
+                      fontSize: 9, letterSpacing: '0.1em', textTransform: 'uppercase',
+                      padding: '3px 7px',
+                      background: item.tag === 'PERMANENT' ? 'rgba(192,57,43,0.08)' : 'var(--bg-subtle)',
+                      color: item.tag === 'PERMANENT' ? 'var(--red)' : 'var(--text-dim)',
+                      border: `1px solid ${item.tag === 'PERMANENT' ? 'var(--red)' : 'var(--border)'}`,
+                    }}>
+                      {item.tag}
+                    </span>
+                  </div>
+                ))}
+              </div>
+            </div>
+          );
+        })()}
 
         {/* ═══════ ACCOUNT — enhanced ═══════ */}
         {activeSection === 'account' && (
