@@ -15,7 +15,7 @@ import {
   AlertCircle, Upload,
 } from 'lucide-react';
 import { createStudentProfile, uploadResume } from '../services/supabase';
-import { importFromGitHub, isValidGitHubUsername } from '../services/github';
+import { importFromGitHub, isValidGitHubUsername } from '../services/githubService';
 import { useNavigate } from 'react-router-dom';
 
 // ─── Design tokens — brutalist cream / ink / electric-blue ────────────────────
