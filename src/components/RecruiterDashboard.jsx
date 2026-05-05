@@ -562,10 +562,14 @@ function NotificationDrawer({ open, onClose, recruiter }) {
 // 6. POST ROLE DRAWER (updated with logo upload, change #7)
 // ═══════════════════════════════════════════════════════════════════════════
 function PostRoleDrawer({ recruiter, open, onClose, onSuccess, showToast, editJob }) {
-  const [skillInput, setSkillInput]   = useState('');
-  const [niceInput, setNiceInput]     = useState('');
-  const [saving, setSaving]           = useState(false);
-  const [logoPreview, setLogoPreview] = useState(null);
+  const [skillInput, setSkillInput]         = useState('');
+  const [niceInput, setNiceInput]           = useState('');
+  const [whatDoInput, setWhatDoInput]       = useState('');
+  const [perkInput, setPerkInput]           = useState('');
+  const [newSecHeading, setNewSecHeading]   = useState('');
+  const [newSecItemText, setNewSecItemText] = useState({});
+  const [saving, setSaving]                 = useState(false);
+  const [logoPreview, setLogoPreview]       = useState(null);
   const logoInputRef = useRef(null);
 
   const defaultForm = () => ({
@@ -583,6 +587,10 @@ function PostRoleDrawer({ recruiter, open, onClose, onSuccess, showToast, editJo
     if (!open) {
       setForm(defaultForm());
       setLogoPreview(null);
+      setWhatDoInput('');
+      setPerkInput('');
+      setNewSecHeading('');
+      setNewSecItemText({});
     } else if (editJob) {
       // Pre-fill for edit
       setForm({
@@ -633,6 +641,33 @@ function PostRoleDrawer({ recruiter, open, onClose, onSuccess, showToast, editJo
     setForm(f => ({ ...f, nice_to_have: [...f.nice_to_have, name] }));
     setNiceInput('');
   };
+  const addWhatDo = () => {
+    const n = whatDoInput.trim(); if (!n) return;
+    setForm(f => ({ ...f, whatYoullDo: [...f.whatYoullDo, n] }));
+    setWhatDoInput('');
+  };
+  const removeWhatDo = (i) => setForm(f => ({ ...f, whatYoullDo: f.whatYoullDo.filter((_, idx) => idx !== i) }));
+  const addPerk = () => {
+    const n = perkInput.trim(); if (!n || form.perks.includes(n)) return;
+    setForm(f => ({ ...f, perks: [...f.perks, n] }));
+    setPerkInput('');
+  };
+  const removePerk = (i) => setForm(f => ({ ...f, perks: f.perks.filter((_, idx) => idx !== i) }));
+  const addSection = () => {
+    const h = newSecHeading.trim(); if (!h) return;
+    setForm(f => ({ ...f, sections: [...f.sections, { heading: h, items: [] }] }));
+    setNewSecHeading('');
+  };
+  const removeSection = (si) => setForm(f => ({ ...f, sections: f.sections.filter((_, i) => i !== si) }));
+  const addSectionItem = (si) => {
+    const text = (newSecItemText[si] || '').trim(); if (!text) return;
+    setForm(f => ({ ...f, sections: f.sections.map((s, i) => i === si ? { ...s, items: [...s.items, text] } : s) }));
+    setNewSecItemText(prev => ({ ...prev, [si]: '' }));
+  };
+  const removeSectionItem = (si, ii) => setForm(f => ({
+    ...f,
+    sections: f.sections.map((s, i) => i === si ? { ...s, items: s.items.filter((_, j) => j !== ii) } : s),
+  }));
 
   const handleSubmit = async () => {
     if (!form.role.trim())     return showToast('Role title is required.', 'error');
@@ -751,10 +786,89 @@ function PostRoleDrawer({ recruiter, open, onClose, onSuccess, showToast, editJo
               <FocusTextarea value={form.description} onChange={e => set('description')(e.target.value)} rows={3} placeholder="What will the intern actually work on?" />
             </div>
 
-            {/* Required skills */}
+            {/* ── Role content sections (restored from v6) ── */}
+            <div style={{ borderTop: '1px solid var(--border)', paddingTop: 16 }}>
+              <p style={{ fontSize: 10, fontWeight: 600, color: 'var(--text-dim)', letterSpacing: '0.1em', textTransform: 'uppercase', marginBottom: 16 }}>Role content</p>
+
+              {/* What you'll do */}
+              <div style={{ marginBottom: 18 }}>
+                <Label>What you'll do</Label>
+                <div style={{ display: 'flex', gap: 8, marginBottom: 8 }}>
+                  <FocusInput value={whatDoInput} onChange={e => setWhatDoInput(e.target.value)}
+                    placeholder="e.g. Build and ship features end to end"
+                    onKeyDown={e => e.key === 'Enter' && (e.preventDefault(), addWhatDo())}
+                    style={{ flex: 1 }} />
+                  <button onClick={addWhatDo} style={{ ...btnPrimary(false), padding: '10px 14px' }}>Add</button>
+                </div>
+                {form.whatYoullDo.map((item, i) => (
+                  <div key={i} style={{ display: 'flex', alignItems: 'flex-start', gap: 8, padding: '7px 10px', borderRadius: 7, border: '1px solid var(--border)', background: 'var(--bg-subtle)', marginBottom: 4 }}>
+                    <div style={{ width: 4, height: 4, background: 'var(--text-dim)', flexShrink: 0, marginTop: 7 }} />
+                    <span style={{ flex: 1, fontSize: 12, color: 'var(--text)', lineHeight: 1.5 }}>{item}</span>
+                    <button onClick={() => removeWhatDo(i)} style={{ background: 'transparent', border: 'none', cursor: 'pointer', color: 'var(--text-dim)', display: 'flex', padding: 0, flexShrink: 0 }}><X size={12} /></button>
+                  </div>
+                ))}
+              </div>
+
+              {/* Perks & benefits */}
+              <div style={{ marginBottom: 18 }}>
+                <Label>Perks & benefits</Label>
+                <div style={{ display: 'flex', gap: 8, marginBottom: 8 }}>
+                  <FocusInput value={perkInput} onChange={e => setPerkInput(e.target.value)}
+                    placeholder="e.g. Flexible hours · Certificate of completion"
+                    onKeyDown={e => e.key === 'Enter' && (e.preventDefault(), addPerk())}
+                    style={{ flex: 1 }} />
+                  <button onClick={addPerk} style={{ ...btnGhost(), padding: '10px 14px' }}>Add</button>
+                </div>
+                {form.perks.length > 0 && (
+                  <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>
+                    {form.perks.map((p, i) => (
+                      <span key={i} style={{ display: 'flex', alignItems: 'center', gap: 5, fontSize: 11, padding: '4px 10px', borderRadius: 20, border: '1px solid var(--border)', color: 'var(--text-mid)', background: 'var(--bg-subtle)' }}>
+                        ✦ {p}
+                        <button onClick={() => removePerk(i)} style={{ background: 'transparent', border: 'none', cursor: 'pointer', color: 'var(--text-dim)', display: 'flex', padding: 0 }}><X size={10} /></button>
+                      </span>
+                    ))}
+                  </div>
+                )}
+              </div>
+
+              {/* Custom sections */}
+              <div>
+                <Label>Custom sections</Label>
+                {form.sections.map((sec, si) => (
+                  <div key={si} style={{ marginBottom: 12, padding: '12px 14px', borderRadius: 10, border: '1px solid var(--border)', background: 'var(--bg-subtle)' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 8 }}>
+                      <span style={{ fontSize: 12, fontWeight: 600, color: 'var(--text)' }}>▲ {sec.heading}</span>
+                      <button onClick={() => removeSection(si)} style={{ background: 'transparent', border: 'none', cursor: 'pointer', color: 'var(--text-dim)', display: 'flex', padding: 0 }}><Trash2 size={12} /></button>
+                    </div>
+                    {sec.items.map((item, ii) => (
+                      <div key={ii} style={{ display: 'flex', alignItems: 'flex-start', gap: 8, padding: '5px 0', borderBottom: '1px solid var(--border)', marginBottom: 4 }}>
+                        <div style={{ width: 4, height: 4, background: 'var(--text-dim)', flexShrink: 0, marginTop: 6 }} />
+                        <span style={{ flex: 1, fontSize: 11, color: 'var(--text)' }}>{item}</span>
+                        <button onClick={() => removeSectionItem(si, ii)} style={{ background: 'transparent', border: 'none', cursor: 'pointer', color: 'var(--text-dim)', display: 'flex', padding: 0, flexShrink: 0 }}><X size={10} /></button>
+                      </div>
+                    ))}
+                    <div style={{ display: 'flex', gap: 6, marginTop: 8 }}>
+                      <FocusInput value={newSecItemText[si] || ''} onChange={e => setNewSecItemText(prev => ({ ...prev, [si]: e.target.value }))}
+                        placeholder="Add a point…"
+                        onKeyDown={e => e.key === 'Enter' && (e.preventDefault(), addSectionItem(si))}
+                        style={{ flex: 1, fontSize: 11, padding: '6px 10px' }} />
+                      <button onClick={() => addSectionItem(si)} style={{ ...btnPrimary(false), padding: '6px 12px', fontSize: 11 }}>Add</button>
+                    </div>
+                  </div>
+                ))}
+                <div style={{ display: 'flex', gap: 8 }}>
+                  <FocusInput value={newSecHeading} onChange={e => setNewSecHeading(e.target.value)}
+                    placeholder="Heading — e.g. Who we're looking for"
+                    onKeyDown={e => e.key === 'Enter' && (e.preventDefault(), addSection())}
+                    style={{ flex: 1 }} />
+                  <button onClick={addSection} style={{ ...btnGhost(), whiteSpace: 'nowrap' }}><Plus size={12} /> Add section</button>
+                </div>
+              </div>
+            </div>
             <div style={{ borderTop: '1px solid var(--border)', paddingTop: 4 }}>
               <p style={{ fontSize: 10, fontWeight: 600, color: 'var(--text-dim)', letterSpacing: '0.1em', textTransform: 'uppercase', marginBottom: 12 }}>Skills & config</p>
               <Label required>Required skills</Label>
+              <p style={{ fontSize: 11, color: 'var(--text-dim)', marginBottom: 8 }}>Type a skill and press Enter. Set level 1–5 for each.</p>
               <div style={{ display: 'flex', gap: 8, marginBottom: 10 }}>
                 <FocusInput value={skillInput} onChange={e => setSkillInput(e.target.value)} placeholder="React, Node.js, Python…" onKeyDown={e => e.key === 'Enter' && (e.preventDefault(), addSkill())} list="skill-suggestions-drawer" style={{ flex: 1 }} />
                 <datalist id="skill-suggestions-drawer">{SKILL_OPTIONS.map(s => <option key={s} value={s} />)}</datalist>
