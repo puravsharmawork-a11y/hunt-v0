@@ -8,7 +8,7 @@ import {
   getStudentProfile, getActiveJobs, createApplication,
   getMyApplications, getWeeklyApplicationCount, signOut, supabase,
 } from '../../services/supabase';
-import { calculateMatchScore } from '../../services/matching';
+import { calculateMatchScore, calculateHuntScore } from '../../services/matching';
 import { sendToAirtable, prepareApplicationData } from '../../services/airtable';
 
 import { applyTokens } from './theme/applyTokens';
@@ -86,6 +86,7 @@ export default function StudentDashboard() {
   const remainingApplications = WEEKLY_LIMIT - weeklyApplications;
   const canApply = remainingApplications > 0;
   const initials = studentProfile?.full_name?.split(' ').map(n => n[0]).join('') || 'U';
+  const huntScore = React.useMemo(() => calculateHuntScore(studentProfile), [studentProfile]);
 
   useEffect(() => { applyTokens(theme); localStorage.setItem('hunt-theme', theme); }, [theme]);
   useEffect(() => { loadData(); }, []);
@@ -281,6 +282,7 @@ export default function StudentDashboard() {
         setShowAccountMenu={setShowAccountMenu}
         setShowSettings={setShowSettings}
         handleSignOut={handleSignOut}
+        huntScore={huntScore}
       />
 
       {/* ── MAIN ── */}
