@@ -1429,7 +1429,7 @@ function RolesTab({ jobs, onCopyLink, onTogglePause, onDelete, onPostRole, recru
 
   return (
     <div>
-      <PageHeader eyebrow="Roles" title={<>Manage your <em>roles.</>} action={<button onClick={onPostRole} style={{ ...btnPrimary(false), padding: '10px 16px' }}><Plus size={13} /> Post a role</button>} />
+      <PageHeader eyebrow="Roles" title={<>Manage your <em>roles.</em></>} action={<button onClick={onPostRole} style={{ ...btnPrimary(false), padding: '10px 16px' }}><Plus size={13} /> Post a role</button>} />
       <SubTabStrip tabs={SUBTABS} active={subTab} onChange={setSubTab} />
       {grouped[subTab].length === 0 ? (
         <EmptyState icon={subTab === 'live' ? '📋' : subTab === 'paused' ? '⏸' : '✕'} title={`No ${subTab} roles.`} message={subTab === 'live' ? 'Post your first role to start receiving matched candidates.' : `Roles you ${subTab === 'paused' ? 'pause' : 'close'} will appear here.`}
@@ -1449,7 +1449,7 @@ function RolesTab({ jobs, onCopyLink, onTogglePause, onDelete, onPostRole, recru
 function HiringTab({ allApps, onStatusChange }) {
   return (
     <div>
-      <PageHeader eyebrow="Pipeline" title={<>Hiring <em>pipeline.</>} subtitle="Track candidates as they move through your process." />
+      <PageHeader eyebrow="Pipeline" title={<>Hiring <em>pipeline.</em></>} subtitle="Track candidates as they move through your process." />
       <PipelineView allApps={allApps} onStatusChange={onStatusChange} />
     </div>
   );
@@ -1510,7 +1510,7 @@ function ProfileTab({ recruiter, onUpdate, showToast }) {
   const SUBTABS   = [{ id: 'startup', label: 'Startup' }, { id: 'recruiter', label: 'You' }];
   return (
     <div>
-      <PageHeader eyebrow="Profile" title={<>Your <em>profile.</>} />
+      <PageHeader eyebrow="Profile" title={<>Your <em>profile.</em></>} />
       <SubTabStrip tabs={SUBTABS} active={subTab} onChange={setSubTab} />
       {subTab === 'startup'   && <StartupProfileForm   startup={startup} canEdit={isFounder} onUpdate={onUpdate} showToast={showToast} />}
       {subTab === 'recruiter' && <RecruiterProfileForm recruiter={recruiter}                  onUpdate={onUpdate} showToast={showToast} />}
