@@ -2,8 +2,50 @@
 import React from 'react';
 import { Bookmark, CheckCircle2 } from 'lucide-react';
 
-export function SwipeView({ jobs, selectedJob, onJobClick, isJobSaved, onSave, isJobApplied, welcomeCard }) {
+// ─── Shared logo block ────────────────────────────────────────────────────────
+function CompanyLogoBlock({ name, logoUrl, size = 44 }) {
+  const glyph = (name || '?').slice(0, 1).toUpperCase();
+  if (logoUrl) {
+    return (
+      <div style={{ width: size, height: size, flexShrink: 0, position: 'relative' }}>
+        <img
+          src={logoUrl}
+          alt={name}
+          style={{ width: size, height: size, objectFit: 'cover', border: '1px solid var(--border-mid)', display: 'block' }}
+          onError={e => {
+            e.target.style.display = 'none';
+            e.target.nextSibling && (e.target.nextSibling.style.display = 'grid');
+          }}
+        />
+        {/* hidden fallback */}
+        <div style={{
+          display: 'none', position: 'absolute', top: 0, left: 0,
+          width: size, height: size, placeItems: 'center',
+          background: 'var(--ink)', color: 'var(--cream)',
+          fontFamily: "'JetBrains Mono', monospace",
+          fontWeight: 600, fontSize: size * 0.36,
+        }}>
+          {glyph}
+          <div style={{ position: 'absolute', bottom: -1, right: -1, width: 5, height: 5, background: 'var(--blue)' }} />
+        </div>
+      </div>
+    );
+  }
+  return (
+    <div style={{
+      width: size, height: size, flexShrink: 0,
+      display: 'grid', placeItems: 'center',
+      background: 'var(--ink)', color: 'var(--cream)',
+      fontFamily: "'JetBrains Mono', monospace",
+      fontWeight: 600, fontSize: size * 0.36, position: 'relative',
+    }}>
+      {glyph}
+      <div style={{ position: 'absolute', bottom: -1, right: -1, width: 5, height: 5, background: 'var(--blue)' }} />
+    </div>
+  );
+}
 
+export function SwipeView({ jobs, selectedJob, onJobClick, isJobSaved, onSave, isJobApplied, welcomeCard }) {
   const scoreColor = s => (s >= 75 ? 'var(--blue)' : s >= 50 ? 'var(--amber)' : 'var(--red)');
   const compColor  = c => (c === 'High' ? 'var(--red)' : c === 'Medium' ? 'var(--amber)' : 'var(--blue)');
   const panelOpen  = !!selectedJob;
@@ -11,9 +53,7 @@ export function SwipeView({ jobs, selectedJob, onJobClick, isJobSaved, onSave, i
   if (!jobs || jobs.length === 0) {
     return (
       <div>
-        {welcomeCard && (
-          <div style={{ padding: '8px 28px 0' }}>{welcomeCard}</div>
-        )}
+        {welcomeCard && <div style={{ padding: '8px 28px 0' }}>{welcomeCard}</div>}
         <div style={{ textAlign: 'center', padding: '60px 20px', border: '1px dashed var(--border-mid)', background: 'var(--bg-card)', margin: '8px 28px' }}>
           <div className="hunt-mono" style={{ fontSize: 11, letterSpacing: '0.2em', textTransform: 'uppercase', color: 'var(--text-dim)', marginBottom: 10 }}>▲ all caught up</div>
           <h3 className="hunt-serif" style={{ fontSize: 24, color: 'var(--text)', marginBottom: 6 }}>You've reviewed every match.</h3>
@@ -25,19 +65,10 @@ export function SwipeView({ jobs, selectedJob, onJobClick, isJobSaved, onSave, i
 
   return (
     <div>
-      {/* Welcome card above list */}
-      {welcomeCard && (
-        <div style={{ padding: '8px 28px 0' }}>{welcomeCard}</div>
-      )}
+      {welcomeCard && <div style={{ padding: '8px 28px 0' }}>{welcomeCard}</div>}
 
       {/* Column headers */}
-      <div style={{
-        display: 'flex',
-        alignItems: 'center',
-        padding: '8px 28px',
-        borderBottom: '1px solid var(--border-mid)',
-        gap: 16,
-      }}>
+      <div style={{ display: 'flex', alignItems: 'center', padding: '8px 28px', borderBottom: '1px solid var(--border-mid)', gap: 16 }}>
         <div style={{ width: 44, flexShrink: 0 }} />
         <div className="hunt-mono" style={{ flex: '1 1 0', fontSize: 9, letterSpacing: '0.14em', textTransform: 'uppercase', color: 'var(--text-faint)' }}>Role</div>
         {!panelOpen && <>
@@ -50,43 +81,28 @@ export function SwipeView({ jobs, selectedJob, onJobClick, isJobSaved, onSave, i
       </div>
 
       {jobs.map(job => {
-        const matchData = job._match;
+        const matchData  = job._match;
         const isSelected = selectedJob?.id === job.id;
-        const isSaved = isJobSaved?.(job.id);
-        const isApplied = isJobApplied?.(job.id);
-        const logoGlyph = (job.company || '?').slice(0, 1).toUpperCase();
+        const isSaved    = isJobSaved?.(job.id);
+        const isApplied  = isJobApplied?.(job.id);
 
         return (
           <div
             key={job.id}
             onClick={() => onJobClick?.(job)}
             style={{
-              display: 'flex',
-              alignItems: 'center',
-              gap: 16,
+              display: 'flex', alignItems: 'center', gap: 16,
               padding: '18px 28px',
               borderBottom: '1px solid var(--border)',
               borderLeft: isSelected ? '2px solid var(--blue)' : '2px solid transparent',
               background: isSelected ? 'var(--blue-tint)' : 'transparent',
-              cursor: 'pointer',
-              transition: 'background 0.1s',
-              position: 'relative',
+              cursor: 'pointer', transition: 'background 0.1s', position: 'relative',
             }}
             onMouseEnter={e => { if (!isSelected) e.currentTarget.style.background = 'var(--bg-subtle)'; }}
             onMouseLeave={e => { e.currentTarget.style.background = isSelected ? 'var(--blue-tint)' : 'transparent'; }}
           >
-            {/* Logo */}
-            <div style={{
-              width: 44, height: 44, flexShrink: 0,
-              display: 'grid', placeItems: 'center',
-              background: 'var(--ink)', color: 'var(--cream)',
-              fontFamily: "'JetBrains Mono', monospace",
-              fontWeight: 600, fontSize: 16,
-              position: 'relative',
-            }}>
-              {logoGlyph}
-              <div style={{ position: 'absolute', bottom: -1, right: -1, width: 5, height: 5, background: 'var(--blue)' }} />
-            </div>
+            {/* LOGO */}
+            <CompanyLogoBlock name={job.company} logoUrl={job.logo_url} size={44} />
 
             {/* Company + Role */}
             <div style={{ flex: '1 1 0', minWidth: 0 }}>
@@ -94,30 +110,15 @@ export function SwipeView({ jobs, selectedJob, onJobClick, isJobSaved, onSave, i
                 <div className="hunt-kicker" style={{ fontSize: 9.5, color: 'var(--text-dim)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
                   {job.company}
                 </div>
-                {/* Applied tag inline with company name */}
                 {isApplied && (
-                  <div style={{
-                    display: 'inline-flex',
-                    alignItems: 'center',
-                    gap: 3,
-                    padding: '2px 6px',
-                    background: 'var(--blue)',
-                    color: 'var(--cream)',
-                    fontFamily: "'JetBrains Mono', monospace",
-                    fontSize: 8.5,
-                    letterSpacing: '0.1em',
-                    textTransform: 'uppercase',
-                    flexShrink: 0,
-                  }}>
-                    <CheckCircle2 size={8} />
-                    Applied
+                  <div style={{ display: 'inline-flex', alignItems: 'center', gap: 3, padding: '2px 6px', background: 'var(--blue)', color: 'var(--cream)', fontFamily: "'JetBrains Mono', monospace", fontSize: 8.5, letterSpacing: '0.1em', textTransform: 'uppercase', flexShrink: 0 }}>
+                    <CheckCircle2 size={8} /> Applied
                   </div>
                 )}
               </div>
               <div className="hunt-serif" style={{ fontSize: 18, color: 'var(--text)', lineHeight: 1.2, overflow: 'hidden', whiteSpace: 'nowrap', textOverflow: 'ellipsis' }}>
                 {job.role}
               </div>
-              {/* Compact meta when panel is open */}
               {panelOpen && (
                 <div className="hunt-mono" style={{ fontSize: 10.5, color: 'var(--text-dim)', marginTop: 4, overflow: 'hidden', whiteSpace: 'nowrap', textOverflow: 'ellipsis' }}>
                   {[job.location, job.stipend, job.duration].filter(Boolean).join(' · ')}
@@ -125,17 +126,10 @@ export function SwipeView({ jobs, selectedJob, onJobClick, isJobSaved, onSave, i
               )}
             </div>
 
-            {/* Columns — only when panel closed */}
             {!panelOpen && <>
-              <div className="hunt-mono" style={{ width: 160, flexShrink: 0, fontSize: 12, color: 'var(--text-mid)', overflow: 'hidden', whiteSpace: 'nowrap', textOverflow: 'ellipsis' }}>
-                {job.location || '—'}
-              </div>
-              <div className="hunt-mono" style={{ width: 110, flexShrink: 0, fontSize: 12, color: 'var(--text-mid)', whiteSpace: 'nowrap' }}>
-                {job.stipend || '—'}
-              </div>
-              <div className="hunt-mono" style={{ width: 90, flexShrink: 0, fontSize: 12, color: 'var(--text-dim)', whiteSpace: 'nowrap' }}>
-                {job.duration || '—'}
-              </div>
+              <div className="hunt-mono" style={{ width: 160, flexShrink: 0, fontSize: 12, color: 'var(--text-mid)', overflow: 'hidden', whiteSpace: 'nowrap', textOverflow: 'ellipsis' }}>{job.location || '—'}</div>
+              <div className="hunt-mono" style={{ width: 110, flexShrink: 0, fontSize: 12, color: 'var(--text-mid)', whiteSpace: 'nowrap' }}>{job.stipend || '—'}</div>
+              <div className="hunt-mono" style={{ width: 90, flexShrink: 0, fontSize: 12, color: 'var(--text-dim)', whiteSpace: 'nowrap' }}>{job.duration || '—'}</div>
             </>}
 
             {/* Match % */}
