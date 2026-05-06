@@ -2,11 +2,68 @@
 import React from 'react';
 import { Bookmark, Briefcase, MapPin, Clock, CheckCircle2 } from 'lucide-react';
 
+// ─── Company logo: real image if available, else ink-block with initial ───
+function CompanyLogoBlock({ name, logoUrl, size = 42 }) {
+  const glyph = (name || '?').slice(0, 1).toUpperCase();
+  if (logoUrl) {
+    return (
+      <div style={{ width: size, height: size, flexShrink: 0, position: 'relative' }}>
+        <img
+          src={logoUrl}
+          alt={name}
+          style={{
+            width: size, height: size,
+            objectFit: 'cover',
+            border: '1px solid var(--border-mid)',
+            display: 'block',
+          }}
+          onError={e => {
+            // on broken image, swap to fallback block
+            e.target.style.display = 'none';
+            e.target.nextSibling && (e.target.nextSibling.style.display = 'grid');
+          }}
+        />
+        {/* hidden fallback — revealed on error */}
+        <div
+          style={{
+            display: 'none',
+            width: size, height: size,
+            placeItems: 'center',
+            background: 'var(--ink)',
+            color: 'var(--cream)',
+            fontFamily: "'JetBrains Mono', monospace",
+            fontWeight: 600, fontSize: size * 0.38,
+            letterSpacing: '0.04em',
+            position: 'absolute', top: 0, left: 0,
+          }}
+        >
+          {glyph}
+          <div style={{ position: 'absolute', bottom: -1, right: -1, width: 5, height: 5, background: 'var(--blue)' }} />
+        </div>
+      </div>
+    );
+  }
+  return (
+    <div
+      style={{
+        width: size, height: size, flexShrink: 0,
+        display: 'grid', placeItems: 'center',
+        background: 'var(--ink)',
+        color: 'var(--cream)',
+        fontFamily: "'JetBrains Mono', monospace",
+        fontWeight: 600, fontSize: size * 0.38, letterSpacing: '0.04em',
+        position: 'relative',
+      }}
+    >
+      {glyph}
+      <div style={{ position: 'absolute', bottom: -1, right: -1, width: 5, height: 5, background: 'var(--blue)' }} />
+    </div>
+  );
+}
+
 export function JobGridCard({ job, matchData, isSelected, onClick, isSaved, onSave, isApplied }) {
   const scoreColor = s => (s >= 75 ? 'var(--blue)' : s >= 50 ? 'var(--amber)' : 'var(--red)');
   const compColor  = c => (c === 'High' ? 'var(--red)' : c === 'Medium' ? 'var(--amber)' : 'var(--blue)');
-
-  const logoGlyph = (job.company || '?').slice(0, 1).toUpperCase();
 
   return (
     <div
@@ -22,53 +79,27 @@ export function JobGridCard({ job, matchData, isSelected, onClick, isSaved, onSa
         transition: 'transform 0.12s, box-shadow 0.12s, border-color 0.12s',
         background: 'var(--bg-card)',
       }}
-      onMouseEnter={e => {
-        if (!isSelected) e.currentTarget.style.borderColor = 'var(--ink)';
-      }}
-      onMouseLeave={e => {
-        if (!isSelected) e.currentTarget.style.borderColor = 'var(--border-mid)';
-      }}
+      onMouseEnter={e => { if (!isSelected) e.currentTarget.style.borderColor = 'var(--ink)'; }}
+      onMouseLeave={e => { if (!isSelected) e.currentTarget.style.borderColor = 'var(--border-mid)'; }}
     >
-      {/* Applied tag — top-right corner, no background color on card */}
+      {/* Applied tag */}
       {isApplied && (
-        <div
-          style={{
-            position: 'absolute',
-            top: 0,
-            right: 0,
-            display: 'flex',
-            alignItems: 'center',
-            gap: 3,
-            padding: '3px 8px',
-            background: 'var(--blue)',
-            color: 'var(--cream)',
-            fontFamily: "'JetBrains Mono', monospace",
-            fontSize: 9,
-            letterSpacing: '0.1em',
-            textTransform: 'uppercase',
-          }}
-        >
-          <CheckCircle2 size={9} />
-          Applied
+        <div style={{
+          position: 'absolute', top: 0, right: 0,
+          display: 'flex', alignItems: 'center', gap: 3,
+          padding: '3px 8px',
+          background: 'var(--blue)', color: 'var(--cream)',
+          fontFamily: "'JetBrains Mono', monospace",
+          fontSize: 9, letterSpacing: '0.1em', textTransform: 'uppercase',
+        }}>
+          <CheckCircle2 size={9} /> Applied
         </div>
       )}
 
-      {/* Header: logo block + match % + bookmark */}
+      {/* Header: logo + title + match + bookmark */}
       <div style={{ display: 'flex', alignItems: 'flex-start', gap: 12, marginBottom: 14 }}>
-        <div
-          style={{
-            width: 42, height: 42, flexShrink: 0,
-            display: 'grid', placeItems: 'center',
-            background: 'var(--ink)',
-            color: 'var(--cream)',
-            fontFamily: "'JetBrains Mono', monospace",
-            fontWeight: 600, fontSize: 16, letterSpacing: '0.04em',
-            position: 'relative',
-          }}
-        >
-          {logoGlyph}
-          <div style={{ position: 'absolute', bottom: -1, right: -1, width: 5, height: 5, background: 'var(--blue)' }} />
-        </div>
+        {/* LOGO — real image or text initial */}
+        <CompanyLogoBlock name={job.company} logoUrl={job.logo_url} size={42} />
 
         <div style={{ flex: 1, minWidth: 0 }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 3 }}>
@@ -96,15 +127,13 @@ export function JobGridCard({ job, matchData, isSelected, onClick, isSaved, onSa
           </h3>
         </div>
 
-        {/* Right: match score + bookmark */}
+        {/* Match score + bookmark */}
         <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: 6, flexShrink: 0 }}>
           <button
             onClick={e => { e.stopPropagation(); onSave(job); }}
             title={isSaved ? 'Unsave' : 'Save'}
             style={{
-              background: 'none', border: 'none',
-              cursor: 'pointer',
-              padding: 2,
+              background: 'none', border: 'none', cursor: 'pointer', padding: 2,
               color: isSaved ? 'var(--blue)' : 'var(--text-dim)',
               display: 'flex', alignItems: 'center',
             }}
@@ -114,8 +143,7 @@ export function JobGridCard({ job, matchData, isSelected, onClick, isSaved, onSa
           {matchData && (
             <div style={{ textAlign: 'right' }}>
               <div className="hunt-serif" style={{ fontSize: 26, lineHeight: 1, color: scoreColor(matchData.score) }}>
-                {matchData.score}
-                <span style={{ fontSize: 13 }}>%</span>
+                {matchData.score}<span style={{ fontSize: 13 }}>%</span>
               </div>
               <div className="hunt-mono" style={{ fontSize: 8.5, letterSpacing: '0.1em', textTransform: 'uppercase', color: 'var(--text-dim)' }}>
                 match
@@ -130,10 +158,7 @@ export function JobGridCard({ job, matchData, isSelected, onClick, isSaved, onSa
         <div className="hunt-match-bar-track" style={{ marginBottom: 14 }}>
           <div
             className="hunt-match-bar-fill"
-            style={{
-              width: matchData.score + '%',
-              background: scoreColor(matchData.score),
-            }}
+            style={{ width: matchData.score + '%', background: scoreColor(matchData.score) }}
           />
         </div>
       )}
@@ -144,21 +169,11 @@ export function JobGridCard({ job, matchData, isSelected, onClick, isSaved, onSa
           { Icon: Briefcase, val: job.stipend },
           { Icon: MapPin,    val: job.location },
           { Icon: Clock,     val: job.duration },
-        ]
-          .filter(x => x.val)
-          .map(({ Icon, val }) => (
-            <div
-              key={val}
-              className="hunt-mono"
-              style={{
-                display: 'flex', alignItems: 'center', gap: 5,
-                fontSize: 10.5, color: 'var(--text-mid)', letterSpacing: '0.03em',
-              }}
-            >
-              <Icon size={11} style={{ flexShrink: 0 }} />
-              {val}
-            </div>
-          ))}
+        ].filter(x => x.val).map(({ Icon, val }) => (
+          <div key={val} className="hunt-mono" style={{ display: 'flex', alignItems: 'center', gap: 5, fontSize: 10.5, color: 'var(--text-mid)', letterSpacing: '0.03em' }}>
+            <Icon size={11} style={{ flexShrink: 0 }} /> {val}
+          </div>
+        ))}
       </div>
 
       {/* Skills chips */}
@@ -166,10 +181,7 @@ export function JobGridCard({ job, matchData, isSelected, onClick, isSaved, onSa
         {(job.required_skills || []).slice(0, 5).map((s, i) => {
           const matched = matchData?.matchedSkills?.find(ms => ms.name === s.name);
           return (
-            <span
-              key={i}
-              className={'hunt-chip ' + (matched ? 'hunt-chip-blue-tint' : '')}
-            >
+            <span key={i} className={'hunt-chip ' + (matched ? 'hunt-chip-blue-tint' : '')}>
               {matched && <span style={{ fontSize: 9 }}>●</span>} {s.name}
             </span>
           );
@@ -182,12 +194,7 @@ export function JobGridCard({ job, matchData, isSelected, onClick, isSaved, onSa
       </div>
 
       {/* Footer */}
-      <div
-        style={{
-          display: 'flex', justifyContent: 'space-between', alignItems: 'center',
-          paddingTop: 10, borderTop: '1px solid var(--border)',
-        }}
-      >
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', paddingTop: 10, borderTop: '1px solid var(--border)' }}>
         <div className="hunt-mono" style={{ fontSize: 10, letterSpacing: '0.06em', color: 'var(--text-dim)' }}>
           {isApplied ? (
             <span style={{ color: 'var(--blue)', display: 'flex', alignItems: 'center', gap: 4 }}>
@@ -198,12 +205,7 @@ export function JobGridCard({ job, matchData, isSelected, onClick, isSaved, onSa
               {job.current_applicants}
               <span style={{ color: 'var(--text-faint)' }}>/{job.max_applicants}</span> applicants
               {matchData?.competitionLevel && (
-                <>
-                  {' · '}
-                  <span style={{ color: compColor(matchData.competitionLevel) }}>
-                    {matchData.competitionLevel} comp
-                  </span>
-                </>
+                <> · <span style={{ color: compColor(matchData.competitionLevel) }}>{matchData.competitionLevel} comp</span></>
               )}
             </>
           )}
