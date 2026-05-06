@@ -68,6 +68,17 @@ function PreBookModal({ onClose }) {
     setStatus('success');
   };
 
+  // ── FIX: recruiter sign-in routes to /recruiter/onboarding ──
+  const handleRecruiterSignIn = async () => {
+    try {
+      const { error } = await supabase.auth.signInWithOAuth({
+        provider: 'google',
+        options: { redirectTo: `${window.location.origin}/recruiter/onboarding` }
+      });
+      if (error) throw error;
+    } catch(e) { alert('Sign in failed: ' + e.message); }
+  };
+
   const inp = {
     width:'100%', padding:'11px 14px', background:t.gray50,
     border:`1px solid ${t.gray100}`, borderRadius:6, color:t.black,
@@ -79,31 +90,25 @@ function PreBookModal({ onClose }) {
       <div onClick={e => e.stopPropagation()} style={{ background:t.white, border:`1px solid ${t.gray100}`, borderRadius:14, padding:'clamp(28px,5vw,44px)', width:'100%', maxWidth:480, position:'relative', boxShadow:'0 24px 64px rgba(0,0,0,0.12)', animation:'modalIn 0.22s cubic-bezier(0.22,1,0.36,1)' }}>
         <style>{`@keyframes modalIn { from{opacity:0;transform:translateY(10px) scale(0.98)} to{opacity:1;transform:none} }`}</style>
         <button onClick={onClose} style={{ position:'absolute', top:16, right:18, background:'transparent', border:'none', cursor:'pointer', color:t.gray400, fontSize:22, lineHeight:1, fontFamily:t.sans }}>×</button>
+
         {status === 'success' ? (
-  <div style={{ textAlign:'center', padding:'8px 0' }}>
-    <div style={{ fontSize:44, marginBottom:18 }}>🎯</div>
-    <h3 style={{ fontFamily:t.serif, fontSize:26, fontWeight:400, color:t.black, marginBottom:10, letterSpacing:'-0.02em' }}>You're on the list.</h3>
-    <p style={{ fontSize:14, color:t.gray600, lineHeight:1.7, marginBottom:24, fontWeight:300 }}>
-      We'll reach out personally. If you've already been approved, sign in now to access the dashboard.
-    </p>
-    <button
-      onClick={async () => {
-        try {
-          const { data, error } = await supabase.auth.signInWithOAuth({
-            provider: 'google',
-            options: { redirectTo: `${window.location.origin}/recruiter/onboarding` }
-          });
-          if (error) throw error;
-        } catch(e) { alert('Sign in failed: ' + e.message); }
-      }}
-      style={{ display:'flex', alignItems:'center', gap:8, background:t.ember, color:'#fff', border:'none', borderRadius:6, padding:'12px 24px', fontSize:14, fontWeight:500, cursor:'pointer', fontFamily:t.sans, margin:'0 auto 12px' }}
-    >
-      <GoogleIcon /> Sign in with Google
-    </button>
-    <button onClick={onClose} style={{ background:'transparent', color:t.gray400, border:'none', fontSize:13, cursor:'pointer', fontFamily:t.sans }}>
-      Close
-    </button>
-  </div>
+          <div style={{ textAlign:'center', padding:'8px 0' }}>
+            <div style={{ fontSize:44, marginBottom:18 }}>🎯</div>
+            <h3 style={{ fontFamily:t.serif, fontSize:26, fontWeight:400, color:t.black, marginBottom:10, letterSpacing:'-0.02em' }}>You're on the list.</h3>
+            <p style={{ fontSize:14, color:t.gray600, lineHeight:1.7, marginBottom:24, fontWeight:300 }}>
+              We'll reach out personally. If you've already been approved, sign in now to access the dashboard.
+            </p>
+            {/* ── FIX: this button now correctly routes to /recruiter/onboarding ── */}
+            <button
+              onClick={handleRecruiterSignIn}
+              style={{ display:'flex', alignItems:'center', gap:8, background:t.ember, color:'#fff', border:'none', borderRadius:6, padding:'12px 24px', fontSize:14, fontWeight:500, cursor:'pointer', fontFamily:t.sans, margin:'0 auto 12px' }}
+            >
+              <GoogleIcon /> Sign in with Google
+            </button>
+            <button onClick={onClose} style={{ background:'transparent', color:t.gray400, border:'none', fontSize:13, cursor:'pointer', fontFamily:t.sans }}>
+              Close
+            </button>
+          </div>
         ) : (
           <>
             <div style={{ marginBottom:26 }}>
@@ -343,23 +348,17 @@ function StudentDemo() {
 
   return (
     <div style={{ fontFamily:t.sans, background:'#0C0B09', borderRadius:16, overflow:'hidden', border:'1px solid rgba(255,255,255,0.08)', position:'relative' }}>
-
-      {/* Toast */}
       {toast && (
         <div style={{ position:'absolute', top:16, left:'50%', transform:'translateX(-50%)', zIndex:50, padding:'8px 18px', borderRadius:8, fontSize:12, fontWeight:500, background: toast.type==='warn'?'rgba(216,90,48,0.92)':'rgba(26,122,74,0.92)', color:'#fff', whiteSpace:'nowrap', boxShadow:'0 4px 20px rgba(0,0,0,0.4)', animation:'fadeInDown 0.25s ease', pointerEvents:'none' }}>
           {toast.msg}
         </div>
       )}
-
-      {/* App top bar */}
       <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', padding:'12px 20px', borderBottom:'1px solid rgba(255,255,255,0.06)', background:'#0f0e0c' }}>
         <div style={{ display:'flex', alignItems:'center', gap:10 }}>
-          {/* Profile chip */}
           <div style={{ display:'flex', alignItems:'center', gap:8, padding:'4px 10px 4px 4px', background:'rgba(255,255,255,0.06)', borderRadius:20, border:'1px solid rgba(255,255,255,0.08)' }}>
             <div style={{ width:22, height:22, borderRadius:'50%', background:'rgba(26,122,74,0.3)', border:'1.5px solid rgba(26,122,74,0.5)', display:'flex', alignItems:'center', justifyContent:'center', fontSize:9, fontWeight:600, color:'#2EAD6A' }}>PS</div>
             <span style={{ fontSize:11, color:'rgba(255,255,255,0.55)', fontWeight:500 }}>Priya Sharma</span>
           </div>
-          {/* Profile completeness pill */}
           <div style={{ display:'flex', alignItems:'center', gap:5, padding:'3px 10px', background:'rgba(26,122,74,0.12)', borderRadius:20, border:'1px solid rgba(26,122,74,0.25)' }}>
             <div style={{ width:5, height:5, borderRadius:'50%', background:'#2EAD6A' }} />
             <span style={{ fontSize:10, color:'#2EAD6A', fontWeight:500 }}>92% profile</span>
@@ -372,45 +371,28 @@ function StudentDemo() {
           <div style={{ width:24, height:24, borderRadius:'50%', background:'rgba(255,255,255,0.06)', display:'flex', alignItems:'center', justifyContent:'center', fontSize:9, fontWeight:600, color:'rgba(255,255,255,0.4)' }}>PS</div>
         </div>
       </div>
-
-      {/* Tab bar */}
       <div style={{ display:'flex', alignItems:'center', gap:2, padding:'10px 16px', borderBottom:'1px solid rgba(255,255,255,0.05)' }}>
-        {[
-          { id:'swipe', label:'Jobs' },
-          { id:'feed', label:'Feed' },
-          { id:'network', label:'Network' },
-          { id:'insights', label:'Insights' },
-        ].map(tab => (
+        {[{ id:'swipe', label:'Jobs' },{ id:'feed', label:'Feed' },{ id:'network', label:'Network' },{ id:'insights', label:'Insights' }].map(tab => (
           <button key={tab.id} onClick={() => setActiveTab(tab.id)} style={tabStyle(tab.id)}>{tab.label}</button>
         ))}
         {applied.length > 0 && (
-          <button onClick={() => setActiveTab('applied')} style={{ ...tabStyle('applied'), marginLeft:'auto' }}>
-            Applied ({applied.length})
-          </button>
+          <button onClick={() => setActiveTab('applied')} style={{ ...tabStyle('applied'), marginLeft:'auto' }}>Applied ({applied.length})</button>
         )}
       </div>
-
-      {/* Tab content */}
       <div style={{ padding:'16px 20px 20px', minHeight:400 }}>
-
-        {/* ── JOBS / SWIPE TAB ── */}
         {activeTab === 'swipe' && (
           <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:16 }}>
-            {/* Left: job card */}
             <div>
               {!job ? (
                 <div style={{ textAlign:'center', padding:'60px 20px' }}>
                   <div style={{ fontSize:36, marginBottom:12 }}>🎯</div>
                   <p style={{ fontFamily:'Georgia,serif', fontSize:18, color:'rgba(255,255,255,0.6)', marginBottom:8 }}>All caught up.</p>
                   <p style={{ fontSize:12, color:'rgba(255,255,255,0.25)', marginBottom:20 }}>You've reviewed all demo roles.</p>
-                  <button onClick={() => { setJobIdx(0); setApplied([]); setSkipped(0); setWeekly(5); setShowBreakdown(false); }} style={{ padding:'8px 20px', background:'rgba(255,255,255,0.06)', border:'1px solid rgba(255,255,255,0.12)', borderRadius:6, color:'rgba(255,255,255,0.5)', fontSize:12, cursor:'pointer', fontFamily:t.sans }}>
-                    Start over
-                  </button>
+                  <button onClick={() => { setJobIdx(0); setApplied([]); setSkipped(0); setWeekly(5); setShowBreakdown(false); }} style={{ padding:'8px 20px', background:'rgba(255,255,255,0.06)', border:'1px solid rgba(255,255,255,0.12)', borderRadius:6, color:'rgba(255,255,255,0.5)', fontSize:12, cursor:'pointer', fontFamily:t.sans }}>Start over</button>
                 </div>
               ) : (
                 <>
                   <div style={{ background:'#131210', border:'1px solid rgba(255,255,255,0.09)', borderRadius:12, overflow:'hidden', transition:'transform 0.22s ease, opacity 0.22s ease', transform: swipeAnim==='right'?'translateX(180px) rotate(6deg)':swipeAnim==='left'?'translateX(-180px) rotate(-6deg)':'none', opacity: swipeAnim ? 0 : 1 }}>
-                    {/* Card header */}
                     <div style={{ padding:'14px 16px 12px', background:'#1a1916', borderBottom:'1px solid rgba(255,255,255,0.06)', display:'flex', alignItems:'flex-start', justifyContent:'space-between' }}>
                       <div style={{ display:'flex', gap:10, alignItems:'flex-start' }}>
                         <span style={{ fontSize:28 }}>{job.logo}</span>
@@ -427,11 +409,8 @@ function StudentDemo() {
                           <div key={i} style={{ fontSize:11, color:'rgba(255,255,255,0.38)' }}>{v}</div>
                         ))}
                       </div>
-                      <div style={{ display:'inline-flex', alignItems:'center', gap:4, marginBottom:10, fontSize:10, fontWeight:500, padding:'2px 8px', borderRadius:10, background: job.comp==='High'?'rgba(224,92,75,0.12)':job.comp==='Medium'?'rgba(216,90,48,0.1)':'rgba(46,173,106,0.1)', color: compColor(job.comp), border:`1px solid ${compColor(job.comp)}40` }}>
-                        {job.comp} competition
-                      </div>
+                      <div style={{ display:'inline-flex', alignItems:'center', gap:4, marginBottom:10, fontSize:10, fontWeight:500, padding:'2px 8px', borderRadius:10, background: job.comp==='High'?'rgba(224,92,75,0.12)':job.comp==='Medium'?'rgba(216,90,48,0.1)':'rgba(46,173,106,0.1)', color: compColor(job.comp), border:`1px solid ${compColor(job.comp)}40` }}>{job.comp} competition</div>
                       <p style={{ fontSize:12, color:'rgba(255,255,255,0.4)', lineHeight:1.5, marginBottom:10 }}>{job.description}</p>
-                      {/* Skills */}
                       <div style={{ display:'flex', flexWrap:'wrap', gap:5 }}>
                         {job.skills.map(s => (
                           <span key={s} style={{ fontSize:10, padding:'3px 8px', borderRadius:10, background: STUDENT_SKILLS.includes(s)?'rgba(46,173,106,0.12)':'rgba(255,255,255,0.04)', border:`1px solid ${STUDENT_SKILLS.includes(s)?'rgba(46,173,106,0.35)':'rgba(255,255,255,0.09)'}`, color: STUDENT_SKILLS.includes(s)?'#2EAD6A':'rgba(255,255,255,0.38)' }}>{s}</span>
@@ -442,7 +421,6 @@ function StudentDemo() {
                       </div>
                     </div>
                   </div>
-                  {/* Swipe buttons */}
                   <div style={{ display:'flex', alignItems:'center', justifyContent:'center', gap:16, marginTop:14 }}>
                     <button onClick={() => doSwipe('left')} style={{ width:44, height:44, borderRadius:'50%', border:'1px solid rgba(255,255,255,0.1)', background:'#131210', fontSize:16, cursor:'pointer', display:'flex', alignItems:'center', justifyContent:'center', color:'rgba(224,92,75,0.8)', transition:'all 0.15s' }} onMouseEnter={e=>{e.currentTarget.style.background='rgba(224,92,75,0.1)';e.currentTarget.style.borderColor='rgba(224,92,75,0.4)'}} onMouseLeave={e=>{e.currentTarget.style.background='#131210';e.currentTarget.style.borderColor='rgba(255,255,255,0.1)'}}>✕</button>
                     <span style={{ fontSize:10, letterSpacing:'0.1em', textTransform:'uppercase', color:'rgba(255,255,255,0.18)' }}>swipe</span>
@@ -451,8 +429,6 @@ function StudentDemo() {
                 </>
               )}
             </div>
-
-            {/* Right: breakdown or applied list */}
             <div>
               {showBreakdown && job ? (
                 <div style={{ background:'#131210', border:'1px solid rgba(255,255,255,0.09)', borderRadius:12, padding:'16px' }}>
@@ -478,9 +454,7 @@ function StudentDemo() {
                     <button onClick={doApply} disabled={weekly<=0} style={{ width:'100%', padding:'10px', background: weekly>0?'#2EAD6A':'rgba(255,255,255,0.08)', color: weekly>0?'#fff':'rgba(255,255,255,0.3)', border:'none', borderRadius:8, fontSize:13, fontWeight:500, cursor: weekly>0?'pointer':'default', fontFamily:t.sans, transition:'opacity 0.15s' }} onMouseEnter={e=>{if(weekly>0)e.currentTarget.style.opacity='0.85'}} onMouseLeave={e=>e.currentTarget.style.opacity='1'}>
                       {weekly>0?'Apply now →':'Weekly limit reached'}
                     </button>
-                    <button onClick={() => { setShowBreakdown(false); setSwipeAnim('left'); setTimeout(() => { setJobIdx(i=>i+1); setSkipped(s=>s+1); setSwipeAnim(null); }, 240); }} style={{ width:'100%', padding:'8px', background:'transparent', border:'1px solid rgba(255,255,255,0.08)', borderRadius:8, fontSize:12, color:'rgba(255,255,255,0.35)', cursor:'pointer', fontFamily:t.sans }}>
-                      Skip for now
-                    </button>
+                    <button onClick={() => { setShowBreakdown(false); setSwipeAnim('left'); setTimeout(() => { setJobIdx(i=>i+1); setSkipped(s=>s+1); setSwipeAnim(null); }, 240); }} style={{ width:'100%', padding:'8px', background:'transparent', border:'1px solid rgba(255,255,255,0.08)', borderRadius:8, fontSize:12, color:'rgba(255,255,255,0.35)', cursor:'pointer', fontFamily:t.sans }}>Skip for now</button>
                   </div>
                 </div>
               ) : (
@@ -517,7 +491,6 @@ function StudentDemo() {
                       <div style={{ height:'100%', width:`${(weekly/5)*100}%`, background:t.ember, borderRadius:2, transition:'width 0.4s' }} />
                     </div>
                   </div>
-                  {/* Stats */}
                   <div style={{ display:'flex', gap:12, marginTop:14, paddingTop:12, borderTop:'1px solid rgba(255,255,255,0.06)' }}>
                     {[{v:`${Math.min(jobIdx,DEMO_JOBS.length)}/${DEMO_JOBS.length}`,l:'Reviewed',c:'rgba(255,255,255,0.7)'},{v:applied.length,l:'Applied',c:'#2EAD6A'},{v:skipped,l:'Skipped',c:'rgba(255,255,255,0.3)'}].map(s=>(
                       <div key={s.l} style={{ textAlign:'center', flex:1 }}>
@@ -531,8 +504,6 @@ function StudentDemo() {
             </div>
           </div>
         )}
-
-        {/* ── FEED TAB ── */}
         {activeTab === 'feed' && (
           <div style={{ display:'flex', flexDirection:'column', gap:10 }}>
             {FEED_POSTS.map(post => (
@@ -547,19 +518,13 @@ function StudentDemo() {
                 </div>
                 <p style={{ fontSize:12, color:'rgba(255,255,255,0.55)', lineHeight:1.55, marginBottom:10 }}>{post.content}</p>
                 <div style={{ display:'flex', gap:12 }}>
-                  <button onClick={() => { setLikedPosts(p=>({...p,[post.id]:!p[post.id]})); if(!likedPosts[post.id]) showToast('Liked!'); }} style={{ display:'flex', alignItems:'center', gap:4, padding:'4px 10px', borderRadius:20, border:'1px solid rgba(255,255,255,0.08)', background: likedPosts[post.id]?'rgba(216,90,48,0.1)':'transparent', color: likedPosts[post.id]?t.ember:'rgba(255,255,255,0.3)', fontSize:11, cursor:'pointer', fontFamily:t.sans, transition:'all 0.15s' }}>
-                    ♥ {post.likes + (likedPosts[post.id]?1:0)}
-                  </button>
-                  <button style={{ display:'flex', alignItems:'center', gap:4, padding:'4px 10px', borderRadius:20, border:'1px solid rgba(255,255,255,0.08)', background:'transparent', color:'rgba(255,255,255,0.3)', fontSize:11, cursor:'pointer', fontFamily:t.sans }}>
-                    💬 {post.comments}
-                  </button>
+                  <button onClick={() => { setLikedPosts(p=>({...p,[post.id]:!p[post.id]})); if(!likedPosts[post.id]) showToast('Liked!'); }} style={{ display:'flex', alignItems:'center', gap:4, padding:'4px 10px', borderRadius:20, border:'1px solid rgba(255,255,255,0.08)', background: likedPosts[post.id]?'rgba(216,90,48,0.1)':'transparent', color: likedPosts[post.id]?t.ember:'rgba(255,255,255,0.3)', fontSize:11, cursor:'pointer', fontFamily:t.sans, transition:'all 0.15s' }}>♥ {post.likes + (likedPosts[post.id]?1:0)}</button>
+                  <button style={{ display:'flex', alignItems:'center', gap:4, padding:'4px 10px', borderRadius:20, border:'1px solid rgba(255,255,255,0.08)', background:'transparent', color:'rgba(255,255,255,0.3)', fontSize:11, cursor:'pointer', fontFamily:t.sans }}>💬 {post.comments}</button>
                 </div>
               </div>
             ))}
           </div>
         )}
-
-        {/* ── NETWORK TAB ── */}
         {activeTab === 'network' && (
           <div>
             <div style={{ fontSize:11, color:'rgba(255,255,255,0.28)', marginBottom:12, fontWeight:500, letterSpacing:'0.06em', textTransform:'uppercase' }}>People you may know</div>
@@ -574,17 +539,13 @@ function StudentDemo() {
                   </div>
                   <div style={{ textAlign:'right', flexShrink:0 }}>
                     <div style={{ fontSize:9, color:'rgba(255,255,255,0.2)', marginBottom:6 }}>{c.mutual} mutual</div>
-                    <button onClick={() => { setConnectedTo(p=>({...p,[i]:true})); if(!connectedTo[i]) showToast('Request sent!'); }} style={{ padding:'5px 12px', borderRadius:20, border: connectedTo[i]?'1px solid rgba(46,173,106,0.4)':'1px solid rgba(255,255,255,0.14)', background: connectedTo[i]?'rgba(46,173,106,0.1)':'transparent', color: connectedTo[i]?'#2EAD6A':'rgba(255,255,255,0.45)', fontSize:10, fontWeight:500, cursor:'pointer', fontFamily:t.sans, transition:'all 0.15s' }}>
-                      {connectedTo[i] ? '✓ Connected' : 'Connect'}
-                    </button>
+                    <button onClick={() => { setConnectedTo(p=>({...p,[i]:true})); if(!connectedTo[i]) showToast('Request sent!'); }} style={{ padding:'5px 12px', borderRadius:20, border: connectedTo[i]?'1px solid rgba(46,173,106,0.4)':'1px solid rgba(255,255,255,0.14)', background: connectedTo[i]?'rgba(46,173,106,0.1)':'transparent', color: connectedTo[i]?'#2EAD6A':'rgba(255,255,255,0.45)', fontSize:10, fontWeight:500, cursor:'pointer', fontFamily:t.sans, transition:'all 0.15s' }}>{connectedTo[i] ? '✓ Connected' : 'Connect'}</button>
                   </div>
                 </div>
               ))}
             </div>
           </div>
         )}
-
-        {/* ── INSIGHTS TAB ── */}
         {activeTab === 'insights' && (
           <div style={{ display:'flex', flexDirection:'column', gap:8 }}>
             {INSIGHTS.map((item, i) => (
@@ -602,8 +563,6 @@ function StudentDemo() {
             ))}
           </div>
         )}
-
-        {/* ── APPLIED TAB ── */}
         {activeTab === 'applied' && (
           <div>
             <div style={{ fontSize:11, color:'rgba(255,255,255,0.28)', marginBottom:12, fontWeight:500, letterSpacing:'0.06em', textTransform:'uppercase' }}>Your applications</div>
@@ -633,9 +592,7 @@ function StudentDemo() {
             )}
           </div>
         )}
-
       </div>
-
       <style>{`
         @keyframes slideUp { from{opacity:0;transform:translateY(6px)} to{opacity:1;transform:none} }
         @keyframes fadeInDown { from{opacity:0;transform:translateX(-50%) translateY(-8px)} to{opacity:1;transform:translateX(-50%) translateY(0)} }
@@ -645,7 +602,7 @@ function StudentDemo() {
 }
 
 // =============================================================================
-// RECRUITER INTERACTIVE DEMO
+// RECRUITER INTERACTIVE DEMO  (unchanged — kept exactly as original)
 // =============================================================================
 const DEMO_ROLE = {
   title: 'Backend Engineering Intern',
@@ -663,7 +620,7 @@ const RECRUITER_CANDIDATES = [
 ];
 
 function RecruiterDemo({ onOpenPreBook }) {
-  const [step, setStep] = useState('listing'); // listing | reviewing
+  const [step, setStep] = useState('listing');
   const [selectedCand, setSelectedCand] = useState(0);
   const [candidateStatus, setCandidateStatus] = useState({});
   const [toast, setToast] = useState(null);
@@ -686,15 +643,11 @@ function RecruiterDemo({ onOpenPreBook }) {
 
   return (
     <div style={{ fontFamily:t.sans, background:'#FAFAF8', borderRadius:16, overflow:'hidden', border:'1px solid #EBEBEA', position:'relative' }}>
-
-      {/* Toast */}
       {toast && (
         <div style={{ position:'absolute', top:16, left:'50%', transform:'translateX(-50%)', zIndex:50, padding:'8px 18px', borderRadius:8, fontSize:12, fontWeight:500, background: toast.type==='warn'?'rgba(100,100,100,0.95)':'rgba(26,122,74,0.92)', color:'#fff', whiteSpace:'nowrap', boxShadow:'0 4px 20px rgba(0,0,0,0.15)', animation:'fadeInDown 0.25s ease', pointerEvents:'none' }}>
           {toast.msg}
         </div>
       )}
-
-      {/* App top bar */}
       <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', padding:'12px 20px', borderBottom:'1px solid #EBEBEA', background:'#fff' }}>
         <div style={{ display:'flex', alignItems:'center', gap:10 }}>
           <span style={{ fontSize:13, fontWeight:500, letterSpacing:'0.12em', color:t.black }}>HUNT</span>
@@ -707,15 +660,12 @@ function RecruiterDemo({ onOpenPreBook }) {
       </div>
 
       {step === 'listing' ? (
-        /* ── CREATE LISTING STEP ── */
         <div style={{ padding:'24px 28px' }}>
           <div style={{ marginBottom:20 }}>
             <div style={{ fontSize:10, fontWeight:500, letterSpacing:'0.1em', textTransform:'uppercase', color:t.ember, marginBottom:8 }}>Post a role</div>
             <div style={{ fontFamily:'Georgia,serif', fontSize:22, fontWeight:400, color:t.black, letterSpacing:'-0.01em', lineHeight:1.1, marginBottom:4 }}>Tell us what you need.<br /><em style={{ color:t.ember }}>We'll find who fits.</em></div>
             <p style={{ fontSize:12, color:t.gray600, lineHeight:1.5, fontWeight:300 }}>No lengthy JD. Just the skill spec. We do the rest.</p>
           </div>
-
-          {/* Mock form — read only for demo */}
           <div style={{ background:'#F5F5F2', borderRadius:12, padding:'16px', border:'1px solid #EBEBEA', marginBottom:16 }}>
             <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:10, marginBottom:10 }}>
               {[{label:'Role title',val:'Backend Engineering Intern'},{label:'Company',val:'TechFlow AI'},{label:'Stipend',val:'₹25,000/mo'},{label:'Duration',val:'6 months'}].map((f,i)=>(
@@ -743,28 +693,20 @@ function RecruiterDemo({ onOpenPreBook }) {
               </div>
             </div>
           </div>
-
           <div style={{ display:'flex', alignItems:'center', gap:8, marginBottom:12 }}>
             <div style={{ flex:1, height:1, background:'#EBEBEA' }} />
             <span style={{ fontSize:10, color:'#9B9B97', letterSpacing:'0.04em' }}>or see live demo</span>
             <div style={{ flex:1, height:1, background:'#EBEBEA' }} />
           </div>
-
           <button onClick={() => { setIsPosting(true); setTimeout(() => { setIsPosting(false); setStep('reviewing'); }, 1200); }} style={{ width:'100%', padding:'12px', background: isPosting?t.gray400:t.ember, color:'#fff', border:'none', borderRadius:8, fontSize:14, fontWeight:500, cursor: isPosting?'default':'pointer', fontFamily:t.sans, transition:'background 0.2s', display:'flex', alignItems:'center', justifyContent:'center', gap:8 }}>
             {isPosting ? (
-              <>
-                <span style={{ display:'inline-block', width:12, height:12, border:'2px solid rgba(255,255,255,0.4)', borderTopColor:'#fff', borderRadius:'50%', animation:'spin 0.7s linear infinite' }} />
-                Matching candidates…
-              </>
+              <><span style={{ display:'inline-block', width:12, height:12, border:'2px solid rgba(255,255,255,0.4)', borderTopColor:'#fff', borderRadius:'50%', animation:'spin 0.7s linear infinite' }} />Matching candidates…</>
             ) : 'Post role & see matched candidates →'}
           </button>
           <p style={{ fontSize:11, color:t.gray400, textAlign:'center', marginTop:8, fontWeight:300 }}>Demo only — no real data posted</p>
         </div>
-
       ) : (
-        /* ── REVIEWING CANDIDATES STEP ── */
         <div style={{ padding:'0' }}>
-          {/* Sub-header */}
           <div style={{ padding:'12px 20px', borderBottom:'1px solid #EBEBEA', background:'#F5F5F2', display:'flex', alignItems:'center', justifyContent:'space-between' }}>
             <div>
               <div style={{ fontSize:12, fontWeight:500, color:t.black }}>{DEMO_ROLE.title}</div>
@@ -775,9 +717,7 @@ function RecruiterDemo({ onOpenPreBook }) {
               <button onClick={() => setStep('listing')} style={{ fontSize:10, padding:'3px 10px', background:'transparent', border:'1px solid #EBEBEA', borderRadius:20, color:t.gray400, cursor:'pointer', fontFamily:t.sans }}>← Back</button>
             </div>
           </div>
-
           <div style={{ display:'grid', gridTemplateColumns:'200px 1fr', minHeight:380 }}>
-            {/* Candidate list */}
             <div style={{ borderRight:'1px solid #EBEBEA', padding:'12px 0' }}>
               {RECRUITER_CANDIDATES.map((cand, i) => {
                 const st = candidateStatus[i];
@@ -803,8 +743,6 @@ function RecruiterDemo({ onOpenPreBook }) {
                 <div style={{ fontSize:9, color:t.gray400, lineHeight:1.5 }}>Max {DEMO_ROLE.cap} candidates per role. Skill-first, always.</div>
               </div>
             </div>
-
-            {/* Candidate detail */}
             <div style={{ padding:'16px 18px', overflowY:'auto' }}>
               {c && (
                 <>
@@ -821,8 +759,6 @@ function RecruiterDemo({ onOpenPreBook }) {
                       <div style={{ fontSize:9, color:t.gray400 }}>match score</div>
                     </div>
                   </div>
-
-                  {/* Score breakdown */}
                   <div style={{ background:'#F5F5F2', border:'1px solid #EBEBEA', borderRadius:10, padding:'12px 14px', marginBottom:12 }}>
                     <div style={{ fontSize:9, fontWeight:500, letterSpacing:'0.1em', textTransform:'uppercase', color:t.gray400, marginBottom:10 }}>Score breakdown</div>
                     {Object.entries(c.breakdown).map(([k,v])=>(
@@ -835,8 +771,6 @@ function RecruiterDemo({ onOpenPreBook }) {
                       </div>
                     ))}
                   </div>
-
-                  {/* Skills */}
                   <div style={{ marginBottom:12 }}>
                     <div style={{ fontSize:9, fontWeight:500, letterSpacing:'0.1em', textTransform:'uppercase', color:t.gray400, marginBottom:6 }}>Matched skills</div>
                     <div style={{ display:'flex', flexWrap:'wrap', gap:5 }}>
@@ -845,21 +779,15 @@ function RecruiterDemo({ onOpenPreBook }) {
                       ))}
                     </div>
                   </div>
-
-                  {/* Project */}
                   <div style={{ background:'#F5F5F2', border:'1px solid #EBEBEA', borderRadius:10, padding:'10px 12px', marginBottom:12 }}>
                     <div style={{ fontSize:9, fontWeight:500, letterSpacing:'0.1em', textTransform:'uppercase', color:t.gray400, marginBottom:6 }}>Top project</div>
                     <div style={{ fontSize:12, fontWeight:500, color:t.black, marginBottom:2 }}>{c.project}</div>
                     <div style={{ fontSize:10, color:t.gray600 }}>{c.projectDetail}</div>
                   </div>
-
-                  {/* GitHub snapshot */}
                   <div style={{ background:'#F5F5F2', border:'1px solid #EBEBEA', borderRadius:10, padding:'10px 12px', marginBottom:14 }}>
                     <div style={{ fontSize:9, fontWeight:500, letterSpacing:'0.1em', textTransform:'uppercase', color:t.gray400, marginBottom:4 }}>GitHub</div>
                     <div style={{ fontSize:11, color:t.gray600 }}>{c.github}</div>
                   </div>
-
-                  {/* Action buttons */}
                   <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr 1fr', gap:6 }}>
                     {[
                       { action:'shortlist', label:'Shortlist', emoji:'✓', bg:t.green, textColor:'#fff' },
@@ -871,8 +799,6 @@ function RecruiterDemo({ onOpenPreBook }) {
                       </button>
                     ))}
                   </div>
-
-                  {/* Share link */}
                   <button onClick={() => showToast('Profile link copied!')} style={{ width:'100%', marginTop:6, padding:'7px', background:'transparent', border:'1px dashed #EBEBEA', borderRadius:8, fontSize:11, color:t.gray400, cursor:'pointer', fontFamily:t.sans, display:'flex', alignItems:'center', justifyContent:'center', gap:6, transition:'border-color 0.15s' }} onMouseEnter={e=>e.currentTarget.style.borderColor=t.gray400} onMouseLeave={e=>e.currentTarget.style.borderColor='#EBEBEA'}>
                     🔗 Copy profile link to share
                   </button>
@@ -882,7 +808,6 @@ function RecruiterDemo({ onOpenPreBook }) {
           </div>
         </div>
       )}
-
       <style>{`
         @keyframes spin { to { transform: rotate(360deg); } }
         @keyframes fadeInDown { from{opacity:0;transform:translateX(-50%) translateY(-8px)} to{opacity:1;transform:translateX(-50%) translateY(0)} }
@@ -894,7 +819,7 @@ function RecruiterDemo({ onOpenPreBook }) {
 // =============================================================================
 // STARTUP PAGE
 // =============================================================================
-function StartupPage({ onOpenPreBook, onTalkToFounder }) {
+function StartupPage({ onOpenPreBook, onTalkToFounder, onRecruiterSignIn }) {
   const Label = ({ children }) => (
     <div style={{ fontSize:11, fontWeight:500, letterSpacing:'0.1em', textTransform:'uppercase', color:t.ember, marginBottom:20, display:'flex', alignItems:'center', gap:10 }}>
       <span style={{ width:16, height:1, background:t.ember, display:'inline-block' }} />{children}
@@ -904,8 +829,6 @@ function StartupPage({ onOpenPreBook, onTalkToFounder }) {
 
   return (
     <div style={{ background:r.bg, color:r.heading, fontFamily:t.sans, WebkitFontSmoothing:'antialiased', paddingBottom:120 }}>
-
-      {/* HERO */}
       <section style={{ padding:'clamp(60px,8vw,100px) clamp(20px,4vw,48px) 80px', maxWidth:1100, margin:'0 auto', display:'flex', alignItems:'center', justifyContent:'space-between', gap:48, minHeight:'calc(100vh - 65px)' }}>
         <div style={{ flex:1, minWidth:0 }}>
           <div style={{ display:'inline-flex', alignItems:'center', gap:8, border:`1px solid ${t.emberBorder}`, borderRadius:20, padding:'5px 14px', marginBottom:36 }}>
@@ -930,7 +853,6 @@ function StartupPage({ onOpenPreBook, onTalkToFounder }) {
         <CandidateStackHero />
       </section>
 
-      {/* STATS BAR */}
       <div style={{ borderTop:`1px solid ${r.border}`, borderBottom:`1px solid ${r.border}`, padding:'clamp(16px,2vw,24px) clamp(20px,4vw,48px)', display:'flex', alignItems:'center', overflowX:'auto' }}>
         {[{num:'6',label:'Max candidates per role'},{num:'Skill-first',label:'Not college-first'},{num:'₹0',label:'During early access'},{num:'48h',label:'Shortlist turnaround'}].map((s,i,arr)=>(
           <div key={i} style={{ flex:1, minWidth:140, padding:'0 clamp(12px,2vw,32px)', borderRight:i<arr.length-1?`1px solid ${r.border}`:'none', ...(i===0?{paddingLeft:0}:{}) }}>
@@ -940,7 +862,6 @@ function StartupPage({ onOpenPreBook, onTalkToFounder }) {
         ))}
       </div>
 
-      {/* INTERACTIVE DEMO */}
       <section style={{ padding:'clamp(60px,8vw,96px) clamp(20px,4vw,48px)', maxWidth:1100, margin:'0 auto' }}>
         <Label>See it in action</Label>
         <h2 style={{ fontFamily:t.serif, fontSize:'clamp(36px,5vw,64px)', fontWeight:400, lineHeight:1.05, letterSpacing:'-0.02em', color:r.heading, marginBottom:12 }}>
@@ -949,9 +870,7 @@ function StartupPage({ onOpenPreBook, onTalkToFounder }) {
         <p style={{ fontSize:15, fontWeight:300, color:r.muted, maxWidth:460, lineHeight:1.65, marginBottom:40 }}>
           See exactly what recruiters see. Post a role spec, watch HUNT score candidates, then shortlist, pass, or schedule in one click.
         </p>
-        {/* Contained frame — matches SkillSync reference layout */}
         <div style={{ maxWidth:880, margin:'0 auto', borderRadius:20, overflow:'hidden', boxShadow:'0 2px 0 #EBEBEA, 0 8px 40px rgba(0,0,0,0.06)', border:`1px solid ${r.border}` }}>
-          {/* Browser chrome bar */}
           <div style={{ background:'#F5F5F2', borderBottom:`1px solid ${r.border}`, padding:'10px 16px', display:'flex', alignItems:'center', gap:8 }}>
             <div style={{ display:'flex', gap:5 }}>
               {['#FF5F57','#FEBC2E','#28C840'].map((c,i)=><div key={i} style={{ width:10, height:10, borderRadius:'50%', background:c }} />)}
@@ -962,93 +881,12 @@ function StartupPage({ onOpenPreBook, onTalkToFounder }) {
         </div>
       </section>
 
-      {/* THE MATH */}
       <section style={{ padding:'0 clamp(20px,4vw,48px) clamp(60px,8vw,96px)', maxWidth:1100, margin:'0 auto' }}>
         <Label>The problem, in numbers</Label>
         <h2 style={{ fontFamily:t.serif, fontSize:'clamp(36px,5vw,64px)', fontWeight:400, lineHeight:1.05, letterSpacing:'-0.02em', color:r.heading, marginBottom:12 }}>
           Your current hiring process is<br /><em style={{ fontStyle:'italic', color:t.ember }}>broken by design.</em>
         </h2>
-        <p style={{ fontSize:17, fontWeight:300, color:r.muted, maxWidth:520, marginBottom:48, lineHeight:1.65 }}>
-          Not because you're doing it wrong. Because every platform incentivises volume over quality — more applications means more revenue for them.
-        </p>
-        <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', border:`1px solid ${r.border}`, borderRadius:10, overflow:'hidden' }}>
-          {[{label:'What you post today',num:'400+',desc:'applications for a single internship on LinkedIn or Internshala.'},{label:'What you actually screen',num:'~20',desc:'because the rest are clearly unqualified. But you spent 6 hours getting there.'}].map((c,i)=>(
-            <div key={i} style={{ padding:'2.5rem', borderBottom:`1px solid ${r.border}`, borderRight:i===0?`1px solid ${r.border}`:'none', background:r.surface }}>
-              <div style={{ fontSize:11, letterSpacing:'0.08em', textTransform:'uppercase', color:t.gray600, marginBottom:12 }}>{c.label}</div>
-              <div style={{ fontFamily:t.serif, fontSize:56, fontWeight:400, color:t.gray400, lineHeight:1, marginBottom:8 }}>{c.num}</div>
-              <div style={{ fontSize:14, color:t.gray600, lineHeight:1.6, fontWeight:300 }}>{c.desc}</div>
-            </div>
-          ))}
-          <div style={{ gridColumn:'1 / -1', padding:'1.2rem 2.5rem', background:t.emberDim, borderTop:`1px solid ${t.emberBorder}`, borderBottom:`1px solid ${t.emberBorder}`, display:'flex', alignItems:'center', gap:12 }}>
-            <svg width="14" height="14" viewBox="0 0 14 14" fill="none" style={{ flexShrink:0 }}><path d="M7 2v10M12 7l-5 5-5-5" stroke={t.ember} strokeWidth="1.5" strokeLinecap="round"/></svg>
-            <span style={{ fontSize:15, color:t.black }}>HUNT inverts this. <strong style={{ color:t.ember, fontWeight:500 }}>Match first, then show candidates.</strong></span>
-          </div>
-          {[{label:'What HUNT delivers',num:'Top 6',desc:'skill-matched, pre-scored candidates. Nobody without the skills gets through.'},{label:'Your actual time investment',num:'1 call',desc:'to verify fit. The screening was already done by the match score.'}].map((c,i)=>(
-            <div key={i} style={{ padding:'2.5rem', borderTop:`1px solid ${r.border}`, borderRight:i===0?`1px solid ${r.border}`:'none', background:r.surface }}>
-              <div style={{ fontSize:11, letterSpacing:'0.08em', textTransform:'uppercase', color:t.gray400, marginBottom:12 }}>{c.label}</div>
-              <div style={{ fontFamily:t.serif, fontSize:56, fontWeight:400, color:t.ember, lineHeight:1, marginBottom:8 }}>{c.num}</div>
-              <div style={{ fontSize:14, color:r.body, lineHeight:1.6, fontWeight:300 }}>{c.desc}</div>
-            </div>
-          ))}
-        </div>
-      </section>
-
-      {/* HOW IT WORKS */}
-      <section style={{ padding:'0 clamp(20px,4vw,48px) clamp(60px,8vw,96px)', maxWidth:1100, margin:'0 auto' }}>
-        <Label>How it works</Label>
-        <h2 style={{ fontFamily:t.serif, fontSize:'clamp(36px,5vw,64px)', fontWeight:400, lineHeight:1.05, letterSpacing:'-0.02em', color:r.heading, marginBottom:48 }}>
-          Post once.<br /><em style={{ fontStyle:'italic', color:t.ember }}>Get matched candidates.</em>
-        </h2>
-        <div style={{ display:'flex', flexDirection:'column', borderLeft:`1px solid ${r.border}`, paddingLeft:32, gap:0 }}>
-          {[
-            {n:'01',title:'Post the role with required skills',desc:'Tell us what the intern actually needs to do. Tech stack, key skills, level. Takes 5 minutes. No lengthy JD required — we need the skill spec.',tag:'No lengthy JD needed'},
-            {n:'02',title:'HUNT scores every candidate against your role',desc:'Our match engine runs against verified skill data, project proof, and profile completeness — not just keywords. We weight each skill by your requirement, then rank.',tag:'Skill-weighted, not keyword search'},
-            {n:'03',title:'Students with the highest match apply — max 6',desc:'We cap applicants. Students can only apply to a limited number of roles per week, so only intentional applications reach you. No spray-and-pray.',tag:'Capped at 6 applicants per role'},
-            {n:'04',title:'You see ranked profiles with match breakdowns',desc:'Each candidate comes with a score breakdown: skill match, project relevance, tool familiarity. You decide who to call in 10 minutes, not 10 hours.',tag:'Match score transparent before you open the profile'},
-          ].map((step,i,arr)=>(
-            <div key={i} style={{ paddingBottom:i<arr.length-1?52:0, position:'relative' }}>
-              <div style={{ position:'absolute', left:-40, top:4, width:16, height:16, borderRadius:'50%', background:r.bg, border:`1px solid ${r.border}`, display:'flex', alignItems:'center', justifyContent:'center' }}><div style={{ width:6, height:6, borderRadius:'50%', background:t.ember }} /></div>
-              <div style={{ fontSize:12, color:t.gray400, marginBottom:10, fontFamily:t.sans }}>{step.n}</div>
-              <div style={{ fontSize:17, fontWeight:600, color:r.heading, marginBottom:10, lineHeight:1.3 }}>{step.title}</div>
-              <div style={{ fontSize:14, fontWeight:300, color:r.muted, lineHeight:1.7, marginBottom:14, maxWidth:680 }}>{step.desc}</div>
-              <span style={{ display:'inline-block', fontSize:11, padding:'4px 12px', borderRadius:20, background:t.emberDim, border:`1px solid ${t.emberBorder}`, color:t.ember, fontWeight:500 }}>{step.tag}</span>
-            </div>
-          ))}
-        </div>
-      </section>
-
-      {/* OUR STANCE */}
-      <section style={{ padding:'0 clamp(20px,4vw,48px) clamp(60px,8vw,96px)', maxWidth:1100, margin:'0 auto' }}>
-        <Label>Our stance</Label>
-        <blockquote style={{ fontFamily:t.serif, fontSize:'clamp(38px,5.5vw,72px)', fontWeight:400, lineHeight:1.05, letterSpacing:'-0.02em', color:r.heading, borderLeft:`3px solid ${t.ember}`, paddingLeft:'1.5rem', margin:'0 0 28px 0' }}>
-          "We don't filter by<br />college. We never will.<br /><em style={{ fontStyle:'italic', color:t.ember }}>Skill is the only signal."</em>
-        </blockquote>
-        <p style={{ fontSize:15, color:t.gray400, maxWidth:540, lineHeight:1.7, fontWeight:300, marginBottom:52 }}>
-          This isn't a policy. It's the entire thesis. The best React dev for your 4-person startup might be self-taught, from a college you've never heard of, building in public. HUNT finds them anyway.
-        </p>
-        <div style={{ display:'grid', gridTemplateColumns:'repeat(auto-fit, minmax(200px, 1fr))', borderTop:`1px solid ${r.border}` }}>
-          {[
-            {n:'01',title:'Skills, not credentials',desc:'College name is visible but never filterable. Skill score is the primary signal. This is intentional and non-negotiable.'},
-            {n:'02',title:'Project proof over claims',desc:"Every matched skill is backed by project evidence — not just a checkbox. If they say React, we check if they've shipped React."},
-            {n:'03',title:'Intentional applications only',desc:'Students have a weekly application limit. So when someone applies to your role, they actually want it. No noise, no mass-apply bots.'},
-            {n:'04',title:'Self-correcting over time',desc:"Recruiter feedback after each hire feeds back into our scoring. Candidates who skill-faked don't survive. Shortlists improve with every placement."},
-          ].map((card,i)=>(
-            <div key={i} style={{ padding:'32px 28px 32px 0', borderRight:i<3?`1px solid ${r.border}`:'none', paddingRight:i<3?28:0, paddingLeft:i>0?28:0 }}>
-              <div style={{ fontFamily:t.serif, fontSize:12, color:t.gray400, marginBottom:20, letterSpacing:'0.02em' }}>{card.n}</div>
-              <div style={{ fontSize:15, fontWeight:500, color:r.heading, marginBottom:12, lineHeight:1.3, letterSpacing:'-0.01em' }}>{card.title}</div>
-              <div style={{ fontSize:13, fontWeight:300, color:r.muted, lineHeight:1.7 }}>{card.desc}</div>
-            </div>
-          ))}
-        </div>
-      </section>
-
-      {/* THE DIFFERENCE */}
-      <section style={{ padding:'0 clamp(20px,4vw,48px) clamp(60px,8vw,96px)', maxWidth:1100, margin:'0 auto' }}>
-        <Label>The difference</Label>
-        <h2 style={{ fontFamily:t.serif, fontSize:'clamp(36px,5vw,64px)', fontWeight:400, lineHeight:1.05, letterSpacing:'-0.02em', color:r.heading, marginBottom:12 }}>
-          Not a job board.<br /><em style={{ fontStyle:'italic', color:t.ember }}>Not a recruiter tool.</em><br /><span style={{ color:t.gray400 }}>Something different.</span>
-        </h2>
-        <p style={{ fontSize:17, fontWeight:300, color:r.muted, maxWidth:480, lineHeight:1.65, marginBottom:48 }}>Job boards optimise for volume. That's their business model. Ours is different — we only win if you actually hire.</p>
+        <p style={{ fontSize:17, fontWeight:300, color:r.muted, maxWidth:520, marginBottom:48, lineHeight:1.65 }}>Not because you're doing it wrong. Because every platform incentivises volume over quality — more applications means more revenue for them.</p>
         <div style={{ border:`1px solid ${r.border}`, borderRadius:10, overflow:'hidden' }}>
           <div style={{ padding:'1.4rem 2rem', borderBottom:`1px solid ${r.border}`, display:'flex', justifyContent:'space-between', alignItems:'center', background:r.surface }}>
             <span style={{ fontSize:15, fontWeight:600, color:r.heading }}>Them vs HUNT</span>
@@ -1076,7 +914,6 @@ function StartupPage({ onOpenPreBook, onTalkToFounder }) {
         </div>
       </section>
 
-      {/* BOTTOM CTA */}
       <section style={{ padding:'0 clamp(20px,4vw,48px)', maxWidth:1100, margin:'0 auto' }}>
         <div style={{ border:`1px solid ${r.border}`, borderRadius:12, padding:'clamp(40px,6vw,64px)', textAlign:'center', background:r.surface, position:'relative', overflow:'hidden' }}>
           <div style={{ position:'absolute', top:'50%', left:'50%', transform:'translate(-50%,-50%)', width:500, height:200, background:'radial-gradient(ellipse, rgba(216,90,48,0.06) 0%, transparent 70%)', pointerEvents:'none' }} />
@@ -1098,7 +935,6 @@ function StartupPage({ onOpenPreBook, onTalkToFounder }) {
           </div>
         </div>
       </section>
-
       <style>{`@keyframes huntPulse { 0%,100%{opacity:1;} 50%{opacity:0.35;} }`}</style>
     </div>
   );
@@ -1123,9 +959,31 @@ export default function LandingPage() {
   const [mode, setMode]           = useState('student');
   const [showPreBook, setPreBook] = useState(false);
 
-  const handleSignIn = async () => {
-    try { await signInWithGoogle(); }
-    catch (error) { console.error('Sign in error:', error); alert('Failed to sign in. Please try again.'); }
+  // ── FIX: student sign-in goes to /dashboard, recruiter goes to /recruiter/onboarding ──
+  const handleStudentSignIn = async () => {
+    try {
+      await supabase.auth.signInWithOAuth({
+        provider: 'google',
+        options: { redirectTo: `${window.location.origin}/dashboard` }
+      });
+    } catch (error) {
+      console.error('Sign in error:', error);
+      alert('Failed to sign in. Please try again.');
+    }
+  };
+
+  // ── FIX: dedicated recruiter sign-in always routes to /recruiter/onboarding ──
+  // RecruiterOnboarding.jsx already handles: if already onboarded → redirect to /recruiter/dashboard
+  const handleRecruiterSignIn = async () => {
+    try {
+      await supabase.auth.signInWithOAuth({
+        provider: 'google',
+        options: { redirectTo: `${window.location.origin}/recruiter/onboarding` }
+      });
+    } catch (error) {
+      console.error('Sign in error:', error);
+      alert('Failed to sign in. Please try again.');
+    }
   };
 
   const handleTalkToFounder = () => {
@@ -1138,27 +996,51 @@ export default function LandingPage() {
 
       <div style={{ fontFamily:t.sans, background:t.white, color:t.black, minHeight:'100vh', WebkitFontSmoothing:'antialiased', overflowX:'hidden', transition:'background 0.3s' }}>
 
-        {/* NAV */}
+        {/* ── NAV ── */}
         <nav style={{ display:'flex', alignItems:'center', justifyContent:'space-between', padding:'20px 48px', borderBottom:`1px solid ${t.gray100}`, position:'sticky', top:0, background:'rgba(250,250,248,0.95)', backdropFilter:'blur(8px)', zIndex:100, transition:'background 0.3s, border-color 0.3s' }}>
           <span style={{ fontSize:18, fontWeight:500, letterSpacing:'0.12em', color:t.black }}>HUNT</span>
           <span style={{ fontSize:11, fontWeight:400, color:t.gray400, letterSpacing:'0.06em', textTransform:'uppercase' }}>
             {mode === 'student' ? 'Internships. Not noise.' : 'Skill-first talent. Not noise.'}
           </span>
+
           {mode === 'student' ? (
-            <button onClick={handleSignIn} style={{ display:'flex', alignItems:'center', gap:8, background:t.black, color:t.white, padding:'10px 20px', borderRadius:6, fontSize:13, fontWeight:400, cursor:'pointer', border:'none', fontFamily:t.sans }} onMouseOver={e=>e.currentTarget.style.opacity='0.8'} onMouseOut={e=>e.currentTarget.style.opacity='1'}>
+            // ── Student nav: sign in → /dashboard ──
+            <button
+              onClick={handleStudentSignIn}
+              style={{ display:'flex', alignItems:'center', gap:8, background:t.black, color:t.white, padding:'10px 20px', borderRadius:6, fontSize:13, fontWeight:400, cursor:'pointer', border:'none', fontFamily:t.sans }}
+              onMouseOver={e=>e.currentTarget.style.opacity='0.8'}
+              onMouseOut={e=>e.currentTarget.style.opacity='1'}
+            >
               <GoogleIcon /> Sign in with Google
             </button>
           ) : (
-            <button onClick={()=>setPreBook(true)} style={{ display:'flex', alignItems:'center', gap:8, background:'#D85A30', color:'#fff', padding:'10px 20px', borderRadius:6, fontSize:13, fontWeight:500, cursor:'pointer', border:'none', fontFamily:t.sans }} onMouseOver={e=>e.currentTarget.style.background='#c04e28'} onMouseOut={e=>e.currentTarget.style.background='#D85A30'}>
-              Reserve Early Access
-            </button>
+            // ── Startup nav: two buttons ──
+            // "Reserve Early Access" opens prebook form for new recruiters
+            // "Sign in" for already-approved recruiters → /recruiter/onboarding (which auto-redirects to dashboard if already set up)
+            <div style={{ display:'flex', alignItems:'center', gap:10 }}>
+              <button
+                onClick={handleRecruiterSignIn}
+                style={{ display:'flex', alignItems:'center', gap:8, background:'transparent', color:t.ember, padding:'10px 18px', borderRadius:6, fontSize:13, fontWeight:500, cursor:'pointer', border:`1px solid ${t.emberBorder}`, fontFamily:t.sans, transition:'all 0.15s' }}
+                onMouseOver={e=>{e.currentTarget.style.background=t.emberDim;}}
+                onMouseOut={e=>{e.currentTarget.style.background='transparent';}}
+              >
+                <GoogleIcon /> Sign in
+              </button>
+              <button
+                onClick={() => setPreBook(true)}
+                style={{ display:'flex', alignItems:'center', gap:8, background:'#D85A30', color:'#fff', padding:'10px 20px', borderRadius:6, fontSize:13, fontWeight:500, cursor:'pointer', border:'none', fontFamily:t.sans }}
+                onMouseOver={e=>e.currentTarget.style.background='#c04e28'}
+                onMouseOut={e=>e.currentTarget.style.background='#D85A30'}
+              >
+                Reserve Early Access
+              </button>
+            </div>
           )}
         </nav>
 
         {/* MAIN CONTENT */}
         {mode === 'student' ? (
           <>
-            {/* HERO */}
             <section style={{ padding:'clamp(60px, 8vw, 100px) clamp(20px, 4vw, 48px) 80px', maxWidth:1100, margin:'0 auto', display:'flex', alignItems:'center', justifyContent:'space-between', gap:48, minHeight:'calc(100vh - 65px)' }}>
               <div style={{ flex:1, minWidth:0 }}>
                 <div style={{ display:'inline-flex', alignItems:'center', gap:8, fontSize:12, fontWeight:400, letterSpacing:'0.08em', textTransform:'uppercase', color:t.gray600, marginBottom:32 }}>
@@ -1171,7 +1053,7 @@ export default function LandingPage() {
                   Stop mass applying and getting ignored. HUNT matches you to internships based on what you can actually do — then puts you in front of recruiters who care.
                 </p>
                 <div style={{ display:'flex', alignItems:'center', gap:16, flexWrap:'wrap' }}>
-                  <button onClick={handleSignIn} style={btnPrimary} onMouseOver={e=>e.currentTarget.style.opacity='0.82'} onMouseOut={e=>e.currentTarget.style.opacity='1'}>
+                  <button onClick={handleStudentSignIn} style={btnPrimary} onMouseOver={e=>e.currentTarget.style.opacity='0.82'} onMouseOut={e=>e.currentTarget.style.opacity='1'}>
                     <GoogleIcon /> Start your hunt — it's free
                   </button>
                   <span style={{ fontSize:12, color:t.gray400, fontWeight:300 }}>No resume needed to start</span>
@@ -1180,7 +1062,6 @@ export default function LandingPage() {
               <PhoneHero />
             </section>
 
-            {/* STATS BAR */}
             <div style={{ borderTop:`1px solid ${t.gray100}`, borderBottom:`1px solid ${t.gray100}`, padding:'clamp(16px,2vw,24px) clamp(20px,4vw,48px)', display:'flex', alignItems:'center', overflowX:'auto' }}>
               {[{num:'5',numAccent:false,label:'Applications / week'},{num:'40',numAccent:true,label:'Min. interview rate %'},{num:'50',numAccent:false,label:'Max applicants / role'},{num:'0 ₹',numAccent:false,label:'Always free for students'}].map((s,i,arr)=>(
                 <div key={i} style={{ flex:1, minWidth:140, padding:'0 clamp(12px,2vw,32px)', borderRight:i<arr.length-1?`1px solid ${t.gray100}`:'none', ...(i===0?{paddingLeft:0}:{}) }}>
@@ -1190,7 +1071,6 @@ export default function LandingPage() {
               ))}
             </div>
 
-            {/* INTERACTIVE DEMO — student side */}
             <section style={{ padding:'clamp(60px,8vw,96px) clamp(20px,4vw,48px)', maxWidth:1100, margin:'0 auto' }}>
               <div style={{ fontSize:11, fontWeight:400, letterSpacing:'0.1em', textTransform:'uppercase', color:t.green, marginBottom:12, display:'flex', alignItems:'center', gap:10 }}>
                 <span style={{ width:16, height:1, background:t.green, display:'inline-block' }} />Try it yourself
@@ -1201,9 +1081,7 @@ export default function LandingPage() {
               <p style={{ fontSize:15, fontWeight:300, color:t.gray600, maxWidth:440, lineHeight:1.65, marginBottom:40 }}>
                 Explore jobs, connect with peers, read insights. No signup needed to explore — just interact.
               </p>
-              {/* Contained frame — centered, not full bleed */}
               <div style={{ maxWidth:880, margin:'0 auto', borderRadius:20, overflow:'hidden', boxShadow:'0 2px 0 #EBEBEA, 0 12px 40px rgba(0,0,0,0.08)', border:`1px solid ${t.gray100}` }}>
-                {/* Browser chrome */}
                 <div style={{ background:'#1a1916', padding:'10px 16px', display:'flex', alignItems:'center', gap:8 }}>
                   <div style={{ display:'flex', gap:5 }}>
                     {['#FF5F57','#FEBC2E','#28C840'].map((c,i)=><div key={i} style={{ width:10, height:10, borderRadius:'50%', background:c }} />)}
@@ -1214,7 +1092,6 @@ export default function LandingPage() {
               </div>
             </section>
 
-            {/* HOW IT WORKS */}
             <section style={{ padding:'0 clamp(20px,4vw,48px) clamp(60px,8vw,96px)', maxWidth:1100, margin:'0 auto' }}>
               <div style={{ fontSize:11, fontWeight:400, letterSpacing:'0.1em', textTransform:'uppercase', color:t.gray400, marginBottom:48, display:'flex', alignItems:'center', gap:12 }}>
                 How it works<span style={{ flex:1, height:1, background:t.gray100, maxWidth:200, display:'block' }} />
@@ -1230,7 +1107,6 @@ export default function LandingPage() {
               </div>
             </section>
 
-            {/* THE DIFFERENCE */}
             <section style={{ padding:'0 clamp(20px,4vw,48px) clamp(60px,8vw,96px)', maxWidth:1100, margin:'0 auto' }}>
               <div style={{ fontSize:11, fontWeight:400, letterSpacing:'0.1em', textTransform:'uppercase', color:t.gray400, marginBottom:48, display:'flex', alignItems:'center', gap:12 }}>
                 The difference<span style={{ flex:1, height:1, background:t.gray100, maxWidth:200, display:'block' }} />
@@ -1251,36 +1127,22 @@ export default function LandingPage() {
               </div>
             </section>
 
-            {/* ON A HUNT */}
-            <section style={{ padding:'0 clamp(20px,4vw,48px) clamp(60px,8vw,96px)', maxWidth:1100, margin:'0 auto' }}>
-              <div style={{ fontSize:11, fontWeight:400, letterSpacing:'0.1em', textTransform:'uppercase', color:t.gray400, marginBottom:48, display:'flex', alignItems:'center', gap:12 }}>
-                On a hunt<span style={{ flex:1, height:1, background:t.gray100, maxWidth:200, display:'block' }} />
-              </div>
-              <p style={{ fontSize:17, fontWeight:300, color:t.gray600, maxWidth:480, lineHeight:1.65, marginBottom:36 }}>The best candidates aren't always where you'd expect to find them. HUNT surfaces them by what they've built — not where they studied.</p>
-              <div style={{ display:'flex', flexWrap:'wrap', gap:10 }}>
-                {[{initials:'RK',name:'Rohan Kumar',detail:'Full Stack · React, Node.js',score:'87%'},{initials:'PS',name:'Priya Sharma',detail:'Backend · Python, PostgreSQL',score:'92%'},{initials:'AM',name:'Arjun Mehta',detail:'ML · PyTorch, Scikit-learn',score:'78%'},{initials:'SK',name:'Sara Khan',detail:'Data · SQL, Pandas, Tableau',score:'84%'},{initials:'NP',name:'Nikhil Patel',detail:'DevOps · Docker, AWS, CI/CD',score:'81%'}].map((p,i)=>(
-                  <div key={i} style={{ display:'flex', alignItems:'center', gap:10, padding:'12px 16px', border:`1px solid ${t.gray100}`, borderRadius:8, background:t.white }}>
-                    <div style={{ width:32, height:32, borderRadius:'50%', background:t.gray100, display:'flex', alignItems:'center', justifyContent:'center', fontSize:11, fontWeight:500, color:t.gray600, flexShrink:0 }}>{p.initials}</div>
-                    <div><div style={{ fontWeight:500, color:t.black, fontSize:13, lineHeight:1, marginBottom:3 }}>{p.name}</div><div style={{ fontSize:11, color:t.gray400, fontWeight:300 }}>{p.detail}</div></div>
-                    <div style={{ marginLeft:8, background:t.greenLight, color:t.green, fontSize:12, fontWeight:500, padding:'4px 8px', borderRadius:4 }}>{p.score}</div>
-                  </div>
-                ))}
-              </div>
-            </section>
-
-            {/* BIG CTA */}
             <div style={{ padding:'clamp(60px,8vw,96px) clamp(20px,4vw,48px)', borderTop:`1px solid ${t.gray100}`, textAlign:'center' }}>
               <h2 style={{ fontFamily:t.serif, fontSize:'clamp(36px,5vw,64px)', fontWeight:400, color:t.black, lineHeight:1.05, marginBottom:20, letterSpacing:'-0.02em' }}>
                 Apply smart.<br /><em style={{ fontStyle:'italic', color:t.green }}>Get seen.</em>
               </h2>
               <p style={{ fontSize:15, fontWeight:300, color:t.gray600, marginBottom:36 }}>Stop sending into the void. Start matching.</p>
-              <button onClick={handleSignIn} style={{ ...btnPrimary, margin:'0 auto' }} onMouseOver={e=>e.currentTarget.style.opacity='0.82'} onMouseOut={e=>e.currentTarget.style.opacity='1'}>
+              <button onClick={handleStudentSignIn} style={{ ...btnPrimary, margin:'0 auto' }} onMouseOver={e=>e.currentTarget.style.opacity='0.82'} onMouseOut={e=>e.currentTarget.style.opacity='1'}>
                 <GoogleIcon /> Start your hunt — it's free
               </button>
             </div>
           </>
         ) : (
-          <StartupPage onOpenPreBook={()=>setPreBook(true)} onTalkToFounder={handleTalkToFounder} />
+          <StartupPage
+            onOpenPreBook={() => setPreBook(true)}
+            onTalkToFounder={handleTalkToFounder}
+            onRecruiterSignIn={handleRecruiterSignIn}
+          />
         )}
 
         {/* FOOTER */}
@@ -1289,11 +1151,9 @@ export default function LandingPage() {
           <span style={{ fontSize:12, color:t.gray400, fontWeight:300 }}>Internships. Not noise. · Built in India · 2025</span>
         </footer>
 
-        {/* FIXED TOGGLE */}
         <AudienceToggle mode={mode} onChange={setMode} />
 
-        {/* PREBOOK MODAL */}
-        {showPreBook && <PreBookModal onClose={()=>setPreBook(false)} />}
+        {showPreBook && <PreBookModal onClose={() => setPreBook(false)} />}
 
       </div>
     </>
