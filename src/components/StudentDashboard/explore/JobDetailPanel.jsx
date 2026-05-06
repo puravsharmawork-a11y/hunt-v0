@@ -7,6 +7,61 @@ import {
   Zap, Gift, ListChecks,
 } from 'lucide-react';
 
+// ─── Company logo: real image if available, else ink-block with initial ───
+function CompanyLogoBlock({ name, logoUrl, size = 56 }) {
+  const glyph = (name || '?').slice(0, 1).toUpperCase();
+  if (logoUrl) {
+    return (
+      <div style={{ width: size, height: size, flexShrink: 0, position: 'relative' }}>
+        <img
+          src={logoUrl}
+          alt={name}
+          style={{
+            width: size, height: size,
+            objectFit: 'cover',
+            border: '1px solid var(--border-mid)',
+            display: 'block',
+          }}
+          onError={e => {
+            e.target.style.display = 'none';
+            e.target.nextSibling && (e.target.nextSibling.style.display = 'grid');
+          }}
+        />
+        {/* hidden ink-block fallback */}
+        <div
+          style={{
+            display: 'none',
+            width: size, height: size,
+            placeItems: 'center',
+            background: 'var(--ink)',
+            color: 'var(--cream)',
+            fontFamily: "'JetBrains Mono', monospace",
+            fontWeight: 600, fontSize: size * 0.39,
+            position: 'absolute', top: 0, left: 0,
+          }}
+        >
+          {glyph}
+          <div style={{ position: 'absolute', bottom: -1, right: -1, width: 7, height: 7, background: 'var(--blue)' }} />
+        </div>
+      </div>
+    );
+  }
+  return (
+    <div
+      style={{
+        width: size, height: size, flexShrink: 0,
+        background: 'var(--ink)', color: 'var(--cream)',
+        display: 'grid', placeItems: 'center',
+        fontFamily: "'JetBrains Mono', monospace",
+        fontWeight: 600, fontSize: size * 0.39, position: 'relative',
+      }}
+    >
+      {glyph}
+      <div style={{ position: 'absolute', bottom: -1, right: -1, width: 7, height: 7, background: 'var(--blue)' }} />
+    </div>
+  );
+}
+
 export function JobDetailPanel({
   job, matchData,
   isMaximized, onToggleMaximize,
@@ -100,9 +155,9 @@ export function JobDetailPanel({
               fontWeight: 600, fontSize: 22, position: 'relative',
             }}
           >
-            {logoGlyph}
-            <div style={{ position: 'absolute', bottom: -1, right: -1, width: 7, height: 7, background: 'var(--blue)' }} />
-          </div>
+            {/* LOGO — real image or ink-block initial */}
+          <CompanyLogoBlock name={job.company} logoUrl={job.logo_url} size={56} />
+ 
           <div style={{ flex: 1 }}>
             <div className="hunt-kicker hunt-kicker-ink" style={{ marginBottom: 6, display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
               {job.company}
@@ -116,24 +171,13 @@ export function JobDetailPanel({
                 </>
               )}
             </div>
-            <h1
-              className="hunt-serif"
-              style={{ fontSize: 26, color: 'var(--text)', lineHeight: 1.15, marginBottom: 10 }}
-            >
+            <h1 className="hunt-serif" style={{ fontSize: 26, color: 'var(--text)', lineHeight: 1.15, marginBottom: 10 }}>
               {job.role}
             </h1>
             <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
               {job.type && <span className="hunt-chip">{job.type}</span>}
               {isApplied && (
-                <span
-                  className="hunt-chip"
-                  style={{
-                    background: 'var(--blue-tint)',
-                    border: '1px solid var(--blue)',
-                    color: 'var(--blue)',
-                    display: 'flex', alignItems: 'center', gap: 4,
-                  }}
-                >
+                <span className="hunt-chip" style={{ background: 'var(--blue-tint)', border: '1px solid var(--blue)', color: 'var(--blue)', display: 'flex', alignItems: 'center', gap: 4 }}>
                   <CheckCircle2 size={10} /> Applied
                 </span>
               )}
