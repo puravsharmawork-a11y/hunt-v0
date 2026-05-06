@@ -159,7 +159,7 @@ async function getJobApplications(jobId) {
 async function getAllApplicationsForRecruiter(recruiterId) {
   // Only fetch columns we know exist — removed legacy 'logo' emoji column
   const { data: jobs, error: jobsErr } = await supabase
-    .from('jobs').select('id, role, company, logo_url').eq('recruiter_id', recruiterId);
+    .from('jobs').select('id, role, company').eq('recruiter_id', recruiterId);
   if (jobsErr) { console.warn('Jobs query failed:', jobsErr); return []; }
   if (!jobs?.length) return [];
   const jobIds = jobs.map(j => j.id);
@@ -1723,7 +1723,52 @@ function RoleDetailView({ job, onBack, onCopyLink, onEdit, onTogglePause, onDele
         /* Both HUNT Sort tab and All Candidates tab use the same list+snapshot layout */
         displayApps.length === 0 ? (
           <EmptyState icon="🎯" title={subTab === 'huntsort' ? 'No candidates to rank.' : 'No applicants yet.'} message={subTab === 'huntsort' ? 'Run HUNT Sort when you have applicants.' : 'Share your role link to start receiving applications.'} />
+        ) : subTab === 'huntsort' ? (
+          /* HUNT Sort: fixed left list + right snapshot — like reference image */
+          <div style={{ display: 'grid', gridTemplateColumns: selectedApp ? '200px 1fr' : '1fr', gap: 0, background: 'var(--bg-card)', border: '1px solid var(--border)', borderRadius: 14, overflow: 'hidden' }}>
+            {/* Left: compact ranked list */}
+            <div style={{ borderRight: selectedApp ? '1px solid var(--border)' : 'none' }}>
+              {displayApps.map((app, i) => {
+                const s = app.students || {};
+                const isSelected = selectedApp?.id === app.id;
+                return (
+                  <div key={app.id} onClick={() => setSelectedApp(isSelected ? null : app)} style={{
+                    display: 'flex', alignItems: 'center', gap: 10, padding: '12px 14px',
+                    cursor: 'pointer', transition: 'background 0.12s',
+                    background: isSelected ? 'var(--green-tint)' : 'transparent',
+                    borderLeft: `3px solid ${isSelected ? 'var(--green)' : 'transparent'}`,
+                    borderBottom: '1px solid var(--border)',
+                  }}>
+                    <span style={{ fontFamily: "'Editorial New', Georgia, serif", fontSize: 13, color: isSelected ? 'var(--green)' : 'var(--text-dim)', fontWeight: 700, width: 20, flexShrink: 0 }}>{i + 1}</span>
+                    <Avatar name={s.full_name} avatarUrl={s.avatar_url} size={30} />
+                    <div style={{ flex: 1, minWidth: 0 }}>
+                      <p style={{ fontSize: 11, fontWeight: 600, color: 'var(--text)', margin: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{s.full_name || 'Student'}</p>
+                      <ScoreNumber score={app.match_score || 0} size={11} />
+                    </div>
+                    {app.status && app.status !== 'pending' && <StatusPill status={app.status} />}
+                  </div>
+                );
+              })}
+              <div style={{ padding: '10px 14px' }}>
+                <p style={{ fontSize: 9, color: 'var(--text-dim)', margin: 0, lineHeight: 1.5 }}>Max 6 candidates per role. Skill-first, always.</p>
+              </div>
+            </div>
+            {/* Right: full ApplicantSnapshot */}
+            {selectedApp ? (
+              <ApplicantSnapshot
+                app={selectedApp}
+                onStatusChange={handleStatusChange}
+                onClose={() => setSelectedApp(null)}
+                onViewFull={(student) => { setProfileDrawerStudent(student); setProfileDrawerOpen(true); }}
+              />
+            ) : (
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 60 }}>
+                <p style={{ fontSize: 13, color: 'var(--text-dim)' }}>← Select a candidate to view their profile</p>
+              </div>
+            )}
+          </div>
         ) : (
+          /* All Candidates: standard full-width list + side snapshot */
           <div style={{ display: 'grid', gridTemplateColumns: selectedApp ? '1fr 380px' : '1fr', gap: 16 }}>
             <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
               {displayApps.map((app, i) => (
@@ -1731,7 +1776,6 @@ function RoleDetailView({ job, onBack, onCopyLink, onEdit, onTogglePause, onDele
                   key={app.id} app={app} rank={i + 1}
                   onClick={() => setSelectedApp(selectedApp?.id === app.id ? null : app)}
                   isSelected={selectedApp?.id === app.id}
-                  showRank={subTab === 'huntsort'}
                 />
               ))}
             </div>
