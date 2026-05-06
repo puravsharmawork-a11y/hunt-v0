@@ -612,11 +612,11 @@ function PostRoleDrawer({ recruiter, open, onClose, onSuccess, showToast, editJo
   const [newSecHeading, setNewSecHeading]   = useState('');
   const [newSecItemText, setNewSecItemText] = useState({});
   const [saving, setSaving]                 = useState(false);
-  const [logoPreview, setLogoPreview]       = useState(recruiter?.startups?.logo_url || null);
+  const [logoPreview, setLogoPreview]       = useState(null);
   const logoInputRef = useRef(null);
 
-  // Use company logo from startup profile as default — no need to upload per role
-  const companyLogoUrl = recruiter?.startups?.logo_url || '';
+  // Per-role logo — company logo is managed separately in startup profile
+  const companyLogoUrl = '';
   const defaultForm = () => ({
     logo_url: companyLogoUrl,
     role: '', description: '', stipend: '', duration: '',
@@ -633,7 +633,7 @@ function PostRoleDrawer({ recruiter, open, onClose, onSuccess, showToast, editJo
   useEffect(() => {
     if (!open) {
       setForm(defaultForm());
-      setLogoPreview(recruiter?.startups?.logo_url || null);
+      setLogoPreview(null);
       setWhatDoInput('');
       setPerkInput('');
       setNewSecHeading('');
@@ -782,7 +782,7 @@ function PostRoleDrawer({ recruiter, open, onClose, onSuccess, showToast, editJo
         <div style={{ padding: '18px 22px', borderBottom: '1px solid var(--border)', display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexShrink: 0 }}>
           <div>
             <p style={{ fontSize: 10, fontWeight: 600, letterSpacing: '0.1em', textTransform: 'uppercase', color: 'var(--text-dim)', margin: 0, marginBottom: 4 }}>{editJob ? 'Edit role' : 'Post a role'}</p>
-            <h2 style={{ fontFamily: "'Editorial New', Georgia, serif", fontSize: 20, fontWeight: 400, color: 'var(--text)', margin: 0 }}>{editJob ? <>Edit <em>{editJob.role}</em></> : <>Hire your next <em>intern.</em></>}</h2>
+            <h2 style={{ fontFamily: "'Editorial New', Georgia, serif", fontSize: 20, fontWeight: 400, color: 'var(--text)', margin: 0 }}>{editJob ? <>Edit <em>{editJob.role}</em></> : <>Post a new <em>role.</em></>}</h2>
           </div>
           <button onClick={onClose} style={{ background: 'transparent', border: '1px solid var(--border)', borderRadius: 7, cursor: 'pointer', color: 'var(--text-dim)', display: 'flex', alignItems: 'center', justifyContent: 'center', width: 32, height: 32, flexShrink: 0 }}>
             <X size={14} />
@@ -792,29 +792,10 @@ function PostRoleDrawer({ recruiter, open, onClose, onSuccess, showToast, editJo
         <div style={{ flex: 1, overflowY: 'auto', padding: '22px' }}>
           <div style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
 
-            {/* Logo upload — real image (change #7) */}
-            <div style={{ display: 'flex', gap: 14, alignItems: 'flex-start' }}>
-              <div style={{ flexShrink: 0 }}>
-                <Label>Company Logo</Label>
-                <div style={{ position: 'relative', width: 72, height: 72 }}>
-                  {logoPreview ? (
-                    <img src={logoPreview} alt="logo" style={{ width: 72, height: 72, borderRadius: 12, objectFit: 'cover', border: '1px solid var(--border)' }} />
-                  ) : (
-                    <div style={{ width: 72, height: 72, borderRadius: 12, background: 'var(--bg-subtle)', border: '2px dashed var(--border)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexDirection: 'column', gap: 4 }}>
-                      <ImageIcon size={20} style={{ color: 'var(--text-dim)' }} />
-                      <span style={{ fontSize: 9, color: 'var(--text-dim)' }}>Logo</span>
-                    </div>
-                  )}
-                  <label style={{ position: 'absolute', bottom: -4, right: -4, width: 24, height: 24, borderRadius: '50%', background: 'var(--text)', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', border: '2px solid var(--bg-card)' }}>
-                    <Camera size={11} style={{ color: 'var(--bg)' }} />
-                    <input ref={logoInputRef} type="file" accept="image/*" style={{ display: 'none' }} onChange={handleLogoChange} />
-                  </label>
-                </div>
-              </div>
-              <div style={{ flex: 1 }}>
-                <Label required>Role title</Label>
-                <FocusInput value={form.role} onChange={e => set('role')(e.target.value)} placeholder="Backend Engineering Intern" />
-              </div>
+            {/* Role title — no logo upload, logo comes from company profile */}
+            <div>
+              <Label required>Role title</Label>
+              <FocusInput value={form.role} onChange={e => set('role')(e.target.value)} placeholder="e.g. Backend Engineer, Growth Marketer…" />
             </div>
 
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
@@ -1199,7 +1180,7 @@ function CandidateProfileDrawer({ student, open, onClose }) {
 // 8. HUNT SORT SECTION — animated, AI-style, change #4
 // ═══════════════════════════════════════════════════════════════════════════
 function HuntSortSection({ apps, job, onStatusChange, showToast }) {
-  const [state, setState] = useState('idle'); // idle | loading | done
+  const [state, setState] = useState('idle');
   const [progress, setProgress] = useState(0);
   const [progressMsg, setProgressMsg] = useState('');
   const [topCandidates, setTopCandidates] = useState([]);
@@ -1211,7 +1192,7 @@ function HuntSortSection({ apps, job, onStatusChange, showToast }) {
     'Reading candidate profiles…',
     'Analysing skill match scores…',
     'Evaluating project relevance…',
-    'Checking GitHub activity…',
+    'Checking consistency signals…',
     'Computing final rankings…',
     'Finalising top candidates…',
   ];
@@ -1219,27 +1200,60 @@ function HuntSortSection({ apps, job, onStatusChange, showToast }) {
   const runSort = async () => {
     setState('loading');
     setProgress(0);
-    // Animate through steps
     for (let i = 0; i < MESSAGES.length; i++) {
       setProgressMsg(MESSAGES[i]);
       setProgress(Math.round(((i + 1) / MESSAGES.length) * 100));
-      await new Promise(r => setTimeout(r, 380 + Math.random() * 220));
+      await new Promise(r => setTimeout(r, 400 + Math.random() * 200));
     }
-    // Sort by match score, take top 6
-    const sorted = [...apps]
-      .sort((a, b) => (b.match_score || 0) - (a.match_score || 0))
-      .slice(0, 6);
+    const sorted = [...apps].sort((a, b) => (b.match_score || 0) - (a.match_score || 0)).slice(0, 6);
     setTopCandidates(sorted);
     setState('done');
   };
 
-  const reset = () => {
-    setState('idle');
-    setProgress(0);
-    setTopCandidates([]);
-    setSelectedApp(null);
-  };
+  const reset = () => { setState('idle'); setProgress(0); setTopCandidates([]); setSelectedApp(null); };
 
+  // idle state: just a compact button — rendered in RoleDetailView header
+  if (state === 'idle') return (
+    <>
+      <button onClick={runSort} disabled={apps.length === 0} style={{
+        display: 'inline-flex', alignItems: 'center', gap: 6,
+        padding: '8px 14px', borderRadius: 8, border: 'none',
+        background: apps.length === 0 ? 'var(--bg-subtle)' : 'var(--text)',
+        color: apps.length === 0 ? 'var(--text-dim)' : 'var(--bg)',
+        fontSize: 11, fontWeight: 600, cursor: apps.length === 0 ? 'default' : 'pointer',
+        fontFamily: 'inherit', transition: 'opacity 0.15s', flexShrink: 0,
+      }}>
+        <Sparkles size={12} /> HUNT Sort
+      </button>
+    </>
+  );
+
+  // loading state: full-screen centered overlay
+  if (state === 'loading') return (
+    <div style={{
+      position: 'fixed', inset: 0, zIndex: 9200,
+      background: 'rgba(0,0,0,0.6)', backdropFilter: 'blur(4px)',
+      display: 'flex', alignItems: 'center', justifyContent: 'center',
+    }}>
+      <div style={{
+        background: 'var(--bg-card)', borderRadius: 20, padding: '48px 56px',
+        border: '1px solid var(--border)', textAlign: 'center', maxWidth: 380, width: '90%',
+        boxShadow: '0 24px 80px rgba(0,0,0,0.3)',
+      }}>
+        <div style={{ width: 56, height: 56, borderRadius: 16, background: 'var(--green-tint)', border: '1px solid var(--green)', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 20px' }}>
+          <Sparkles size={24} style={{ color: 'var(--green)' }} />
+        </div>
+        <p style={{ fontFamily: "'Editorial New', Georgia, serif", fontSize: 20, color: 'var(--text)', margin: '0 0 6px', fontWeight: 400 }}>HUNT Sort</p>
+        <p style={{ fontSize: 12, color: 'var(--text-dim)', margin: '0 0 28px', lineHeight: 1.5 }}>{progressMsg}</p>
+        <div style={{ height: 3, background: 'var(--border)', borderRadius: 2, overflow: 'hidden', marginBottom: 12 }}>
+          <div style={{ height: '100%', background: 'var(--green)', borderRadius: 2, width: `${progress}%`, transition: 'width 0.4s ease' }} />
+        </div>
+        <p style={{ fontSize: 11, color: 'var(--text-dim)', margin: 0 }}>{progress}%</p>
+      </div>
+    </div>
+  );
+
+  // done state: results section
   return (
     <>
       <CandidateProfileDrawer
@@ -1248,127 +1262,59 @@ function HuntSortSection({ apps, job, onStatusChange, showToast }) {
         onClose={() => { setProfileDrawerOpen(false); setProfileDrawerStudent(null); }}
       />
 
-      <div style={{
-        background: 'var(--bg-card)',
-        border: state === 'done' ? '1.5px solid var(--green)' : '1px solid var(--border)',
-        borderRadius: 14, marginBottom: 18, overflow: 'hidden',
-        transition: 'border-color 0.3s',
-      }}>
-        {/* Header */}
-        <div style={{ padding: '16px 20px', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-            <div style={{
-              width: 34, height: 34, borderRadius: 9,
-              background: state === 'done' ? 'var(--green-tint)' : 'var(--bg-subtle)',
-              border: `1px solid ${state === 'done' ? 'var(--green)' : 'var(--border)'}`,
-              display: 'flex', alignItems: 'center', justifyContent: 'center',
-              transition: 'all 0.3s',
-            }}>
-              <Sparkles size={15} style={{ color: state === 'done' ? 'var(--green)' : 'var(--text-dim)' }} />
-            </div>
-            <div>
-              <p style={{ fontSize: 13, fontWeight: 600, color: 'var(--text)', margin: 0 }}>HUNT Sort</p>
-              <p style={{ fontSize: 11, color: 'var(--text-dim)', margin: '1px 0 0' }}>
-                {state === 'idle' ? 'AI-powered candidate ranking for this role' :
-                 state === 'loading' ? progressMsg :
-                 `Top ${topCandidates.length} candidates found`}
-              </p>
-            </div>
-          </div>
+      <div style={{ background: 'var(--bg-card)', border: '1.5px solid var(--green)', borderRadius: 14, marginBottom: 18, overflow: 'hidden' }}>
+        {/* Results header */}
+        <div style={{ padding: '14px 20px', borderBottom: '1px solid var(--border)', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-            {state === 'done' && (
-              <button onClick={reset} style={{ ...iconBtn, width: 30, height: 30, padding: 0, justifyContent: 'center' }} title="Close">
-                <X size={13} />
-              </button>
-            )}
-            {state === 'idle' && (
-              <button onClick={runSort} disabled={apps.length === 0} style={{
-                padding: '8px 16px', borderRadius: 8, border: 'none',
-                background: apps.length === 0 ? 'var(--bg-subtle)' : 'linear-gradient(135deg, var(--green) 0%, #0D8F58 100%)',
-                color: apps.length === 0 ? 'var(--text-dim)' : '#fff',
-                fontSize: 12, fontWeight: 600, cursor: apps.length === 0 ? 'default' : 'pointer',
-                fontFamily: 'inherit', display: 'flex', alignItems: 'center', gap: 6,
-                boxShadow: apps.length > 0 ? '0 2px 12px rgba(26,122,74,0.25)' : 'none',
-                transition: 'all 0.2s',
-              }}>
-                <Sparkles size={13} /> Run HUNT Sort
-              </button>
-            )}
+            <Sparkles size={14} style={{ color: 'var(--green)' }} />
+            <p style={{ fontSize: 13, fontWeight: 600, color: 'var(--text)', margin: 0 }}>Top {topCandidates.length} candidates</p>
+            <span style={{ fontSize: 10, color: 'var(--text-dim)', padding: '2px 7px', borderRadius: 6, background: 'var(--green-tint)', border: '1px solid var(--green)', color: 'var(--green-text)', fontWeight: 500 }}>HUNT Sort</span>
           </div>
+          <button onClick={reset} style={{ ...iconBtn, width: 28, height: 28, padding: 0, justifyContent: 'center' }}><X size={12} /></button>
         </div>
 
-        {/* Loading state */}
-        {state === 'loading' && (
-          <div style={{ padding: '0 20px 20px' }}>
-            <div style={{ height: 4, background: 'var(--border)', borderRadius: 2, overflow: 'hidden', marginBottom: 8 }}>
-              <div style={{
-                height: '100%', borderRadius: 2,
-                background: 'linear-gradient(90deg, var(--green), #0D8F58)',
-                width: `${progress}%`, transition: 'width 0.35s ease',
-              }} />
-            </div>
-            <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-              <div style={{
-                width: 12, height: 12, borderRadius: '50%',
-                border: '2px solid var(--green)', borderTopColor: 'transparent',
-                animation: 'spin 0.8s linear infinite',
-              }} />
-              <p style={{ fontSize: 11, color: 'var(--text-dim)', margin: 0 }}>{progress}% — {progressMsg}</p>
-            </div>
-          </div>
-        )}
-
-        {/* Results */}
-        {state === 'done' && (
-          <div style={{ padding: '0 20px 20px', display: 'flex', gap: 14 }}>
-            {/* List */}
-            <div style={{ flex: 1 }}>
-              {topCandidates.map((app, i) => {
-                const s = app.students || {};
-                const huntScore = s._huntScore?.score ?? s.hunt_score ?? null;
-                return (
-                  <div
-                    key={app.id}
-                    onClick={() => setSelectedApp(selectedApp?.id === app.id ? null : app)}
-                    style={{
-                      display: 'flex', alignItems: 'center', gap: 10, padding: '11px 14px',
-                      borderRadius: 10, border: `1px solid ${selectedApp?.id === app.id ? 'var(--green)' : 'var(--border)'}`,
-                      background: selectedApp?.id === app.id ? 'var(--green-tint)' : 'var(--bg-subtle)',
-                      cursor: 'pointer', marginBottom: 7, transition: 'all 0.15s',
-                    }}
-                  >
-                    <span style={{ fontSize: 10, fontWeight: 700, color: 'var(--text-dim)', width: 20, flexShrink: 0, fontFamily: "'Editorial New', Georgia, serif" }}>#{i + 1}</span>
-                    <Avatar name={s.full_name} avatarUrl={s.avatar_url} size={32} />
-                    <div style={{ flex: 1, minWidth: 0 }}>
-                      <p style={{ fontSize: 12, fontWeight: 600, color: 'var(--text)', margin: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{s.full_name || 'Student'}</p>
-                      <p style={{ fontSize: 10, color: 'var(--text-dim)', margin: '1px 0 0', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{s.college || '—'}{s.year ? ` · Y${s.year}` : ''}</p>
-                    </div>
-                    {huntScore !== null && <HuntScoreBadge score={huntScore} />}
-                    <ScoreNumber score={app.match_score || 0} size={15} />
-                    {app.status && app.status !== 'pending' && <StatusPill status={app.status} />}
-                    <ChevronRight size={12} style={{ color: 'var(--text-dim)', flexShrink: 0, transform: selectedApp?.id === app.id ? 'rotate(90deg)' : 'none', transition: 'transform 0.15s' }} />
-                  </div>
-                );
-              })}
-            </div>
-
-            {/* Snapshot panel */}
-            {selectedApp && (
-              <div style={{ width: 300, flexShrink: 0 }}>
-                <HuntSortSnapshot
-                  app={selectedApp}
-                  onStatusChange={onStatusChange}
-                  onViewFull={(student) => { setProfileDrawerStudent(student); setProfileDrawerOpen(true); }}
-                  onClose={() => setSelectedApp(null)}
-                  showToast={showToast}
-                />
+        {/* Candidate list */}
+        <div style={{ padding: '12px 16px', display: 'flex', flexDirection: 'column', gap: 6 }}>
+          {topCandidates.map((app, i) => {
+            const s = app.students || {};
+            const huntScore = s._huntScore?.score ?? s.hunt_score ?? null;
+            const isSelected = selectedApp?.id === app.id;
+            return (
+              <div key={app.id} onClick={() => setSelectedApp(isSelected ? null : app)} style={{
+                display: 'flex', alignItems: 'center', gap: 10, padding: '10px 12px',
+                borderRadius: 10,
+                border: `1px solid ${isSelected ? 'var(--text)' : 'var(--border)'}`,
+                background: isSelected ? 'var(--bg-subtle)' : 'transparent',
+                cursor: 'pointer', transition: 'all 0.15s',
+              }}>
+                <span style={{ fontFamily: "'Editorial New', Georgia, serif", fontSize: 12, color: 'var(--text-dim)', width: 18, flexShrink: 0, textAlign: 'right' }}>{i + 1}</span>
+                <Avatar name={s.full_name} avatarUrl={s.avatar_url} size={30} />
+                <div style={{ flex: 1, minWidth: 0 }}>
+                  <p style={{ fontSize: 12, fontWeight: 600, color: 'var(--text)', margin: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{s.full_name || 'Student'}</p>
+                  <p style={{ fontSize: 10, color: 'var(--text-dim)', margin: '1px 0 0', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{s.college || '—'}{s.year ? ` · Y${s.year}` : ''}</p>
+                </div>
+                {huntScore !== null && <HuntScoreBadge score={huntScore} />}
+                <ScoreNumber score={app.match_score || 0} size={14} />
+                {app.status && app.status !== 'pending' && <StatusPill status={app.status} />}
+                <ChevronRight size={11} style={{ color: 'var(--text-dim)', flexShrink: 0, transform: isSelected ? 'rotate(90deg)' : 'none', transition: 'transform 0.15s' }} />
               </div>
-            )}
+            );
+          })}
+        </div>
+
+        {/* Expanded snapshot inline */}
+        {selectedApp && (
+          <div style={{ margin: '0 16px 16px', borderRadius: 12, border: '1px solid var(--border)', background: 'var(--bg-subtle)', overflow: 'hidden' }}>
+            <HuntSortSnapshot
+              app={selectedApp}
+              onStatusChange={onStatusChange}
+              onViewFull={(student) => { setProfileDrawerStudent(student); setProfileDrawerOpen(true); }}
+              onClose={() => setSelectedApp(null)}
+              showToast={showToast}
+            />
           </div>
         )}
       </div>
-
-      <style>{`@keyframes spin { to { transform: rotate(360deg); } }`}</style>
     </>
   );
 }
@@ -1677,7 +1623,7 @@ function RoleCard({ job, onClick, onTogglePause, onCopyLink, onDelete, onEdit })
       </div>
       <div style={{ display: 'flex', gap: 12, fontSize: 10, color: 'var(--text-mid)', flexWrap: 'wrap' }}>
         <span style={{ display: 'flex', alignItems: 'center', gap: 4 }}><MapPin size={10} /> {job.location}</span>
-        <span style={{ display: 'flex', alignItems: 'center', gap: 4 }}><Users size={10} /> {job.current_applicants || 0}/{job.max_applicants || 50}</span>
+        <span style={{ display: 'flex', alignItems: 'center', gap: 4 }}><Users size={10} /> {job.current_applicants || 0} applied</span>
       </div>
       <div>
         <div style={{ height: 3, borderRadius: 2, background: 'var(--border)', overflow: 'hidden' }}>
@@ -1760,8 +1706,9 @@ function RoleDetailView({ job, onBack, onCopyLink, onEdit, onTogglePause, onDele
               </div>
             </div>
           </div>
-          {/* Action buttons — share, edit, pause, delete at role detail header (change #1) */}
-          <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap', justifyContent: 'flex-end' }}>
+          {/* Action buttons — HUNT Sort + share, edit, pause, delete */}
+          <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap', justifyContent: 'flex-end', alignItems: 'center' }}>
+            {!loading && <HuntSortSection apps={apps} job={job} onStatusChange={handleStatusChange} showToast={showToast} />}
             <button onClick={() => onCopyLink(job)} style={btnGhost()}><Link2 size={12} /> Share</button>
             <button onClick={() => onEdit(job)} style={btnGhost()}><Edit2 size={12} /> Edit</button>
             <button onClick={() => onTogglePause(job)} style={btnGhost()}>{status === 'live' ? <><Pause size={12} /> Pause</> : <><Play size={12} /> Resume</>}</button>
@@ -1782,9 +1729,6 @@ function RoleDetailView({ job, onBack, onCopyLink, onEdit, onTogglePause, onDele
           ))}
         </div>
       </div>
-
-      {/* HUNT Sort — change #4 */}
-      {!loading && <HuntSortSection apps={apps} job={job} onStatusChange={handleStatusChange} showToast={showToast} />}
 
       {/* Sub tabs — candidates | pipeline (change #2) */}
       <div style={{ display: 'flex', borderBottom: '1px solid var(--border)', marginBottom: 18 }}>
@@ -1975,7 +1919,7 @@ function HomeTab({ recruiter, jobs, allApps, onPostRole, onOpenRole }) {
                 </div>
                 <div style={{ display: 'flex', gap: 10, fontSize: 10, color: 'var(--text-mid)' }}>
                   <span style={{ display: 'flex', alignItems: 'center', gap: 3 }}><MapPin size={10} /> {job.location}</span>
-                  <span style={{ display: 'flex', alignItems: 'center', gap: 3 }}><Users size={10} /> {job.current_applicants || 0}/{job.max_applicants || 50}</span>
+                  <span style={{ display: 'flex', alignItems: 'center', gap: 3 }}><Users size={10} /> {job.current_applicants || 0} applied</span>
                 </div>
                 <div style={{ height: 3, borderRadius: 2, background: 'var(--border)', overflow: 'hidden' }}>
                   <div style={{ height: '100%', width: `${Math.min(filled, 1) * 100}%`, background: filled > 0.8 ? 'var(--red)' : filled > 0.5 ? 'var(--amber)' : 'var(--green)', borderRadius: 2 }} />
@@ -2082,7 +2026,7 @@ function HiringTab({ allApps, jobs, onStatusChange }) {
       <PageHeader eyebrow="Pipeline" title={<>Hiring <em>pipeline.</em></>} subtitle="Track candidates through your hiring process, by role." />
 
       {jobsWithApps.length === 0 ? (
-        <EmptyState icon="🎯" title="No active pipelines." message="Once candidates apply to your roles, you can manage them here." />
+        <EmptyState icon="🎯" title="No candidates in pipeline yet." message={jobs.length === 0 ? "Post a role first, then manage candidates here." : "Candidates who apply to your roles will appear here. Share your role links to get applications."} />
       ) : (
         <div style={{ display: 'grid', gridTemplateColumns: selectedJob ? '260px 1fr' : '1fr', gap: 16 }}>
           {/* Role selector */}
@@ -2158,6 +2102,38 @@ function ProfileTab({ recruiter, onUpdate, showToast }) {
   );
 }
 
+// Reusable profile card with pencil-edit pattern (like student dashboard)
+function ProfileCard({ title, canEdit, children, onSave, saving }) {
+  const [editing, setEditing] = useState(false);
+  const handleSave = async () => {
+    await onSave();
+    setEditing(false);
+  };
+  return (
+    <div style={{ background: 'var(--bg-card)', border: `1px solid ${editing ? 'var(--border-mid)' : 'var(--border)'}`, borderRadius: 14, overflow: 'hidden', transition: 'border-color 0.15s' }}>
+      <div style={{ padding: '16px 20px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', borderBottom: '1px solid var(--border)' }}>
+        <p style={{ fontSize: 13, fontWeight: 600, color: 'var(--text)', margin: 0 }}>{title}</p>
+        {canEdit && !editing && (
+          <button onClick={() => setEditing(true)} style={{ ...iconBtn, width: 28, height: 28, padding: 0, justifyContent: 'center' }} title="Edit">
+            <Edit2 size={12} />
+          </button>
+        )}
+        {editing && (
+          <div style={{ display: 'flex', gap: 6 }}>
+            <button onClick={() => setEditing(false)} style={{ ...btnGhost(), padding: '5px 12px', fontSize: 11 }}>Cancel</button>
+            <button onClick={handleSave} disabled={saving} style={{ ...btnPrimary(saving), padding: '5px 12px', fontSize: 11 }}>
+              {saving ? 'Saving…' : 'Save'}
+            </button>
+          </div>
+        )}
+      </div>
+      <div style={{ padding: '18px 20px' }}>
+        {children(editing)}
+      </div>
+    </div>
+  );
+}
+
 function StartupProfileForm({ startup, recruiter, canEdit, onUpdate, showToast }) {
   const [form, setForm] = useState({
     name: startup.name || '', tagline: startup.tagline || '',
@@ -2185,11 +2161,11 @@ function StartupProfileForm({ startup, recruiter, canEdit, onUpdate, showToast }
     r.readAsDataURL(file);
   };
 
-  const save = async () => {
-    if (!startup.id) { showToast('No startup linked.', 'error'); return; }
+  const saveAll = async () => {
+    if (!startup.id) { showToast('No startup linked.', 'error'); throw new Error('No startup'); }
     setSaving(true);
-    try { await updateStartupProfile(startup.id, form); showToast('Startup profile updated'); onUpdate(); }
-    catch (e) { showToast(e.message || 'Failed', 'error'); }
+    try { await updateStartupProfile(startup.id, form); showToast('Updated'); onUpdate(); }
+    catch (e) { showToast(e.message || 'Failed', 'error'); throw e; }
     finally { setSaving(false); }
   };
 
@@ -2200,8 +2176,10 @@ function StartupProfileForm({ startup, recruiter, canEdit, onUpdate, showToast }
     { key: 'founded_year', label: 'Founded', ph: '2024', type: 'number' },
   ];
 
+  const val = (k, fallback = '—') => form[k] || <span style={{ color: 'var(--text-dim)', fontStyle: 'italic' }}>{fallback}</span>;
+
   return (
-    <div style={{ maxWidth: 720, display: 'flex', flexDirection: 'column', gap: 16 }}>
+    <div style={{ maxWidth: 720, display: 'flex', flexDirection: 'column', gap: 14 }}>
       {!canEdit && (
         <div style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '10px 14px', borderRadius: 8, background: 'var(--amber-tint)', border: '1px solid var(--amber)' }}>
           <Lock size={13} style={{ color: 'var(--amber)', flexShrink: 0 }} />
@@ -2209,93 +2187,108 @@ function StartupProfileForm({ startup, recruiter, canEdit, onUpdate, showToast }
         </div>
       )}
 
-      {/* Banner + Logo hero card (change #7, #8) */}
-      <div style={{ background: 'var(--bg-card)', border: '1px solid var(--border)', borderRadius: 14, overflow: 'hidden' }}>
-        {/* Banner */}
-        <div style={{ position: 'relative', height: 140, background: bannerPreview ? 'transparent' : 'linear-gradient(135deg, var(--bg-subtle) 0%, var(--border) 100%)' }}>
-          {bannerPreview ? (
-            <img src={bannerPreview} alt="banner" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
-          ) : (
-            <div style={{ width: '100%', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-              <p style={{ fontSize: 13, color: 'var(--text-dim)', fontStyle: 'italic' }}>Add a banner image</p>
-            </div>
-          )}
-          {canEdit && (
-            <label style={{ position: 'absolute', top: 10, right: 10, display: 'flex', alignItems: 'center', gap: 5, padding: '5px 10px', borderRadius: 6, background: 'rgba(0,0,0,0.5)', color: '#fff', fontSize: 11, cursor: 'pointer', backdropFilter: 'blur(4px)' }}>
-              <Camera size={12} /> Change banner
-              <input type="file" accept="image/*" style={{ display: 'none' }} onChange={handleBannerChange} />
-            </label>
-          )}
-        </div>
-        {/* Logo + name */}
-        <div style={{ padding: '0 24px 24px' }}>
-          <div style={{ display: 'flex', alignItems: 'flex-end', justifyContent: 'space-between', marginBottom: 14 }}>
-            <div style={{ position: 'relative', marginTop: -36 }}>
-              {logoPreview ? (
-                <img src={logoPreview} alt="logo" style={{ width: 72, height: 72, borderRadius: 12, objectFit: 'cover', border: '3px solid var(--bg-card)' }} />
-              ) : (
-                <div style={{ width: 72, height: 72, borderRadius: 12, background: 'var(--bg-subtle)', border: '3px solid var(--bg-card)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 24, fontWeight: 700, color: 'var(--text-mid)' }}>
-                  {(form.name || '?').slice(0, 2).toUpperCase()}
+      {/* Identity card with banner + logo */}
+      <ProfileCard title="Brand" canEdit={canEdit} onSave={saveAll} saving={saving}>
+        {(editing) => (
+          <div>
+            {/* Banner */}
+            <div style={{ position: 'relative', height: 120, borderRadius: 10, overflow: 'hidden', background: bannerPreview ? 'transparent' : 'linear-gradient(135deg, var(--bg-subtle), var(--border))', marginBottom: 0 }}>
+              {bannerPreview ? <img src={bannerPreview} alt="banner" style={{ width: '100%', height: '100%', objectFit: 'cover' }} /> : (
+                <div style={{ width: '100%', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                  <p style={{ fontSize: 11, color: 'var(--text-dim)', fontStyle: 'italic' }}>No banner</p>
                 </div>
               )}
-              {canEdit && (
-                <label style={{ position: 'absolute', bottom: -4, right: -4, width: 24, height: 24, borderRadius: '50%', background: 'var(--text)', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', border: '2px solid var(--bg-card)' }}>
-                  <Camera size={11} style={{ color: 'var(--bg)' }} />
-                  <input type="file" accept="image/*" style={{ display: 'none' }} onChange={handleLogoChange} />
+              {editing && (
+                <label style={{ position: 'absolute', top: 8, right: 8, display: 'flex', alignItems: 'center', gap: 5, padding: '5px 10px', borderRadius: 6, background: 'rgba(0,0,0,0.55)', color: '#fff', fontSize: 10, cursor: 'pointer', backdropFilter: 'blur(4px)' }}>
+                  <Camera size={11} /> Change banner
+                  <input type="file" accept="image/*" style={{ display: 'none' }} onChange={handleBannerChange} />
                 </label>
               )}
             </div>
+            {/* Logo overlapping */}
+            <div style={{ display: 'flex', alignItems: 'flex-end', gap: 14, marginTop: -28, paddingLeft: 16, marginBottom: 14 }}>
+              <div style={{ position: 'relative', flexShrink: 0 }}>
+                {logoPreview ? (
+                  <img src={logoPreview} alt="logo" style={{ width: 56, height: 56, borderRadius: 10, objectFit: 'cover', border: '3px solid var(--bg-card)' }} />
+                ) : (
+                  <div style={{ width: 56, height: 56, borderRadius: 10, background: 'var(--bg-subtle)', border: '3px solid var(--bg-card)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 18, fontWeight: 700, color: 'var(--text-mid)' }}>
+                    {(form.name || '?').slice(0, 2).toUpperCase()}
+                  </div>
+                )}
+                {editing && (
+                  <label style={{ position: 'absolute', bottom: -4, right: -4, width: 22, height: 22, borderRadius: '50%', background: 'var(--text)', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', border: '2px solid var(--bg-card)' }}>
+                    <Camera size={10} style={{ color: 'var(--bg)' }} />
+                    <input type="file" accept="image/*" style={{ display: 'none' }} onChange={handleLogoChange} />
+                  </label>
+                )}
+              </div>
+              {!editing && (
+                <div style={{ paddingBottom: 2 }}>
+                  <p style={{ fontFamily: "'Editorial New', Georgia, serif", fontSize: 18, color: 'var(--text)', margin: 0, fontWeight: 400 }}>{form.name || <em style={{ color: 'var(--text-dim)' }}>Startup name</em>}</p>
+                  <p style={{ fontSize: 12, color: 'var(--text-dim)', margin: '2px 0 0' }}>{form.tagline || <span style={{ fontStyle: 'italic' }}>No tagline</span>}</p>
+                </div>
+              )}
+            </div>
+            {editing && (
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+                <div><Label required>Startup name</Label><FocusInput value={form.name} onChange={e => set('name')(e.target.value)} placeholder="HUNT Labs" /></div>
+                <div><Label>Tagline</Label><FocusInput value={form.tagline} onChange={e => set('tagline')(e.target.value)} placeholder="Skill-first internships" /></div>
+              </div>
+            )}
           </div>
-          <p style={{ fontFamily: "'Editorial New', Georgia, serif", fontSize: 20, color: 'var(--text)', margin: 0 }}>{form.name || <em style={{ color: 'var(--text-dim)' }}>Startup name</em>}</p>
-          <p style={{ fontSize: 13, color: 'var(--text-dim)', margin: '3px 0 0' }}>{form.tagline || ''}</p>
-        </div>
-      </div>
+        )}
+      </ProfileCard>
 
       {/* Basic info card */}
-      <div style={{ background: 'var(--bg-card)', border: '1px solid var(--border)', borderRadius: 14, padding: '20px 22px' }}>
-        <p style={{ fontSize: 13, fontWeight: 600, color: 'var(--text)', marginBottom: 16 }}>Basic Information</p>
-        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 14 }}>
-          <div style={{ gridColumn: '1 / -1' }}>
-            <Label required>Startup name</Label>
-            <FocusInput value={form.name} disabled={!canEdit} onChange={e => set('name')(e.target.value)} placeholder="HUNT Labs" />
-          </div>
-          <div style={{ gridColumn: '1 / -1' }}>
-            <Label>Tagline</Label>
-            <FocusInput value={form.tagline} disabled={!canEdit} onChange={e => set('tagline')(e.target.value)} placeholder="Skill-first internships" />
-          </div>
-          {infoRows.map(({ key, label, ph, type }) => (
-            <div key={key}>
-              <Label>{label}</Label>
-              <FocusInput type={type || 'text'} value={form[key]} disabled={!canEdit} onChange={e => set(key)(e.target.value)} placeholder={ph} />
+      <ProfileCard title="Basic Info" canEdit={canEdit} onSave={saveAll} saving={saving}>
+        {(editing) => editing ? (
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
+            {infoRows.map(({ key, label, ph, type }) => (
+              <div key={key}><Label>{label}</Label><FocusInput type={type || 'text'} value={form[key]} onChange={e => set(key)(e.target.value)} placeholder={ph} /></div>
+            ))}
+            <div>
+              <Label>Stage</Label>
+              <FocusSelect value={form.stage} onChange={e => set('stage')(e.target.value)}>
+                <option value="">—</option><option>Pre-seed</option><option>Seed</option>
+                <option>Series A</option><option>Series B</option><option>Bootstrapped</option>
+              </FocusSelect>
             </div>
-          ))}
-          <div>
-            <Label>Stage</Label>
-            <FocusSelect value={form.stage} disabled={!canEdit} onChange={e => set('stage')(e.target.value)}>
-              <option value="">—</option><option>Pre-seed</option><option>Seed</option>
-              <option>Series A</option><option>Series B</option><option>Bootstrapped</option>
-            </FocusSelect>
+            <div>
+              <Label>Team size</Label>
+              <FocusSelect value={form.team_size} onChange={e => set('team_size')(e.target.value)}>
+                <option value="">—</option><option>1-10</option><option>11-50</option><option>51-200</option><option>200+</option>
+              </FocusSelect>
+            </div>
           </div>
-          <div>
-            <Label>Team size</Label>
-            <FocusSelect value={form.team_size} disabled={!canEdit} onChange={e => set('team_size')(e.target.value)}>
-              <option value="">—</option><option>1-10</option><option>11-50</option><option>51-200</option><option>200+</option>
-            </FocusSelect>
+        ) : (
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 14 }}>
+            {[
+              { label: 'Website', val: form.website },
+              { label: 'HQ Location', val: form.hq_location },
+              { label: 'Industry', val: form.industry },
+              { label: 'Founded', val: form.founded_year },
+              { label: 'Stage', val: form.stage },
+              { label: 'Team size', val: form.team_size },
+            ].map(({ label, val: v }) => (
+              <div key={label}>
+                <p style={{ fontSize: 9, fontWeight: 600, color: 'var(--text-dim)', textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: 3 }}>{label}</p>
+                <p style={{ fontSize: 13, color: v ? 'var(--text)' : 'var(--text-dim)', margin: 0, fontStyle: v ? 'normal' : 'italic' }}>{v || 'Not set'}</p>
+              </div>
+            ))}
           </div>
-        </div>
-      </div>
+        )}
+      </ProfileCard>
 
       {/* About card */}
-      <div style={{ background: 'var(--bg-card)', border: '1px solid var(--border)', borderRadius: 14, padding: '20px 22px' }}>
-        <p style={{ fontSize: 13, fontWeight: 600, color: 'var(--text)', marginBottom: 14 }}>About</p>
-        <FocusTextarea value={form.about} disabled={!canEdit} onChange={e => set('about')(e.target.value)} rows={4} placeholder="What does your startup do?" />
-      </div>
-
-      {canEdit && (
-        <button onClick={save} disabled={saving} style={btnPrimary(saving)}>
-          {saving ? 'Saving…' : 'Save changes'}
-        </button>
-      )}
+      <ProfileCard title="About" canEdit={canEdit} onSave={saveAll} saving={saving}>
+        {(editing) => editing ? (
+          <FocusTextarea value={form.about} onChange={e => set('about')(e.target.value)} rows={4} placeholder="What does your startup do? What problems do you solve?" />
+        ) : (
+          <p style={{ fontSize: 13, color: form.about ? 'var(--text-mid)' : 'var(--text-dim)', lineHeight: 1.7, margin: 0, fontStyle: form.about ? 'normal' : 'italic' }}>
+            {form.about || 'No description yet. Add one to help candidates understand your company.'}
+          </p>
+        )}
+      </ProfileCard>
     </div>
   );
 }
@@ -2316,40 +2309,64 @@ function RecruiterProfileForm({ recruiter, onUpdate, showToast }) {
     finally { setSaving(false); }
   };
   return (
-    <div style={{ maxWidth: 720, display: 'flex', flexDirection: 'column', gap: 16 }}>
+    <div style={{ maxWidth: 720, display: 'flex', flexDirection: 'column', gap: 14 }}>
       {/* Identity card */}
-      <div style={{ background: 'var(--bg-card)', border: '1px solid var(--border)', borderRadius: 14, padding: '20px 22px' }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 14, marginBottom: 20, paddingBottom: 16, borderBottom: '1px solid var(--border)' }}>
-          <Avatar name={form.contact_name} size={52} />
+      <ProfileCard title="Your Profile" canEdit={true} onSave={save} saving={saving}>
+        {(editing) => (
           <div>
-            <p style={{ fontFamily: "'Editorial New', Georgia, serif", fontSize: 18, color: 'var(--text)', margin: 0, fontWeight: 400 }}>{form.contact_name || 'Your name'}</p>
-            <p style={{ fontSize: 12, color: 'var(--text-dim)', margin: '2px 0 0' }}>{form.title || 'Your role'} at {recruiter.startups?.name || 'your startup'}</p>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 14, marginBottom: editing ? 18 : 0, paddingBottom: editing ? 16 : 0, borderBottom: editing ? '1px solid var(--border)' : 'none' }}>
+              <Avatar name={form.contact_name} size={46} />
+              <div>
+                <p style={{ fontFamily: "'Editorial New', Georgia, serif", fontSize: 17, color: 'var(--text)', margin: 0, fontWeight: 400 }}>{form.contact_name || 'Your name'}</p>
+                <p style={{ fontSize: 12, color: 'var(--text-dim)', margin: '2px 0 0' }}>{form.title || <span style={{ fontStyle: 'italic' }}>No title</span>} · {recruiter.startups?.name || 'your startup'}</p>
+              </div>
+            </div>
+            {editing && (
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
+                <div><Label required>Full name</Label><FocusInput value={form.contact_name} onChange={e => set('contact_name')(e.target.value)} /></div>
+                <div><Label>Title</Label><FocusInput value={form.title} onChange={e => set('title')(e.target.value)} placeholder="Head of Talent" /></div>
+                <div><Label>Email</Label><FocusInput value={form.email} disabled type="email" /></div>
+                <div><Label>Phone</Label><FocusInput value={form.phone} onChange={e => set('phone')(e.target.value)} placeholder="+91…" /></div>
+                <div><Label>LinkedIn</Label><FocusInput value={form.linkedin_url} onChange={e => set('linkedin_url')(e.target.value)} placeholder="https://linkedin.com/in/…" /></div>
+                <div>
+                  <Label>Role in company</Label>
+                  <FocusSelect value={form.role_in_company} onChange={e => set('role_in_company')(e.target.value)}>
+                    <option value="founder">Founder</option>
+                    <option value="hiring_manager">Hiring manager</option>
+                    <option value="recruiter">Recruiter</option>
+                  </FocusSelect>
+                </div>
+              </div>
+            )}
+            {!editing && (
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12, marginTop: 16 }}>
+                {[
+                  { label: 'Phone', val: form.phone },
+                  { label: 'Email', val: form.email },
+                  { label: 'LinkedIn', val: form.linkedin_url ? 'Connected' : null },
+                  { label: 'Role', val: form.role_in_company },
+                ].map(({ label, val: v }) => v ? (
+                  <div key={label}>
+                    <p style={{ fontSize: 9, fontWeight: 600, color: 'var(--text-dim)', textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: 3 }}>{label}</p>
+                    <p style={{ fontSize: 13, color: 'var(--text)', margin: 0, textTransform: label === 'Role' ? 'capitalize' : 'none' }}>{v}</p>
+                  </div>
+                ) : null)}
+              </div>
+            )}
           </div>
-        </div>
-        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 14 }}>
-          <div><Label required>Full name</Label><FocusInput value={form.contact_name} onChange={e => set('contact_name')(e.target.value)} /></div>
-          <div><Label>Title</Label><FocusInput value={form.title} onChange={e => set('title')(e.target.value)} placeholder="Head of Talent" /></div>
-          <div><Label>Email</Label><FocusInput value={form.email} disabled type="email" /></div>
-          <div><Label>Phone</Label><FocusInput value={form.phone} onChange={e => set('phone')(e.target.value)} placeholder="+91…" /></div>
-          <div><Label>LinkedIn</Label><FocusInput value={form.linkedin_url} onChange={e => set('linkedin_url')(e.target.value)} placeholder="https://linkedin.com/in/…" /></div>
-          <div>
-            <Label>Role in company</Label>
-            <FocusSelect value={form.role_in_company} onChange={e => set('role_in_company')(e.target.value)}>
-              <option value="founder">Founder</option>
-              <option value="hiring_manager">Hiring manager</option>
-              <option value="recruiter">Recruiter</option>
-            </FocusSelect>
-          </div>
-        </div>
-      </div>
+        )}
+      </ProfileCard>
 
       {/* Bio card */}
-      <div style={{ background: 'var(--bg-card)', border: '1px solid var(--border)', borderRadius: 14, padding: '20px 22px' }}>
-        <p style={{ fontSize: 13, fontWeight: 600, color: 'var(--text)', marginBottom: 12 }}>Bio</p>
-        <FocusTextarea value={form.bio} onChange={e => set('bio')(e.target.value)} rows={3} placeholder="Short intro that candidates will see when you reach out." />
-      </div>
-
-      <button onClick={save} disabled={saving} style={btnPrimary(saving)}>{saving ? 'Saving…' : 'Save changes'}</button>
+      <ProfileCard title="Bio" canEdit={true} onSave={save} saving={saving}>
+        {(editing) => editing ? (
+          <FocusTextarea value={form.bio} onChange={e => set('bio')(e.target.value)} rows={3} placeholder="Short intro that candidates will see when you reach out." />
+        ) : (
+          <p style={{ fontSize: 13, color: form.bio ? 'var(--text-mid)' : 'var(--text-dim)', lineHeight: 1.7, margin: 0, fontStyle: form.bio ? 'normal' : 'italic' }}>
+            {form.bio || 'No bio yet. Candidates see this when you reach out.'}
+          </p>
+        )}
+      </ProfileCard>
     </div>
   );
 }
@@ -2610,10 +2627,12 @@ export default function RecruiterDashboard() {
               onClick={() => setShowNotifications(true)}
               style={{ flex: 1, position: 'relative', display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'none', border: 'none', cursor: 'pointer', padding: 7, borderRadius: 6, color: 'var(--text-dim)' }}
             >
-              <Bell size={13} />
-              {unreadCount > 0 && (
-                <span style={{ position: 'absolute', top: 3, right: 8, width: 8, height: 8, borderRadius: '50%', background: 'var(--green)', border: '2px solid var(--bg-card)' }} />
-              )}
+              <span style={{ position: 'relative', display: 'inline-flex' }}>
+                <Bell size={13} />
+                {unreadCount > 0 && (
+                  <span style={{ position: 'absolute', top: -3, right: -3, width: 7, height: 7, borderRadius: '50%', background: 'var(--green)', border: '1.5px solid var(--bg-card)' }} />
+                )}
+              </span>
             </button>
             <button onClick={() => setTheme(t => t === 'light' ? 'dark' : 'light')} className="hn-item" style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'none', border: 'none', cursor: 'pointer', padding: 7, borderRadius: 6, color: 'var(--text-dim)' }}>
               {theme === 'light' ? <Moon size={13} /> : <Sun size={13} />}
