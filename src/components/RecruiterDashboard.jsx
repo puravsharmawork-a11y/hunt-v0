@@ -139,16 +139,17 @@ async function getJobApplications(jobId) {
 }
 
 async function getAllApplicationsForRecruiter(recruiterId) {
+  // Only fetch columns we know exist — removed legacy 'logo' emoji column
   const { data: jobs, error: jobsErr } = await supabase
-    .from('jobs').select('id, role, logo, company, logo_url').eq('recruiter_id', recruiterId);
-  if (jobsErr) throw jobsErr;
+    .from('jobs').select('id, role, company, logo_url').eq('recruiter_id', recruiterId);
+  if (jobsErr) { console.warn('Jobs query failed:', jobsErr); return []; }
   if (!jobs?.length) return [];
   const jobIds = jobs.map(j => j.id);
   const jobLookup = Object.fromEntries(jobs.map(j => [j.id, j]));
   const { data: apps, error: appsErr } = await supabase
     .from('applications').select('*, students(*)').in('job_id', jobIds)
     .order('match_score', { ascending: false });
-  if (appsErr) throw appsErr;
+  if (appsErr) { console.warn('Applications query failed:', appsErr); return []; }
   return (apps || []).map(a => ({ ...a, jobs: jobLookup[a.job_id] }));
 }
 
@@ -446,44 +447,76 @@ const iconBtn = {
 // 5. NOTIFICATION DRAWER (change #9)
 // ═══════════════════════════════════════════════════════════════════════════
 function NotificationDrawer({ open, onClose, recruiter }) {
-  // Mock notifications — in production fetch from DB
-  const [notifications] = useState([
-    {
-      id: 1, type: 'success', read: false,
-      title: 'New application received',
-      body: 'Priya Sharma applied to Backend Engineering Intern with 91% match.',
-      time: '2 min ago',
-      icon: <UserCheck size={14} />,
-    },
-    {
-      id: 2, type: 'alert', read: false,
-      title: 'Role almost full',
-      body: 'Frontend Developer role has 45/50 applicants. Consider closing soon.',
-      time: '1 hr ago',
-      icon: <AlertCircle size={14} />,
-    },
-    {
-      id: 3, type: 'success', read: true,
-      title: 'Candidate shortlisted',
-      body: 'You shortlisted Rahul Mehta for Full Stack Developer role.',
-      time: '3 hrs ago',
-      icon: <Bookmark size={14} />,
-    },
-    {
-      id: 4, type: 'info', read: true,
-      title: 'Weekly summary',
-      body: '12 new applicants this week. 3 interviews scheduled. 1 hire made.',
-      time: '1 day ago',
-      icon: <CheckCircle size={14} />,
-    },
-    {
-      id: 5, type: 'success', read: true,
-      title: 'New application received',
-      body: 'Arjun Singh applied to DevOps Intern with 78% match.',
-      time: '2 days ago',
-      icon: <UserCheck size={14} />,
-    },
-  ]);
+  const [notifications, setNotifications] = useState([]);
+  const [loadingNotifs, setLoadingNotifs] = useState(false);
+
+  // Fetch real notifications when drawer opens
+  useEffect(() => {
+    if (!open || !recruiter) return;
+    const fetchNotifs = async () => {
+      setLoadingNotifs(true);
+      try {
+        // Recruiter notifications: new applications for their jobs
+        const { data: jobs } = await supabase
+          .from('jobs')
+          .select('id, role')
+          .eq('recruiter_id', recruiter.id);
+
+        if (!jobs?.length) { setNotifications([]); return; }
+        const jobIds = jobs.map(j => j.id);
+        const jobMap = Object.fromEntries(jobs.map(j => [j.id, j.role]));
+
+        const { data: apps } = await supabase
+          .from('applications')
+          .select('id, job_id, status, created_at, match_score, students(full_name)')
+          .in('job_id', jobIds)
+          .order('created_at', { ascending: false })
+          .limit(20);
+
+        const notifs = (apps || []).map(a => {
+          const studentName = a.students?.full_name || 'A candidate';
+          const roleName = jobMap[a.job_id] || 'a role';
+          const score = a.match_score ? ` with ${a.match_score}% match` : '';
+          const isNew = a.status === 'pending';
+          const statusLabels = {
+            shortlisted: { title: 'Candidate shortlisted', body: `${studentName} was shortlisted for ${roleName}.`, type: 'success' },
+            interview:   { title: 'Interview scheduled',    body: `${studentName} moved to interview for ${roleName}.`, type: 'alert' },
+            hired:       { title: 'Hire made 🎉',           body: `${studentName} was hired for ${roleName}!`, type: 'success' },
+            pending:     { title: 'New application',        body: `${studentName} applied to ${roleName}${score}.`, type: 'success' },
+          };
+          const meta = statusLabels[a.status] || statusLabels.pending;
+          const createdAt = new Date(a.created_at);
+          const now = new Date();
+          const diffMs = now - createdAt;
+          const diffMins = Math.floor(diffMs / 60000);
+          const timeStr = diffMins < 60 ? `${diffMins}m ago` :
+            diffMins < 1440 ? `${Math.floor(diffMins / 60)}h ago` :
+            `${Math.floor(diffMins / 1440)}d ago`;
+          return {
+            id: a.id,
+            type: meta.type,
+            read: !isNew,
+            title: meta.title,
+            body: meta.body,
+            time: timeStr,
+          };
+        });
+        setNotifications(notifs);
+      } catch (e) {
+        console.warn('Notifications fetch failed:', e);
+        setNotifications([]);
+      } finally {
+        setLoadingNotifs(false);
+      }
+    };
+    fetchNotifs();
+  }, [open, recruiter]);
+
+  const iconForType = (type) => {
+    if (type === 'success') return <UserCheck size={14} />;
+    if (type === 'alert')   return <AlertCircle size={14} />;
+    return <CheckCircle size={14} />;
+  };
 
   const typeColor = { success: 'var(--green)', alert: 'var(--amber)', info: 'var(--blue)' };
   const typeTint  = { success: 'var(--green-tint)', alert: 'var(--amber-tint)', info: 'var(--blue-tint)' };
@@ -518,10 +551,16 @@ function NotificationDrawer({ open, onClose, recruiter }) {
 
         {/* List */}
         <div style={{ flex: 1, overflowY: 'auto', padding: '12px 16px' }}>
-          {notifications.length === 0 ? (
+          {loadingNotifs ? (
+            <div style={{ textAlign: 'center', padding: '48px 24px' }}>
+              <div style={{ width: 20, height: 20, border: '2px solid var(--green)', borderTopColor: 'transparent', borderRadius: '50%', animation: 'spin 0.8s linear infinite', margin: '0 auto 12px' }} />
+              <p style={{ fontSize: 12, color: 'var(--text-dim)' }}>Loading notifications…</p>
+            </div>
+          ) : notifications.length === 0 ? (
             <div style={{ textAlign: 'center', padding: '48px 24px' }}>
               <Bell size={28} style={{ color: 'var(--text-dim)', marginBottom: 12 }} />
-              <p style={{ fontSize: 13, color: 'var(--text-dim)' }}>No notifications yet</p>
+              <p style={{ fontSize: 13, color: 'var(--text-dim)' }}>No activity yet</p>
+              <p style={{ fontSize: 11, color: 'var(--text-dim)', marginTop: 4 }}>Applications and status updates will appear here.</p>
             </div>
           ) : notifications.map(n => (
             <div key={n.id} style={{
@@ -538,7 +577,7 @@ function NotificationDrawer({ open, onClose, recruiter }) {
                 display: 'flex', alignItems: 'center', justifyContent: 'center',
                 color: typeColor[n.type] || 'var(--text-dim)',
               }}>
-                {n.icon}
+                {iconForType(n.type)}
               </div>
               <div style={{ flex: 1, minWidth: 0 }}>
                 <p style={{ fontSize: 12, fontWeight: n.read ? 400 : 600, color: 'var(--text)', margin: 0, marginBottom: 3, lineHeight: 1.3 }}>{n.title}</p>
@@ -573,16 +612,20 @@ function PostRoleDrawer({ recruiter, open, onClose, onSuccess, showToast, editJo
   const [newSecHeading, setNewSecHeading]   = useState('');
   const [newSecItemText, setNewSecItemText] = useState({});
   const [saving, setSaving]                 = useState(false);
-  const [logoPreview, setLogoPreview]       = useState(null);
+  const [logoPreview, setLogoPreview]       = useState(recruiter?.startups?.logo_url || null);
   const logoInputRef = useRef(null);
 
+  // Use company logo from startup profile as default — no need to upload per role
+  const companyLogoUrl = recruiter?.startups?.logo_url || '';
   const defaultForm = () => ({
-    logo_url: recruiter?.startups?.logo_url || '',
+    logo_url: companyLogoUrl,
     role: '', description: '', stipend: '', duration: '',
     location: '', type: 'Paid Internship', visibility: 'public',
     required_skills: [], nice_to_have: [],
-    max_applicants: 50, minimum_match_threshold: 50, positions: 1,
+    positions: 1,
     whatYoullDo: [], perks: [], sections: [],
+    // Sensible defaults — not exposed in UI
+    max_applicants: 50, minimum_match_threshold: 50,
   });
 
   const [form, setForm] = useState(defaultForm);
@@ -590,7 +633,7 @@ function PostRoleDrawer({ recruiter, open, onClose, onSuccess, showToast, editJo
   useEffect(() => {
     if (!open) {
       setForm(defaultForm());
-      setLogoPreview(null);
+      setLogoPreview(recruiter?.startups?.logo_url || null);
       setWhatDoInput('');
       setPerkInput('');
       setNewSecHeading('');
@@ -915,28 +958,21 @@ function PostRoleDrawer({ recruiter, open, onClose, onSuccess, showToast, editJo
               )}
             </div>
 
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 12 }}>
-              <div>
-                <Label>Visibility</Label>
-                <div style={{ display: 'flex', gap: 6 }}>
-                  {['public','private'].map(v => (
-                    <button key={v} onClick={() => set('visibility')(v)} style={chipBtn(form.visibility === v)}>
-                      {v === 'public' ? 'Public' : 'Link only'}
-                    </button>
-                  ))}
-                </div>
-              </div>
-              <div>
-                <Label>Max applicants</Label>
-                <div style={{ display: 'flex', gap: 4 }}>
-                  {[25,50,100].map(n => <button key={n} onClick={() => set('max_applicants')(n)} style={chipBtn(form.max_applicants === n)}>{n}</button>)}
-                </div>
-              </div>
-              <div>
-                <Label>Min match %</Label>
-                <div style={{ display: 'flex', gap: 4 }}>
-                  {[40,50,70].map(n => <button key={n} onClick={() => set('minimum_match_threshold')(n)} style={chipBtn(form.minimum_match_threshold === n)}>{n}%</button>)}
-                </div>
+            {/* Visibility toggle — simple */}
+            <div>
+              <Label>Visibility</Label>
+              <div style={{ display: 'flex', gap: 8 }}>
+                {['public', 'private'].map(v => (
+                  <button key={v} onClick={() => set('visibility')(v)} style={{
+                    padding: '8px 16px', borderRadius: 8, fontSize: 12, fontFamily: 'inherit', cursor: 'pointer',
+                    background: form.visibility === v ? 'var(--text)' : 'transparent',
+                    border: `1px solid ${form.visibility === v ? 'var(--text)' : 'var(--border)'}`,
+                    color: form.visibility === v ? 'var(--bg)' : 'var(--text-mid)',
+                    fontWeight: form.visibility === v ? 600 : 400,
+                  }}>
+                    {v === 'public' ? '🌐 Public' : '🔒 Link only'}
+                  </button>
+                ))}
               </div>
             </div>
           </div>
@@ -2376,8 +2412,15 @@ export default function RecruiterDashboard() {
         const r = await getRecruiterProfile();
         if (!r) { navigate('/recruiter/onboarding'); return; }
         setRecruiter(r);
-        const [j, a] = await Promise.all([getRecruiterJobs(r.id), getAllApplicationsForRecruiter(r.id)]);
-        setJobs(j); setAllApps(a);
+        // Load jobs first — critical. Apps are secondary; don't let them block.
+        const j = await getRecruiterJobs(r.id);
+        setJobs(j);
+        try {
+          const a = await getAllApplicationsForRecruiter(r.id);
+          setAllApps(a);
+        } catch (appErr) {
+          console.warn('Applications load failed (non-fatal):', appErr);
+        }
       } catch (e) {
         console.error('Dashboard load failed:', e);
         showToast(e.message || 'Failed to load dashboard', 'error');
@@ -2387,8 +2430,12 @@ export default function RecruiterDashboard() {
 
   const refreshAll = async () => {
     if (!recruiter) return;
-    const [j, a] = await Promise.all([getRecruiterJobs(recruiter.id), getAllApplicationsForRecruiter(recruiter.id)]);
-    setJobs(j); setAllApps(a);
+    const j = await getRecruiterJobs(recruiter.id);
+    setJobs(j);
+    try {
+      const a = await getAllApplicationsForRecruiter(recruiter.id);
+      setAllApps(a);
+    } catch (e) { console.warn('Apps refresh failed:', e); }
   };
   const refreshRecruiter = async () => { const r = await getRecruiterProfile(); setRecruiter(r); };
 
@@ -2443,8 +2490,9 @@ export default function RecruiterDashboard() {
     try { await signOut(); navigate('/'); } catch (e) { console.error(e); }
   };
 
-  // unread notifications count (mock)
-  const unreadCount = 2;
+  // Unread = new applications (pending status) received since last login
+  // We use allApps since we already have them loaded — pending apps are "new"
+  const unreadCount = allApps.filter(a => a.status === 'pending').length;
 
   if (loading) return (
     <div style={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'var(--bg)', fontFamily: "'DM Sans', system-ui, sans-serif" }}>
