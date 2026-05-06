@@ -107,19 +107,37 @@ async function getRecruiterJobs(recruiterId) {
 }
 
 async function createJob(jobData) {
-  // Bypass cleanPatch for inserts — we must preserve empty arrays and numeric 0 values
+  // Bypass cleanPatch for inserts — preserve empty arrays and numeric 0 values
+  // Strip logo_url if jobs table doesn't have the column yet
   const safe = Object.fromEntries(
-    Object.entries(jobData).filter(([, v]) => v !== undefined && v !== null)
+    Object.entries(jobData).filter(([k, v]) => v !== undefined && v !== null)
   );
   const { data, error } = await supabase.from('jobs').insert([safe]).select().single();
-  if (error) throw new Error(error.message || 'Failed to create job');
+  if (error) {
+    // If logo_url column missing, retry without it
+    if (error.message?.includes("logo_url") || error.message?.includes("schema cache")) {
+      const { logo_url: _dropped, ...safeWithoutLogo } = safe;
+      const { data: d2, error: e2 } = await supabase.from('jobs').insert([safeWithoutLogo]).select().single();
+      if (e2) throw new Error(e2.message || 'Failed to create job');
+      return d2;
+    }
+    throw new Error(error.message || 'Failed to create job');
+  }
   return data;
 }
 
 async function updateJob(jobId, patch) {
   const safe = cleanPatch(patch);
   const { data, error } = await supabase.from('jobs').update(safe).eq('id', jobId).select().single();
-  if (error) throw new Error(error.message || 'Update failed');
+  if (error) {
+    if (error.message?.includes("logo_url") || error.message?.includes("schema cache")) {
+      const { logo_url: _dropped, ...safeWithoutLogo } = safe;
+      const { data: d2, error: e2 } = await supabase.from('jobs').update(safeWithoutLogo).eq('id', jobId).select().single();
+      if (e2) throw new Error(e2.message || 'Update failed');
+      return d2;
+    }
+    throw new Error(error.message || 'Update failed');
+  }
   return data;
 }
 
@@ -243,10 +261,9 @@ const SKILL_OPTIONS = [
 
 // NAV — Network removed (change #11)
 const NAV_ITEMS = [
-  { id: 'home',    label: 'Home',     icon: Home },
-  { id: 'roles',   label: 'Roles',    icon: Layers },
-  { id: 'hiring',  label: 'Pipeline', icon: GitBranch },
-  { id: 'profile', label: 'Profile',  icon: Building2 },
+  { id: 'home',    label: 'Home',    icon: Home },
+  { id: 'roles',   label: 'Roles',   icon: Layers },
+  { id: 'profile', label: 'Profile', icon: Building2 },
 ];
 
 const STATUS_META = {
@@ -1253,7 +1270,7 @@ function HuntSortSection({ apps, job, onStatusChange, showToast }) {
     </div>
   );
 
-  // done state: results section
+  // done state: two-column layout like reference — left list, right detail
   return (
     <>
       <CandidateProfileDrawer
@@ -1262,58 +1279,154 @@ function HuntSortSection({ apps, job, onStatusChange, showToast }) {
         onClose={() => { setProfileDrawerOpen(false); setProfileDrawerStudent(null); }}
       />
 
-      <div style={{ background: 'var(--bg-card)', border: '1.5px solid var(--green)', borderRadius: 14, marginBottom: 18, overflow: 'hidden' }}>
-        {/* Results header */}
-        <div style={{ padding: '14px 20px', borderBottom: '1px solid var(--border)', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-            <Sparkles size={14} style={{ color: 'var(--green)' }} />
-            <p style={{ fontSize: 13, fontWeight: 600, color: 'var(--text)', margin: 0 }}>Top {topCandidates.length} candidates</p>
-            <span style={{ fontSize: 10, color: 'var(--text-dim)', padding: '2px 7px', borderRadius: 6, background: 'var(--green-tint)', border: '1px solid var(--green)', color: 'var(--green-text)', fontWeight: 500 }}>HUNT Sort</span>
-          </div>
-          <button onClick={reset} style={{ ...iconBtn, width: 28, height: 28, padding: 0, justifyContent: 'center' }}><X size={12} /></button>
-        </div>
+      <div style={{ display: 'grid', gridTemplateColumns: selectedApp ? '220px 1fr' : '1fr', gap: 0, background: 'var(--bg-card)', border: '1.5px solid var(--green)', borderRadius: 14, marginBottom: 18, overflow: 'hidden' }}>
 
-        {/* Candidate list */}
-        <div style={{ padding: '12px 16px', display: 'flex', flexDirection: 'column', gap: 6 }}>
-          {topCandidates.map((app, i) => {
-            const s = app.students || {};
-            const huntScore = s._huntScore?.score ?? s.hunt_score ?? null;
-            const isSelected = selectedApp?.id === app.id;
-            return (
-              <div key={app.id} onClick={() => setSelectedApp(isSelected ? null : app)} style={{
-                display: 'flex', alignItems: 'center', gap: 10, padding: '10px 12px',
-                borderRadius: 10,
-                border: `1px solid ${isSelected ? 'var(--text)' : 'var(--border)'}`,
-                background: isSelected ? 'var(--bg-subtle)' : 'transparent',
-                cursor: 'pointer', transition: 'all 0.15s',
-              }}>
-                <span style={{ fontFamily: "'Editorial New', Georgia, serif", fontSize: 12, color: 'var(--text-dim)', width: 18, flexShrink: 0, textAlign: 'right' }}>{i + 1}</span>
-                <Avatar name={s.full_name} avatarUrl={s.avatar_url} size={30} />
-                <div style={{ flex: 1, minWidth: 0 }}>
-                  <p style={{ fontSize: 12, fontWeight: 600, color: 'var(--text)', margin: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{s.full_name || 'Student'}</p>
-                  <p style={{ fontSize: 10, color: 'var(--text-dim)', margin: '1px 0 0', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{s.college || '—'}{s.year ? ` · Y${s.year}` : ''}</p>
+        {/* Left: ranked list */}
+        <div style={{ borderRight: selectedApp ? '1px solid var(--border)' : 'none' }}>
+          {/* Header */}
+          <div style={{ padding: '12px 16px', borderBottom: '1px solid var(--border)', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 7 }}>
+              <Sparkles size={13} style={{ color: 'var(--green)' }} />
+              <span style={{ fontSize: 12, fontWeight: 600, color: 'var(--text)' }}>Top {topCandidates.length}</span>
+              <span style={{ fontSize: 9, padding: '2px 6px', borderRadius: 5, background: 'var(--green-tint)', border: '1px solid var(--green)', color: 'var(--green-text)', fontWeight: 600, letterSpacing: '0.04em' }}>HUNT Sort</span>
+            </div>
+            <button onClick={reset} style={{ background: 'transparent', border: 'none', cursor: 'pointer', color: 'var(--text-dim)', display: 'flex', padding: 2 }}><X size={12} /></button>
+          </div>
+
+          {/* Candidate rows */}
+          <div style={{ padding: '8px' }}>
+            {topCandidates.map((app, i) => {
+              const s = app.students || {};
+              const isSelected = selectedApp?.id === app.id;
+              return (
+                <div key={app.id} onClick={() => setSelectedApp(isSelected ? null : app)} style={{
+                  display: 'flex', alignItems: 'center', gap: 8, padding: '9px 10px',
+                  borderRadius: 8, cursor: 'pointer', transition: 'all 0.12s',
+                  background: isSelected ? 'var(--green-tint)' : 'transparent',
+                  borderLeft: isSelected ? '2px solid var(--green)' : '2px solid transparent',
+                  marginBottom: 2,
+                }}>
+                  <span style={{ fontSize: 10, color: 'var(--text-dim)', width: 14, flexShrink: 0, fontFamily: "'Editorial New', Georgia, serif" }}>{i + 1}</span>
+                  <Avatar name={s.full_name} avatarUrl={s.avatar_url} size={28} />
+                  <div style={{ flex: 1, minWidth: 0 }}>
+                    <p style={{ fontSize: 11, fontWeight: isSelected ? 600 : 500, color: 'var(--text)', margin: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{s.full_name || 'Student'}</p>
+                    <ScoreNumber score={app.match_score || 0} size={11} />
+                  </div>
+                  {app.status && app.status !== 'pending' && <StatusPill status={app.status} />}
                 </div>
-                {huntScore !== null && <HuntScoreBadge score={huntScore} />}
-                <ScoreNumber score={app.match_score || 0} size={14} />
-                {app.status && app.status !== 'pending' && <StatusPill status={app.status} />}
-                <ChevronRight size={11} style={{ color: 'var(--text-dim)', flexShrink: 0, transform: isSelected ? 'rotate(90deg)' : 'none', transition: 'transform 0.15s' }} />
-              </div>
-            );
-          })}
+              );
+            })}
+          </div>
+
+          {/* Footer note */}
+          <div style={{ padding: '10px 16px', borderTop: '1px solid var(--border)' }}>
+            <p style={{ fontSize: 9, color: 'var(--text-dim)', margin: 0, lineHeight: 1.5 }}>Max 6 candidates per role. Skill-first, always.</p>
+          </div>
         </div>
 
-        {/* Expanded snapshot inline */}
-        {selectedApp && (
-          <div style={{ margin: '0 16px 16px', borderRadius: 12, border: '1px solid var(--border)', background: 'var(--bg-subtle)', overflow: 'hidden' }}>
-            <HuntSortSnapshot
-              app={selectedApp}
-              onStatusChange={onStatusChange}
-              onViewFull={(student) => { setProfileDrawerStudent(student); setProfileDrawerOpen(true); }}
-              onClose={() => setSelectedApp(null)}
-              showToast={showToast}
-            />
-          </div>
-        )}
+        {/* Right: detail panel — only when candidate selected */}
+        {selectedApp && (() => {
+          const s = selectedApp.students || {};
+          const score = selectedApp.match_score || 0;
+          const breakdown = selectedApp.match_breakdown || {};
+          const huntScore = s._huntScore?.score ?? s.hunt_score ?? null;
+          return (
+            <div style={{ display: 'flex', flexDirection: 'column' }}>
+              {/* Candidate header */}
+              <div style={{ padding: '16px 20px', display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+                  <Avatar name={s.full_name} avatarUrl={s.avatar_url} size={40} />
+                  <div>
+                    <p style={{ fontSize: 15, fontWeight: 600, color: 'var(--text)', margin: 0 }}>{s.full_name || 'Student'}</p>
+                    <p style={{ fontSize: 11, color: 'var(--text-dim)', margin: '2px 0 0' }}>{s.college || '—'}{s.year ? ` · ${s.year}rd Year` : ''}</p>
+                  </div>
+                </div>
+                <div style={{ textAlign: 'right' }}>
+                  <p style={{ fontFamily: "'Editorial New', Georgia, serif", fontSize: 26, color: 'var(--green)', margin: 0, lineHeight: 1 }}>{score}%</p>
+                  <p style={{ fontSize: 9, color: 'var(--text-dim)', margin: '2px 0 0', textTransform: 'uppercase', letterSpacing: '0.08em' }}>match score</p>
+                </div>
+              </div>
+
+              <div style={{ flex: 1, padding: '0 20px 16px', display: 'flex', flexDirection: 'column', gap: 14 }}>
+                {/* Score breakdown */}
+                {Object.keys(breakdown).length > 0 && (
+                  <div>
+                    <p style={{ fontSize: 9, fontWeight: 600, color: 'var(--text-dim)', textTransform: 'uppercase', letterSpacing: '0.1em', marginBottom: 10 }}>Score Breakdown</p>
+                    {Object.entries(breakdown).map(([k, v]) => (
+                      <div key={k} style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 7 }}>
+                        <span style={{ fontSize: 11, color: 'var(--text-mid)', width: 130, flexShrink: 0, textTransform: 'capitalize' }}>{k.replace(/([A-Z])/g, ' $1').trim()}</span>
+                        <div style={{ flex: 1, height: 3, background: 'var(--border)', borderRadius: 2, overflow: 'hidden' }}>
+                          <div style={{ height: '100%', width: `${Math.min(v / 40, 1) * 100}%`, background: 'var(--green)', borderRadius: 2 }} />
+                        </div>
+                        <span style={{ fontSize: 11, fontWeight: 600, color: 'var(--text)', width: 30, textAlign: 'right' }}>{v}%</span>
+                      </div>
+                    ))}
+                  </div>
+                )}
+
+                {/* Matched skills */}
+                {(s.skills || []).length > 0 && (
+                  <div>
+                    <p style={{ fontSize: 9, fontWeight: 600, color: 'var(--text-dim)', textTransform: 'uppercase', letterSpacing: '0.1em', marginBottom: 8 }}>Matched Skills</p>
+                    <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>
+                      {(s.skills || []).slice(0, 6).map((sk, i) => (
+                        <span key={i} style={{ fontSize: 10, padding: '3px 9px', borderRadius: 6, background: 'var(--green-tint)', border: '1px solid var(--green)', color: 'var(--green-text)' }}>{sk.name}</span>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                {/* Top project */}
+                {(s.projects || []).length > 0 && (
+                  <div style={{ padding: '12px 14px', background: 'var(--bg-subtle)', borderRadius: 10, border: '1px solid var(--border)' }}>
+                    <p style={{ fontSize: 9, fontWeight: 600, color: 'var(--text-dim)', textTransform: 'uppercase', letterSpacing: '0.1em', marginBottom: 6 }}>Top Project</p>
+                    <p style={{ fontSize: 13, fontWeight: 600, color: 'var(--text)', margin: '0 0 3px' }}>{s.projects[0].title || s.projects[0].name}</p>
+                    <p style={{ fontSize: 11, color: 'var(--text-dim)', margin: 0 }}>
+                      {Array.isArray(s.projects[0].techStack) ? s.projects[0].techStack.slice(0, 3).join(' + ') : ''}
+                      {s.projects[0].github_url ? ' · Live on GitHub' : ''}
+                    </p>
+                  </div>
+                )}
+
+                {/* GitHub */}
+                {s.github_url && (
+                  <div style={{ padding: '10px 14px', background: 'var(--bg-subtle)', borderRadius: 10, border: '1px solid var(--border)' }}>
+                    <p style={{ fontSize: 9, fontWeight: 600, color: 'var(--text-dim)', textTransform: 'uppercase', letterSpacing: '0.1em', marginBottom: 4 }}>GitHub</p>
+                    <p style={{ fontSize: 12, color: 'var(--text)', margin: 0 }}>
+                      {s.github_contributions ? `${s.github_contributions} contributions` : 'Profile available'}
+                    </p>
+                  </div>
+                )}
+
+                {/* Action buttons */}
+                <div style={{ marginTop: 'auto', display: 'flex', flexDirection: 'column', gap: 8 }}>
+                  <div style={{ display: 'flex', gap: 8 }}>
+                    {[
+                      { key: 'shortlisted', label: '✓ Shortlist', color: 'var(--green)', tint: 'var(--green-tint)', border: 'var(--green)' },
+                      { key: 'interview',   label: '📋 Interview', color: 'var(--blue)',  tint: 'var(--blue-tint)',  border: 'var(--blue)' },
+                    ].map(opt => {
+                      const active = selectedApp.status === opt.key;
+                      return (
+                        <button key={opt.key} onClick={async () => { await onStatusChange(selectedApp.id, opt.key, ''); showToast && showToast(opt.key + ' updated'); }}
+                          style={{ flex: 1, padding: '9px', borderRadius: 8, fontSize: 11, fontWeight: 500, cursor: 'pointer', fontFamily: 'inherit', transition: 'all 0.15s', border: `1px solid ${active ? opt.border : 'var(--border)'}`, background: active ? opt.tint : 'transparent', color: active ? opt.color : 'var(--text-mid)' }}>
+                          {opt.label}
+                        </button>
+                      );
+                    })}
+                    <button onClick={() => onStatusChange(selectedApp.id, 'rejected', '')}
+                      style={{ padding: '9px 12px', borderRadius: 8, fontSize: 11, cursor: 'pointer', fontFamily: 'inherit', border: '1px solid var(--border)', background: 'transparent', color: 'var(--text-dim)', transition: 'all 0.15s' }}>
+                      × Pass
+                    </button>
+                  </div>
+                  <button onClick={() => { setProfileDrawerStudent(s); setProfileDrawerOpen(true); }}
+                    style={{ width: '100%', padding: '7px', borderRadius: 8, fontSize: 10, cursor: 'pointer', fontFamily: 'inherit', border: '1px solid var(--border)', background: 'transparent', color: 'var(--text-dim)', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 4 }}>
+                    <Link2 size={10} /> Copy profile link to share
+                  </button>
+                </div>
+              </div>
+            </div>
+          );
+        })()}
       </div>
     </>
   );
@@ -2702,7 +2815,7 @@ export default function RecruiterDashboard() {
         <div style={{ padding: '32px 40px 80px', maxWidth: 1280, margin: '0 auto', animation: 'hunt-fade-in 0.3s ease' }}>
           {activeTab === 'home'    && <HomeTab recruiter={recruiter} jobs={jobs} allApps={allApps} onPostRole={() => setShowPostDrawer(true)} onOpenRole={handleOpenRole} />}
           {activeTab === 'roles'   && <RolesTab key={jobs.length} jobs={jobs} onCopyLink={handleCopyLink} onTogglePause={handleTogglePause} onDelete={handleDelete} onEdit={handleEdit} onPostRole={() => setShowPostDrawer(true)} recruiter={recruiter} showToast={showToast} initialOpenJob={pendingOpenRole} />}
-          {activeTab === 'hiring'  && <HiringTab allApps={allApps} jobs={jobs} onStatusChange={handleStatusChange} />}
+          {/* Pipeline tab removed from sidebar nav */}
           {activeTab === 'profile' && <ProfileTab recruiter={recruiter} onUpdate={refreshRecruiter} showToast={showToast} />}
         </div>
       </main>
