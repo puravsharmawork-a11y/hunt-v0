@@ -1196,14 +1196,11 @@ function CandidateProfileDrawer({ student, open, onClose }) {
 // ═══════════════════════════════════════════════════════════════════════════
 // 8. HUNT SORT SECTION — animated, AI-style, change #4
 // ═══════════════════════════════════════════════════════════════════════════
-function HuntSortSection({ apps, job, onStatusChange, showToast }) {
-  const [state, setState] = useState('idle');
+// HuntSortTrigger — just a button + loading overlay, calls onSortDone when finished
+function HuntSortTrigger({ apps, onSortDone }) {
+  const [loading, setLoading] = useState(false);
   const [progress, setProgress] = useState(0);
-  const [progressMsg, setProgressMsg] = useState('');
-  const [topCandidates, setTopCandidates] = useState([]);
-  const [selectedApp, setSelectedApp] = useState(null);
-  const [profileDrawerOpen, setProfileDrawerOpen] = useState(false);
-  const [profileDrawerStudent, setProfileDrawerStudent] = useState(null);
+  const [msg, setMsg] = useState('');
 
   const MESSAGES = [
     'Reading candidate profiles…',
@@ -1214,220 +1211,47 @@ function HuntSortSection({ apps, job, onStatusChange, showToast }) {
     'Finalising top candidates…',
   ];
 
-  const runSort = async () => {
-    setState('loading');
+  const run = async () => {
+    setLoading(true);
     setProgress(0);
     for (let i = 0; i < MESSAGES.length; i++) {
-      setProgressMsg(MESSAGES[i]);
+      setMsg(MESSAGES[i]);
       setProgress(Math.round(((i + 1) / MESSAGES.length) * 100));
       await new Promise(r => setTimeout(r, 400 + Math.random() * 200));
     }
     const sorted = [...apps].sort((a, b) => (b.match_score || 0) - (a.match_score || 0)).slice(0, 6);
-    setTopCandidates(sorted);
-    setState('done');
+    setLoading(false);
+    onSortDone(sorted);
   };
 
-  const reset = () => { setState('idle'); setProgress(0); setTopCandidates([]); setSelectedApp(null); };
-
-  // idle state: just a compact button — rendered in RoleDetailView header
-  if (state === 'idle') return (
+  return (
     <>
-      <button onClick={runSort} disabled={apps.length === 0} style={{
+      <button onClick={run} disabled={loading || apps.length === 0} style={{
         display: 'inline-flex', alignItems: 'center', gap: 6,
         padding: '8px 14px', borderRadius: 8, border: 'none',
         background: apps.length === 0 ? 'var(--bg-subtle)' : 'var(--text)',
         color: apps.length === 0 ? 'var(--text-dim)' : 'var(--bg)',
         fontSize: 11, fontWeight: 600, cursor: apps.length === 0 ? 'default' : 'pointer',
-        fontFamily: 'inherit', transition: 'opacity 0.15s', flexShrink: 0,
+        fontFamily: 'inherit', flexShrink: 0,
       }}>
         <Sparkles size={12} /> HUNT Sort
       </button>
-    </>
-  );
 
-  // loading state: full-screen centered overlay
-  if (state === 'loading') return (
-    <div style={{
-      position: 'fixed', inset: 0, zIndex: 9200,
-      background: 'rgba(0,0,0,0.6)', backdropFilter: 'blur(4px)',
-      display: 'flex', alignItems: 'center', justifyContent: 'center',
-    }}>
-      <div style={{
-        background: 'var(--bg-card)', borderRadius: 20, padding: '48px 56px',
-        border: '1px solid var(--border)', textAlign: 'center', maxWidth: 380, width: '90%',
-        boxShadow: '0 24px 80px rgba(0,0,0,0.3)',
-      }}>
-        <div style={{ width: 56, height: 56, borderRadius: 16, background: 'var(--green-tint)', border: '1px solid var(--green)', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 20px' }}>
-          <Sparkles size={24} style={{ color: 'var(--green)' }} />
-        </div>
-        <p style={{ fontFamily: "'Editorial New', Georgia, serif", fontSize: 20, color: 'var(--text)', margin: '0 0 6px', fontWeight: 400 }}>HUNT Sort</p>
-        <p style={{ fontSize: 12, color: 'var(--text-dim)', margin: '0 0 28px', lineHeight: 1.5 }}>{progressMsg}</p>
-        <div style={{ height: 3, background: 'var(--border)', borderRadius: 2, overflow: 'hidden', marginBottom: 12 }}>
-          <div style={{ height: '100%', background: 'var(--green)', borderRadius: 2, width: `${progress}%`, transition: 'width 0.4s ease' }} />
-        </div>
-        <p style={{ fontSize: 11, color: 'var(--text-dim)', margin: 0 }}>{progress}%</p>
-      </div>
-    </div>
-  );
-
-  // done state: two-column layout like reference — left list, right detail
-  return (
-    <>
-      <CandidateProfileDrawer
-        student={profileDrawerStudent}
-        open={profileDrawerOpen}
-        onClose={() => { setProfileDrawerOpen(false); setProfileDrawerStudent(null); }}
-      />
-
-      <div style={{ display: 'grid', gridTemplateColumns: selectedApp ? '220px 1fr' : '1fr', gap: 0, background: 'var(--bg-card)', border: '1.5px solid var(--green)', borderRadius: 14, marginBottom: 18, overflow: 'hidden' }}>
-
-        {/* Left: ranked list */}
-        <div style={{ borderRight: selectedApp ? '1px solid var(--border)' : 'none' }}>
-          {/* Header */}
-          <div style={{ padding: '12px 16px', borderBottom: '1px solid var(--border)', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: 7 }}>
-              <Sparkles size={13} style={{ color: 'var(--green)' }} />
-              <span style={{ fontSize: 12, fontWeight: 600, color: 'var(--text)' }}>Top {topCandidates.length}</span>
-              <span style={{ fontSize: 9, padding: '2px 6px', borderRadius: 5, background: 'var(--green-tint)', border: '1px solid var(--green)', color: 'var(--green-text)', fontWeight: 600, letterSpacing: '0.04em' }}>HUNT Sort</span>
+      {loading && (
+        <div style={{ position: 'fixed', inset: 0, zIndex: 9200, background: 'rgba(0,0,0,0.6)', backdropFilter: 'blur(4px)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+          <div style={{ background: 'var(--bg-card)', borderRadius: 20, padding: '48px 56px', border: '1px solid var(--border)', textAlign: 'center', maxWidth: 380, width: '90%', boxShadow: '0 24px 80px rgba(0,0,0,0.3)' }}>
+            <div style={{ width: 56, height: 56, borderRadius: 16, background: 'var(--green-tint)', border: '1px solid var(--green)', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 20px' }}>
+              <Sparkles size={24} style={{ color: 'var(--green)' }} />
             </div>
-            <button onClick={reset} style={{ background: 'transparent', border: 'none', cursor: 'pointer', color: 'var(--text-dim)', display: 'flex', padding: 2 }}><X size={12} /></button>
-          </div>
-
-          {/* Candidate rows */}
-          <div style={{ padding: '8px' }}>
-            {topCandidates.map((app, i) => {
-              const s = app.students || {};
-              const isSelected = selectedApp?.id === app.id;
-              return (
-                <div key={app.id} onClick={() => setSelectedApp(isSelected ? null : app)} style={{
-                  display: 'flex', alignItems: 'center', gap: 8, padding: '9px 10px',
-                  borderRadius: 8, cursor: 'pointer', transition: 'all 0.12s',
-                  background: isSelected ? 'var(--green-tint)' : 'transparent',
-                  borderLeft: isSelected ? '2px solid var(--green)' : '2px solid transparent',
-                  marginBottom: 2,
-                }}>
-                  <span style={{ fontSize: 10, color: 'var(--text-dim)', width: 14, flexShrink: 0, fontFamily: "'Editorial New', Georgia, serif" }}>{i + 1}</span>
-                  <Avatar name={s.full_name} avatarUrl={s.avatar_url} size={28} />
-                  <div style={{ flex: 1, minWidth: 0 }}>
-                    <p style={{ fontSize: 11, fontWeight: isSelected ? 600 : 500, color: 'var(--text)', margin: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{s.full_name || 'Student'}</p>
-                    <ScoreNumber score={app.match_score || 0} size={11} />
-                  </div>
-                  {app.status && app.status !== 'pending' && <StatusPill status={app.status} />}
-                </div>
-              );
-            })}
-          </div>
-
-          {/* Footer note */}
-          <div style={{ padding: '10px 16px', borderTop: '1px solid var(--border)' }}>
-            <p style={{ fontSize: 9, color: 'var(--text-dim)', margin: 0, lineHeight: 1.5 }}>Max 6 candidates per role. Skill-first, always.</p>
+            <p style={{ fontFamily: "'Editorial New', Georgia, serif", fontSize: 20, color: 'var(--text)', margin: '0 0 6px', fontWeight: 400 }}>HUNT Sort</p>
+            <p style={{ fontSize: 12, color: 'var(--text-dim)', margin: '0 0 28px', lineHeight: 1.5 }}>{msg}</p>
+            <div style={{ height: 3, background: 'var(--border)', borderRadius: 2, overflow: 'hidden', marginBottom: 12 }}>
+              <div style={{ height: '100%', background: 'var(--green)', borderRadius: 2, width: `${progress}%`, transition: 'width 0.4s ease' }} />
+            </div>
+            <p style={{ fontSize: 11, color: 'var(--text-dim)', margin: 0 }}>{progress}%</p>
           </div>
         </div>
-
-        {/* Right: detail panel — only when candidate selected */}
-        {selectedApp && (() => {
-          const s = selectedApp.students || {};
-          const score = selectedApp.match_score || 0;
-          const breakdown = selectedApp.match_breakdown || {};
-          const huntScore = s._huntScore?.score ?? s.hunt_score ?? null;
-          return (
-            <div style={{ display: 'flex', flexDirection: 'column' }}>
-              {/* Candidate header */}
-              <div style={{ padding: '16px 20px', display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between' }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-                  <Avatar name={s.full_name} avatarUrl={s.avatar_url} size={40} />
-                  <div>
-                    <p style={{ fontSize: 15, fontWeight: 600, color: 'var(--text)', margin: 0 }}>{s.full_name || 'Student'}</p>
-                    <p style={{ fontSize: 11, color: 'var(--text-dim)', margin: '2px 0 0' }}>{s.college || '—'}{s.year ? ` · ${s.year}rd Year` : ''}</p>
-                  </div>
-                </div>
-                <div style={{ textAlign: 'right' }}>
-                  <p style={{ fontFamily: "'Editorial New', Georgia, serif", fontSize: 26, color: 'var(--green)', margin: 0, lineHeight: 1 }}>{score}%</p>
-                  <p style={{ fontSize: 9, color: 'var(--text-dim)', margin: '2px 0 0', textTransform: 'uppercase', letterSpacing: '0.08em' }}>match score</p>
-                </div>
-              </div>
-
-              <div style={{ flex: 1, padding: '0 20px 16px', display: 'flex', flexDirection: 'column', gap: 14 }}>
-                {/* Score breakdown */}
-                {Object.keys(breakdown).length > 0 && (
-                  <div>
-                    <p style={{ fontSize: 9, fontWeight: 600, color: 'var(--text-dim)', textTransform: 'uppercase', letterSpacing: '0.1em', marginBottom: 10 }}>Score Breakdown</p>
-                    {Object.entries(breakdown).map(([k, v]) => (
-                      <div key={k} style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 7 }}>
-                        <span style={{ fontSize: 11, color: 'var(--text-mid)', width: 130, flexShrink: 0, textTransform: 'capitalize' }}>{k.replace(/([A-Z])/g, ' $1').trim()}</span>
-                        <div style={{ flex: 1, height: 3, background: 'var(--border)', borderRadius: 2, overflow: 'hidden' }}>
-                          <div style={{ height: '100%', width: `${Math.min(v / 40, 1) * 100}%`, background: 'var(--green)', borderRadius: 2 }} />
-                        </div>
-                        <span style={{ fontSize: 11, fontWeight: 600, color: 'var(--text)', width: 30, textAlign: 'right' }}>{v}%</span>
-                      </div>
-                    ))}
-                  </div>
-                )}
-
-                {/* Matched skills */}
-                {(s.skills || []).length > 0 && (
-                  <div>
-                    <p style={{ fontSize: 9, fontWeight: 600, color: 'var(--text-dim)', textTransform: 'uppercase', letterSpacing: '0.1em', marginBottom: 8 }}>Matched Skills</p>
-                    <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>
-                      {(s.skills || []).slice(0, 6).map((sk, i) => (
-                        <span key={i} style={{ fontSize: 10, padding: '3px 9px', borderRadius: 6, background: 'var(--green-tint)', border: '1px solid var(--green)', color: 'var(--green-text)' }}>{sk.name}</span>
-                      ))}
-                    </div>
-                  </div>
-                )}
-
-                {/* Top project */}
-                {(s.projects || []).length > 0 && (
-                  <div style={{ padding: '12px 14px', background: 'var(--bg-subtle)', borderRadius: 10, border: '1px solid var(--border)' }}>
-                    <p style={{ fontSize: 9, fontWeight: 600, color: 'var(--text-dim)', textTransform: 'uppercase', letterSpacing: '0.1em', marginBottom: 6 }}>Top Project</p>
-                    <p style={{ fontSize: 13, fontWeight: 600, color: 'var(--text)', margin: '0 0 3px' }}>{s.projects[0].title || s.projects[0].name}</p>
-                    <p style={{ fontSize: 11, color: 'var(--text-dim)', margin: 0 }}>
-                      {Array.isArray(s.projects[0].techStack) ? s.projects[0].techStack.slice(0, 3).join(' + ') : ''}
-                      {s.projects[0].github_url ? ' · Live on GitHub' : ''}
-                    </p>
-                  </div>
-                )}
-
-                {/* GitHub */}
-                {s.github_url && (
-                  <div style={{ padding: '10px 14px', background: 'var(--bg-subtle)', borderRadius: 10, border: '1px solid var(--border)' }}>
-                    <p style={{ fontSize: 9, fontWeight: 600, color: 'var(--text-dim)', textTransform: 'uppercase', letterSpacing: '0.1em', marginBottom: 4 }}>GitHub</p>
-                    <p style={{ fontSize: 12, color: 'var(--text)', margin: 0 }}>
-                      {s.github_contributions ? `${s.github_contributions} contributions` : 'Profile available'}
-                    </p>
-                  </div>
-                )}
-
-                {/* Action buttons */}
-                <div style={{ marginTop: 'auto', display: 'flex', flexDirection: 'column', gap: 8 }}>
-                  <div style={{ display: 'flex', gap: 8 }}>
-                    {[
-                      { key: 'shortlisted', label: '✓ Shortlist', color: 'var(--green)', tint: 'var(--green-tint)', border: 'var(--green)' },
-                      { key: 'interview',   label: '📋 Interview', color: 'var(--blue)',  tint: 'var(--blue-tint)',  border: 'var(--blue)' },
-                    ].map(opt => {
-                      const active = selectedApp.status === opt.key;
-                      return (
-                        <button key={opt.key} onClick={async () => { await onStatusChange(selectedApp.id, opt.key, ''); showToast && showToast(opt.key + ' updated'); }}
-                          style={{ flex: 1, padding: '9px', borderRadius: 8, fontSize: 11, fontWeight: 500, cursor: 'pointer', fontFamily: 'inherit', transition: 'all 0.15s', border: `1px solid ${active ? opt.border : 'var(--border)'}`, background: active ? opt.tint : 'transparent', color: active ? opt.color : 'var(--text-mid)' }}>
-                          {opt.label}
-                        </button>
-                      );
-                    })}
-                    <button onClick={() => onStatusChange(selectedApp.id, 'rejected', '')}
-                      style={{ padding: '9px 12px', borderRadius: 8, fontSize: 11, cursor: 'pointer', fontFamily: 'inherit', border: '1px solid var(--border)', background: 'transparent', color: 'var(--text-dim)', transition: 'all 0.15s' }}>
-                      × Pass
-                    </button>
-                  </div>
-                  <button onClick={() => { setProfileDrawerStudent(s); setProfileDrawerOpen(true); }}
-                    style={{ width: '100%', padding: '7px', borderRadius: 8, fontSize: 10, cursor: 'pointer', fontFamily: 'inherit', border: '1px solid var(--border)', background: 'transparent', color: 'var(--text-dim)', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 4 }}>
-                    <Link2 size={10} /> Copy profile link to share
-                  </button>
-                </div>
-              </div>
-            </div>
-          );
-        })()}
-      </div>
+      )}
     </>
   );
 }
@@ -1758,11 +1582,12 @@ function RoleCard({ job, onClick, onTogglePause, onCopyLink, onDelete, onEdit })
 // 11. ROLE DETAIL VIEW — with role pipeline sub-tab (change #2, #3, #4)
 // ═══════════════════════════════════════════════════════════════════════════
 function RoleDetailView({ job, onBack, onCopyLink, onEdit, onTogglePause, onDelete, recruiter, showToast }) {
-  const [apps, setApps]               = useState([]);
-  const [loading, setLoading]         = useState(true);
-  const [selectedApp, setSelectedApp] = useState(null);
-  const [subTab, setSubTab]           = useState('candidates'); // candidates | pipeline
-  const [profileDrawerOpen, setProfileDrawerOpen]     = useState(false);
+  const [apps, setApps]                     = useState([]);
+  const [loading, setLoading]               = useState(true);
+  const [selectedApp, setSelectedApp]       = useState(null);
+  const [subTab, setSubTab]                 = useState('candidates');
+  const [sortedCandidates, setSortedCandidates] = useState(null); // null = not run yet
+  const [profileDrawerOpen, setProfileDrawerOpen]       = useState(false);
   const [profileDrawerStudent, setProfileDrawerStudent] = useState(null);
 
   useEffect(() => {
@@ -1781,15 +1606,32 @@ function RoleDetailView({ job, onBack, onCopyLink, onEdit, onTogglePause, onDele
         { role: job.role, company: job.company || recruiter?.startups?.name },
       );
       setApps(a => a.map(x => x.id === appId ? { ...x, status, recruiter_message: note || x.recruiter_message } : x));
-      if (selectedApp?.id === appId) setSelectedApp(s => ({ ...s, status, recruiter_message: note || s.recruiter_message }));
+      if (sortedCandidates) setSortedCandidates(sc => sc.map(x => x.id === appId ? { ...x, status } : x));
+      if (selectedApp?.id === appId) setSelectedApp(s => ({ ...s, status }));
       const labels = { shortlisted: 'Shortlisted ✓', interview: 'Moved to interview', hired: 'Hired! 🎉', rejected: 'Passed' };
       showToast(labels[status] || 'Updated');
     } catch (e) { showToast(e.message || 'Update failed', 'error'); }
   };
 
-  const status = job.status || (job.is_active ? 'live' : 'paused');
-  const avgScore = apps.length ? Math.round(apps.reduce((s, a) => s + (a.match_score || 0), 0) / apps.length) : 0;
-  const counts = apps.reduce((acc, a) => { const s = a.status || 'pending'; acc[s] = (acc[s] || 0) + 1; return acc; }, {});
+  const handleSortDone = (candidates) => {
+    setSortedCandidates(candidates);
+    setSelectedApp(null);
+    setSubTab('huntsort'); // switch to HUNT Sort tab automatically
+  };
+
+  const jobStatus = job.status || (job.is_active ? 'live' : 'paused');
+  const avgScore  = apps.length ? Math.round(apps.reduce((s, a) => s + (a.match_score || 0), 0) / apps.length) : 0;
+  const counts    = apps.reduce((acc, a) => { const s = a.status || 'pending'; acc[s] = (acc[s] || 0) + 1; return acc; }, {});
+
+  // Which list to show in the candidates area
+  const displayApps = subTab === 'huntsort' ? (sortedCandidates || []) : apps;
+
+  // Tabs
+  const tabs = [
+    ...(sortedCandidates ? [{ id: 'huntsort', label: `HUNT Sort (${sortedCandidates.length})` }] : []),
+    { id: 'candidates', label: `All Candidates (${apps.length})` },
+    { id: 'pipeline',   label: 'Pipeline' },
+  ];
 
   return (
     <div>
@@ -1811,20 +1653,19 @@ function RoleDetailView({ job, onBack, onCopyLink, onEdit, onTogglePause, onDele
               <p style={{ fontSize: 12, color: 'var(--text-dim)', margin: '4px 0 0' }}>{job.company} · {job.location} · {job.stipend}</p>
               <div style={{ marginTop: 6 }}>
                 <span style={{ fontSize: 9, padding: '2px 8px', borderRadius: 10, fontWeight: 500,
-                  background: status === 'live' ? 'var(--green-tint)' : 'var(--amber-tint)',
-                  color: status === 'live' ? 'var(--green-text)' : 'var(--amber)',
-                  border: `1px solid ${status === 'live' ? 'var(--green)' : 'var(--amber)'}`,
+                  background: jobStatus === 'live' ? 'var(--green-tint)' : 'var(--amber-tint)',
+                  color: jobStatus === 'live' ? 'var(--green-text)' : 'var(--amber)',
+                  border: `1px solid ${jobStatus === 'live' ? 'var(--green)' : 'var(--amber)'}`,
                   textTransform: 'uppercase', letterSpacing: '0.05em',
-                }}>{status === 'live' ? '● Live' : '⏸ Paused'}</span>
+                }}>{jobStatus === 'live' ? '● Live' : '⏸ Paused'}</span>
               </div>
             </div>
           </div>
-          {/* Action buttons — HUNT Sort + share, edit, pause, delete */}
           <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap', justifyContent: 'flex-end', alignItems: 'center' }}>
-            {!loading && <HuntSortSection apps={apps} job={job} onStatusChange={handleStatusChange} showToast={showToast} />}
+            {!loading && <HuntSortTrigger apps={apps} onSortDone={handleSortDone} />}
             <button onClick={() => onCopyLink(job)} style={btnGhost()}><Link2 size={12} /> Share</button>
             <button onClick={() => onEdit(job)} style={btnGhost()}><Edit2 size={12} /> Edit</button>
-            <button onClick={() => onTogglePause(job)} style={btnGhost()}>{status === 'live' ? <><Pause size={12} /> Pause</> : <><Play size={12} /> Resume</>}</button>
+            <button onClick={() => onTogglePause(job)} style={btnGhost()}>{jobStatus === 'live' ? <><Pause size={12} /> Pause</> : <><Play size={12} /> Resume</>}</button>
             <button onClick={() => { onDelete(job); onBack(); }} style={{ ...btnGhost(), color: 'var(--red)', borderColor: 'var(--red)' }}><Trash2 size={12} /> Delete</button>
           </div>
         </div>
@@ -1843,37 +1684,54 @@ function RoleDetailView({ job, onBack, onCopyLink, onEdit, onTogglePause, onDele
         </div>
       </div>
 
-      {/* Sub tabs — candidates | pipeline (change #2) */}
+      {/* Tab strip */}
       <div style={{ display: 'flex', borderBottom: '1px solid var(--border)', marginBottom: 18 }}>
-        {[
-          { id: 'candidates', label: `All Candidates (${apps.length})` },
-          { id: 'pipeline',   label: 'Pipeline' },
-        ].map(t => (
-          <button key={t.id} onClick={() => setSubTab(t.id)} style={{
-            padding: '10px 18px', fontSize: 13, fontFamily: 'inherit', cursor: 'pointer',
-            background: 'transparent', border: 'none',
-            borderBottom: `2px solid ${subTab === t.id ? 'var(--text)' : 'transparent'}`,
-            color: subTab === t.id ? 'var(--text)' : 'var(--text-dim)',
-            fontWeight: subTab === t.id ? 600 : 400, marginBottom: -1,
-            whiteSpace: 'nowrap',
-          }}>{t.label}</button>
-        ))}
+        {tabs.map(t => {
+          const isHuntSort = t.id === 'huntsort';
+          const active = subTab === t.id;
+          return (
+            <button key={t.id} onClick={() => { setSubTab(t.id); setSelectedApp(null); }} style={{
+              padding: '10px 18px', fontSize: 13, fontFamily: 'inherit', cursor: 'pointer',
+              background: 'transparent', border: 'none',
+              borderBottom: `2px solid ${active ? (isHuntSort ? 'var(--green)' : 'var(--text)') : 'transparent'}`,
+              color: active ? (isHuntSort ? 'var(--green)' : 'var(--text)') : 'var(--text-dim)',
+              fontWeight: active ? 600 : 400, marginBottom: -1, whiteSpace: 'nowrap',
+              display: 'flex', alignItems: 'center', gap: 6,
+            }}>
+              {isHuntSort && <Sparkles size={12} style={{ color: active ? 'var(--green)' : 'var(--text-dim)' }} />}
+              {t.label}
+            </button>
+          );
+        })}
+
+        {/* Clear HUNT Sort results button */}
+        {sortedCandidates && subTab === 'huntsort' && (
+          <button onClick={() => { setSortedCandidates(null); setSubTab('candidates'); setSelectedApp(null); }}
+            style={{ marginLeft: 'auto', padding: '10px 12px', background: 'transparent', border: 'none', cursor: 'pointer', color: 'var(--text-dim)', display: 'flex', alignItems: 'center', gap: 4, fontSize: 11, fontFamily: 'inherit' }}>
+            <X size={11} /> Clear sort
+          </button>
+        )}
       </div>
 
       {loading ? (
         <p style={{ textAlign: 'center', color: 'var(--text-dim)', padding: 40, fontSize: 13 }}>Loading applicants…</p>
-      ) : subTab === 'candidates' ? (
-        /* All candidates — no status filter (change #3) */
-        apps.length === 0 ? (
-          <EmptyState icon="🎯" title="No applicants yet." message="Share your role link to start receiving applications." />
+      ) : subTab === 'pipeline' ? (
+        <RolePipelineView apps={apps} onStatusChange={handleStatusChange} showToast={showToast}
+          onViewFull={(student) => { setProfileDrawerStudent(student); setProfileDrawerOpen(true); }}
+        />
+      ) : (
+        /* Both HUNT Sort tab and All Candidates tab use the same list+snapshot layout */
+        displayApps.length === 0 ? (
+          <EmptyState icon="🎯" title={subTab === 'huntsort' ? 'No candidates to rank.' : 'No applicants yet.'} message={subTab === 'huntsort' ? 'Run HUNT Sort when you have applicants.' : 'Share your role link to start receiving applications.'} />
         ) : (
           <div style={{ display: 'grid', gridTemplateColumns: selectedApp ? '1fr 380px' : '1fr', gap: 16 }}>
             <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
-              {apps.map((app, i) => (
+              {displayApps.map((app, i) => (
                 <ApplicantRow
                   key={app.id} app={app} rank={i + 1}
                   onClick={() => setSelectedApp(selectedApp?.id === app.id ? null : app)}
                   isSelected={selectedApp?.id === app.id}
+                  showRank={subTab === 'huntsort'}
                 />
               ))}
             </div>
@@ -1887,28 +1745,31 @@ function RoleDetailView({ job, onBack, onCopyLink, onEdit, onTogglePause, onDele
             )}
           </div>
         )
-      ) : (
-        /* Role-specific pipeline (change #2) */
-        <RolePipelineView apps={apps} onStatusChange={handleStatusChange} showToast={showToast}
-          onViewFull={(student) => { setProfileDrawerStudent(student); setProfileDrawerOpen(true); }}
-        />
       )}
     </div>
   );
 }
 
-function ApplicantRow({ app, rank, onClick, isSelected }) {
+function ApplicantRow({ app, rank, onClick, isSelected, showRank = false }) {
   const s     = app.students || {};
   const score = app.match_score || 0;
   const huntScore = s._huntScore?.score ?? s.hunt_score ?? null;
   return (
     <div onClick={onClick} className="hn-card" style={{
       background: 'var(--bg-card)',
-      border: isSelected ? '1.5px solid var(--text)' : '1px solid var(--border)',
+      border: isSelected
+        ? `1.5px solid ${showRank ? 'var(--green)' : 'var(--text)'}`
+        : '1px solid var(--border)',
       borderRadius: 10, padding: '13px 16px', cursor: 'pointer',
       display: 'flex', alignItems: 'center', gap: 12, transition: 'border-color 0.15s',
+      background: isSelected && showRank ? 'var(--green-tint)' : 'var(--bg-card)',
     }}>
-      <span style={{ fontSize: 10, color: 'var(--text-dim)', width: 22, flexShrink: 0, textAlign: 'center', fontFamily: "'Editorial New', Georgia, serif" }}>#{rank}</span>
+      <span style={{
+        fontSize: 10, width: 22, flexShrink: 0, textAlign: 'center',
+        fontFamily: "'Editorial New', Georgia, serif",
+        color: showRank ? 'var(--green)' : 'var(--text-dim)',
+        fontWeight: showRank ? 700 : 400,
+      }}>#{rank}</span>
       <Avatar name={s.full_name} avatarUrl={s.avatar_url} size={34} />
       <div style={{ flex: 1, minWidth: 0 }}>
         <p style={{ fontSize: 12, fontWeight: 500, color: 'var(--text)', margin: 0, lineHeight: 1.2 }}>{s.full_name || 'Student'}</p>
