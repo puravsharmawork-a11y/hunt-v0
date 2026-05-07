@@ -1086,13 +1086,13 @@ function getSkillLogoForRecruiter(skillName) {
 
 // Coding platform configs
 const CODING_PLATFORMS = {
-  leetcode:    { label: 'LeetCode',    url: (u) => `https://leetcode.com/${u}`,          color: '#FFA116', emoji: '🟡' },
-  codeforces:  { label: 'Codeforces',  url: (u) => `https://codeforces.com/profile/${u}`, color: '#1F8ACB', emoji: '🔵' },
-  codechef:    { label: 'CodeChef',    url: (u) => `https://codechef.com/users/${u}`,     color: '#5B4638', emoji: '🟤' },
-  hackerrank:  { label: 'HackerRank',  url: (u) => `https://hackerrank.com/${u}`,         color: '#2EC866', emoji: '🟢' },
-  hackerearth: { label: 'HackerEarth', url: (u) => `https://hackerearth.com/@${u}`,       color: '#323754', emoji: '🟣' },
-  kaggle:      { label: 'Kaggle',      url: (u) => `https://kaggle.com/${u}`,             color: '#20BEFF', emoji: '🔷' },
-  geeksforgeeks: { label: 'GeeksforGeeks', url: (u) => `https://auth.geeksforgeeks.org/user/${u}`, color: '#2F8D46', emoji: '🌿' },
+  leetcode:    { label: 'LeetCode',    url: (u) => `https://leetcode.com/${u}`,          color: '#FFA116', logo: 'https://assets.leetcode.com/static_assets/public/icons/favicon-192x192.png' },
+  codeforces:  { label: 'Codeforces',  url: (u) => `https://codeforces.com/profile/${u}`, color: '#1F8ACB', logo: 'https://codeforces.org/s/0/favicon-32x32.png' },
+  codechef:    { label: 'CodeChef',    url: (u) => `https://codechef.com/users/${u}`,     color: '#5B4638', logo: 'https://cdn.codechef.com/images/cc-logo.svg' },
+  hackerrank:  { label: 'HackerRank',  url: (u) => `https://hackerrank.com/${u}`,         color: '#2EC866', logo: 'https://hrcdn.net/fcore/assets/favicon-ddc852f75a.png' },
+  hackerearth: { label: 'HackerEarth', url: (u) => `https://hackerearth.com/@${u}`,       color: '#323754', logo: 'https://static-fastly.hackerearth.com/static/hackathon/images/favicon.png' },
+  kaggle:      { label: 'Kaggle',      url: (u) => `https://kaggle.com/${u}`,             color: '#20BEFF', logo: 'https://www.kaggle.com/static/images/favicon.ico' },
+  geeksforgeeks: { label: 'GeeksforGeeks', url: (u) => `https://auth.geeksforgeeks.org/user/${u}`, color: '#2F8D46', logo: 'https://media.geeksforgeeks.org/gfg-gg-logo.svg' },
 };
 
 // Star rating display
@@ -1353,8 +1353,8 @@ function CandidateProfileDrawer({ student, open, onClose }) {
                       return (
                         <a key={platform} href={url} target="_blank" rel="noopener noreferrer"
                           style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '9px 12px', background: 'var(--bg-card)', border: '1px solid var(--border)', borderRadius: 8, textDecoration: 'none' }}>
-                          <div style={{ width: 28, height: 28, borderRadius: 6, background: cfg.color, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 14, flexShrink: 0 }}>
-                            {cfg.emoji}
+                          <div style={{ width: 28, height: 28, borderRadius: 6, background: cfg.color, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, overflow: 'hidden' }}>
+                            <img src={cfg.logo} alt={cfg.label} style={{ width: 18, height: 18, objectFit: 'contain' }} onError={e => { e.target.style.display = 'none'; }} />
                           </div>
                           <span style={{ fontSize: 12, fontWeight: 600, color: 'var(--text)', width: 100, flexShrink: 0 }}>{cfg.label}</span>
                           <span style={{ fontSize: 12, color: 'var(--green-text)', flex: 1 }}>@{username}</span>
