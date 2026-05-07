@@ -1,6 +1,6 @@
 // src/components/RecruiterDashboard.jsx
 // HUNT — RECRUITER DASHBOARD (v9 — enhanced CandidateProfileDrawer)
-// Changes: CandidateProfileDrawer now shows contact info, education, certifications, 
+// Changes: CandidateProfileDrawer now shows contact info, education, certifications,
 // awards, coding profiles, other links, real skill logos, and reviews tab.
 
 import React, { useState, useEffect, useMemo, useRef } from 'react';
@@ -1157,31 +1157,35 @@ function CandidateProfileDrawer({ student, open, onClose }) {
       }}>
         {/* Header */}
         <div style={{ flexShrink: 0, background: 'var(--bg-card)', borderBottom: '1px solid var(--border)' }}>
-          {/* Banner */}
-          <div style={{ position: 'relative', height: 96, overflow: 'hidden', flexShrink: 0 }}>
-            {s.banner_url ? (
-              <img src={s.banner_url} alt="banner" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
-            ) : (
-              <div style={{ width: '100%', height: '100%', background: 'linear-gradient(120deg, var(--bg-subtle) 0%, var(--border) 100%)' }} />
-            )}
-            {/* Close button floating top-right over banner */}
-            <button onClick={onClose} style={{ position: 'absolute', top: 10, right: 12, width: 28, height: 28, borderRadius: 7, border: '1px solid rgba(255,255,255,0.25)', background: 'rgba(0,0,0,0.35)', backdropFilter: 'blur(6px)', color: '#fff', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-              <X size={13} />
-            </button>
-          </div>
-          {/* Avatar + name row */}
-          <div style={{ padding: '0 20px 14px', display: 'flex', alignItems: 'flex-end', justifyContent: 'space-between', marginTop: -28 }}>
-            <div style={{ display: 'flex', alignItems: 'flex-end', gap: 12 }}>
-              {s.avatar_url ? (
-                <img src={s.avatar_url} alt={s.full_name} style={{ width: 56, height: 56, borderRadius: '50%', objectFit: 'cover', border: '3px solid var(--bg-card)', flexShrink: 0 }} />
+          {/* Banner + avatar overlap container */}
+          <div style={{ position: 'relative' }}>
+            {/* Banner strip */}
+            <div style={{ height: 80, overflow: 'hidden', position: 'relative' }}>
+              {s.banner_url && s.banner_url.startsWith('http') ? (
+                <img src={s.banner_url} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }} />
               ) : (
-                <div style={{ width: 56, height: 56, borderRadius: '50%', background: 'var(--bg-subtle)', border: '3px solid var(--bg-card)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 700, fontSize: 18, color: 'var(--text-mid)', flexShrink: 0 }}>{initials}</div>
+                <div style={{ width: '100%', height: '100%', background: 'linear-gradient(120deg, var(--bg-subtle) 0%, var(--border-mid) 100%)' }} />
               )}
-              <div style={{ paddingBottom: 4 }}>
-                <p style={{ fontSize: 15, fontWeight: 600, color: 'var(--text)', margin: 0 }}>{s.full_name || 'Student'}</p>
-                <p style={{ fontSize: 11, color: 'var(--text-dim)', margin: '1px 0 0' }}>{s.college || '—'}{s.year ? ` · Year ${s.year}` : ''}</p>
-              </div>
+              {/* Close button over banner */}
+              <button onClick={onClose} style={{ position: 'absolute', top: 8, right: 10, width: 26, height: 26, borderRadius: 6, border: '1px solid rgba(255,255,255,0.3)', background: 'rgba(0,0,0,0.4)', backdropFilter: 'blur(6px)', color: '#fff', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 2 }}>
+                <X size={12} />
+              </button>
             </div>
+
+            {/* Avatar — absolutely positioned to straddle banner bottom */}
+            <div style={{ position: 'absolute', bottom: -28, left: 18 }}>
+              {s.avatar_url ? (
+                <img src={s.avatar_url} alt={s.full_name} style={{ width: 56, height: 56, borderRadius: '50%', objectFit: 'cover', border: '3px solid var(--bg-card)', display: 'block' }} />
+              ) : (
+                <div style={{ width: 56, height: 56, borderRadius: '50%', background: 'var(--bg-subtle)', border: '3px solid var(--bg-card)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 700, fontSize: 18, color: 'var(--text-mid)' }}>{initials}</div>
+              )}
+            </div>
+          </div>
+
+          {/* Name row — padded to clear the avatar */}
+          <div style={{ padding: '36px 20px 12px 86px' }}>
+            <p style={{ fontSize: 15, fontWeight: 600, color: 'var(--text)', margin: 0, lineHeight: 1.3 }}>{s.full_name || 'Student'}</p>
+            <p style={{ fontSize: 11, color: 'var(--text-dim)', margin: '2px 0 0' }}>{s.college || '—'}{s.year ? ` · Year ${s.year}` : ''}</p>
           </div>
           {/* Tabs */}
           <div style={{ display: 'flex', overflowX: 'auto', borderTop: '1px solid var(--border)', padding: '0 20px', scrollbarWidth: 'none' }}>
