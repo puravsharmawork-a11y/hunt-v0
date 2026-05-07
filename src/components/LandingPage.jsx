@@ -68,6 +68,17 @@ function PreBookModal({ onClose }) {
     setStatus('success');
   };
 
+  // ── FIX: startup sign-in redirects to /recruiter/onboarding ──
+  const handleStartupSignIn = async () => {
+    try {
+      const { error } = await supabase.auth.signInWithOAuth({
+        provider: 'google',
+        options: { redirectTo: `${window.location.origin}/recruiter/onboarding` }
+      });
+      if (error) throw error;
+    } catch(e) { alert('Sign in failed: ' + e.message); }
+  };
+
   const inp = {
     width:'100%', padding:'11px 14px', background:t.gray50,
     border:`1px solid ${t.gray100}`, borderRadius:6, color:t.black,
@@ -87,15 +98,7 @@ function PreBookModal({ onClose }) {
       We'll reach out personally. If you've already been approved, sign in now to access the dashboard.
     </p>
     <button
-      onClick={async () => {
-        try {
-          const { data, error } = await supabase.auth.signInWithOAuth({
-            provider: 'google',
-            options: { redirectTo: `${window.location.origin}/recruiter/onboarding` }
-          });
-          if (error) throw error;
-        } catch(e) { alert('Sign in failed: ' + e.message); }
-      }}
+      onClick={handleStartupSignIn}
       style={{ display:'flex', alignItems:'center', gap:8, background:t.ember, color:'#fff', border:'none', borderRadius:6, padding:'12px 24px', fontSize:14, fontWeight:500, cursor:'pointer', fontFamily:t.sans, margin:'0 auto 12px' }}
     >
       <GoogleIcon /> Sign in with Google
@@ -1123,9 +1126,24 @@ export default function LandingPage() {
   const [mode, setMode]           = useState('student');
   const [showPreBook, setPreBook] = useState(false);
 
+  // ── FIX: student sign-in uses default redirect (to student onboarding/dashboard)
   const handleSignIn = async () => {
     try { await signInWithGoogle(); }
     catch (error) { console.error('Sign in error:', error); alert('Failed to sign in. Please try again.'); }
+  };
+
+  // ── FIX: startup sign-in always redirects to /recruiter/onboarding
+  const handleStartupSignIn = async () => {
+    try {
+      const { error } = await supabase.auth.signInWithOAuth({
+        provider: 'google',
+        options: { redirectTo: `${window.location.origin}/recruiter/onboarding` }
+      });
+      if (error) throw error;
+    } catch (error) {
+      console.error('Startup sign in error:', error);
+      alert('Failed to sign in. Please try again.');
+    }
   };
 
   const handleTalkToFounder = () => {
@@ -1144,13 +1162,14 @@ export default function LandingPage() {
           <span style={{ fontSize:11, fontWeight:400, color:t.gray400, letterSpacing:'0.06em', textTransform:'uppercase' }}>
             {mode === 'student' ? 'Internships. Not noise.' : 'Skill-first talent. Not noise.'}
           </span>
+          {/* ── FIX: nav CTA uses mode-appropriate sign-in ── */}
           {mode === 'student' ? (
             <button onClick={handleSignIn} style={{ display:'flex', alignItems:'center', gap:8, background:t.black, color:t.white, padding:'10px 20px', borderRadius:6, fontSize:13, fontWeight:400, cursor:'pointer', border:'none', fontFamily:t.sans }} onMouseOver={e=>e.currentTarget.style.opacity='0.8'} onMouseOut={e=>e.currentTarget.style.opacity='1'}>
               <GoogleIcon /> Sign in with Google
             </button>
           ) : (
-            <button onClick={()=>setPreBook(true)} style={{ display:'flex', alignItems:'center', gap:8, background:'#D85A30', color:'#fff', padding:'10px 20px', borderRadius:6, fontSize:13, fontWeight:500, cursor:'pointer', border:'none', fontFamily:t.sans }} onMouseOver={e=>e.currentTarget.style.background='#c04e28'} onMouseOut={e=>e.currentTarget.style.background='#D85A30'}>
-              Reserve Early Access
+            <button onClick={handleStartupSignIn} style={{ display:'flex', alignItems:'center', gap:8, background:'#D85A30', color:'#fff', padding:'10px 20px', borderRadius:6, fontSize:13, fontWeight:500, cursor:'pointer', border:'none', fontFamily:t.sans }} onMouseOver={e=>e.currentTarget.style.background='#c04e28'} onMouseOut={e=>e.currentTarget.style.background='#D85A30'}>
+              <GoogleIcon /> Sign in with Google
             </button>
           )}
         </nav>
