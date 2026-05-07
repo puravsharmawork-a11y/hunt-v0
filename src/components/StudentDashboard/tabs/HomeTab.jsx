@@ -135,7 +135,7 @@ export function HomeTab({
           interviewed_at,
           hired_at,
           jobs (
-            id, role, company, logo,
+            id, role, company, logo_url,
             stipend, location, duration
           )
         `)
@@ -479,20 +479,25 @@ export function HomeTab({
                         }}
                       >
                         {/* Logo */}
+                        {job.logo_url ? (
+                          <img
+                            src={job.logo_url}
+                            alt={job.company}
+                            style={{ width: 34, height: 34, objectFit: 'cover', border: '1px solid var(--border-mid)', flexShrink: 0, display: 'block' }}
+                            onError={e => { e.target.style.display = 'none'; e.target.nextSibling && (e.target.nextSibling.style.display = 'grid'); }}
+                          />
+                        ) : null}
                         <div
                           style={{
-                            width: 34,
-                            height: 34,
-                            background: 'var(--ink)',
-                            color: 'var(--cream)',
-                            display: 'grid',
+                            width: 34, height: 34,
+                            background: 'var(--ink)', color: 'var(--cream)',
+                            display: job.logo_url ? 'none' : 'grid',
                             placeItems: 'center',
                             fontFamily: "'JetBrains Mono', monospace",
-                            fontWeight: 600,
-                            fontSize: 14,
+                            fontWeight: 600, fontSize: 14,
                           }}
                         >
-                          {job.logo || glyph}
+                          {glyph}
                         </div>
 
                         {/* Role + company */}
@@ -632,11 +637,19 @@ export function HomeTab({
                     <Bookmark size={14} fill="var(--blue)" />
                   </button>
                   <div style={{ display: 'flex', gap: 12, marginBottom: 10 }}>
+                    {job.logo_url ? (
+                      <img
+                        src={job.logo_url}
+                        alt={job.company}
+                        style={{ width: 36, height: 36, objectFit: 'cover', border: '1px solid var(--border-mid)', flexShrink: 0, display: 'block' }}
+                        onError={e => { e.target.style.display = 'none'; e.target.nextSibling && (e.target.nextSibling.style.display = 'grid'); }}
+                      />
+                    ) : null}
                     <div
                       style={{
                         width: 36, height: 36,
                         background: 'var(--ink)', color: 'var(--cream)',
-                        display: 'grid', placeItems: 'center',
+                        display: job.logo_url ? 'none' : 'grid', placeItems: 'center',
                         fontFamily: "'JetBrains Mono', monospace",
                         fontWeight: 600, fontSize: 14, flexShrink: 0,
                       }}
@@ -786,17 +799,25 @@ function OfferCard({ app }) {
       {/* Body */}
       <div style={{ padding: '16px 18px' }}>
         <div style={{ display: 'flex', gap: 12, alignItems: 'flex-start', marginBottom: 14 }}>
-          {/* Company glyph */}
+          {/* Company logo */}
+          {job.logo_url ? (
+            <img
+              src={job.logo_url}
+              alt={job.company}
+              style={{ width: 40, height: 40, objectFit: 'cover', border: '1px solid var(--border-mid)', flexShrink: 0, display: 'block' }}
+              onError={e => { e.target.style.display = 'none'; e.target.nextSibling && (e.target.nextSibling.style.display = 'grid'); }}
+            />
+          ) : null}
           <div
             style={{
               width: 40, height: 40,
               background: 'var(--ink)', color: 'var(--cream)',
-              display: 'grid', placeItems: 'center',
+              display: job.logo_url ? 'none' : 'grid', placeItems: 'center',
               fontFamily: "'JetBrains Mono', monospace",
               fontWeight: 600, fontSize: 16, flexShrink: 0,
             }}
           >
-            {job.logo || glyph}
+            {glyph}
           </div>
 
           {/* Role info */}
