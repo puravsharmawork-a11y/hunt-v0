@@ -1160,11 +1160,9 @@ function CandidateProfileDrawer({ student, open, onClose }) {
           {/* Banner + avatar overlap container */}
           <div style={{ position: 'relative' }}>
             {/* Banner strip */}
-            <div style={{ height: 80, overflow: 'hidden', position: 'relative' }}>
-              {s.banner_url && s.banner_url.startsWith('http') ? (
-                <img src={s.banner_url} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }} />
-              ) : (
-                <div style={{ width: '100%', height: '100%', background: 'linear-gradient(120deg, var(--bg-subtle) 0%, var(--border-mid) 100%)' }} />
+            <div style={{ height: 110, overflow: 'hidden', position: 'relative', background: 'linear-gradient(120deg, var(--bg-subtle) 0%, var(--border-mid) 100%)' }}>
+              {s.banner_url && s.banner_url.startsWith('http') && (
+                <img src={s.banner_url} alt="" style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', objectFit: 'cover', objectPosition: 'center', display: 'block' }} />
               )}
               {/* Close button over banner */}
               <button onClick={onClose} style={{ position: 'absolute', top: 8, right: 10, width: 26, height: 26, borderRadius: 6, border: '1px solid rgba(255,255,255,0.3)', background: 'rgba(0,0,0,0.4)', backdropFilter: 'blur(6px)', color: '#fff', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 2 }}>
