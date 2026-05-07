@@ -1115,8 +1115,6 @@ function StarRating({ rating, max = 5, size = 12 }) {
 
 function CandidateProfileDrawer({ student, open, onClose }) {
   const [activeTab, setActiveTab] = useState('overview');
-  if (!student) return null;
-  const s = student;
 
   // Inject devicon CSS if not already present
   useEffect(() => {
@@ -1129,6 +1127,10 @@ function CandidateProfileDrawer({ student, open, onClose }) {
       document.head.appendChild(link);
     }
   }, []);
+
+  // Early return AFTER all hooks
+  if (!student) return null;
+  const s = student;
 
   const tabs = [
     { id: 'overview', label: 'Overview' },
