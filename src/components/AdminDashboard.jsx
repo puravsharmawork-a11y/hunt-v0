@@ -302,6 +302,27 @@ function RecruiterDetail({recruiter:r,onClose,onUpdate,T}) {
     } catch(e){ alert('Failed: '+e.message); }
     finally{ setSaving(null); }
   };
+
+  // ── NEW: delete recruiter (jobs + applications cascade, then recruiter row) ──
+  const deleteRecruiter = async () => {
+    const name = r.company_name || r.company || 'this recruiter';
+    if(!window.confirm(`Delete ${name}? This will permanently remove their profile, all job listings, and associated applications. This cannot be undone.`)) return;
+    try {
+      // 1. Find all jobs posted by this recruiter
+      const {data: jobData} = await supabase.from('jobs').select('id').eq('recruiter_id', r.id);
+      if(jobData && jobData.length > 0) {
+        const jobIds = jobData.map(j => j.id);
+        // 2. Delete all applications for those jobs
+        await supabase.from('applications').delete().in('job_id', jobIds);
+        // 3. Delete all jobs
+        await supabase.from('jobs').delete().eq('recruiter_id', r.id);
+      }
+      // 4. Delete the recruiter
+      await supabase.from('recruiters').delete().eq('id', r.id);
+      onUpdate(null);
+    } catch(e){ alert('Failed to delete recruiter: '+e.message); }
+  };
+
   const logo = r.logo_emoji || r.logo || '🚀';
   const name = r.company_name || r.company || '—';
   const desc = r.what_you_build || r.about || '—';
@@ -309,7 +330,10 @@ function RecruiterDetail({recruiter:r,onClose,onUpdate,T}) {
     <div style={{background:T.surface,border:`1px solid ${T.border}`,borderRadius:12,overflow:'hidden',position:'sticky',top:76}}>
       <div style={{padding:'12px 16px',borderBottom:`1px solid ${T.border}`,background:T.surfaceAlt,display:'flex',alignItems:'center',justifyContent:'space-between'}}>
         <SL T={T}>Recruiter profile</SL>
-        <button onClick={onClose} style={{background:'transparent',border:'none',cursor:'pointer',color:T.muted,display:'flex'}}><X size={14}/></button>
+        <div style={{display:'flex',gap:8}}>
+          <button onClick={deleteRecruiter} style={{background:'transparent',border:'none',cursor:'pointer',color:T.red,display:'flex'}} title="Delete recruiter"><Trash2 size={13}/></button>
+          <button onClick={onClose} style={{background:'transparent',border:'none',cursor:'pointer',color:T.muted,display:'flex'}}><X size={14}/></button>
+        </div>
       </div>
       <div style={{padding:18,overflowY:'auto',maxHeight:'calc(100vh - 160px)'}}>
         <div style={{display:'flex',alignItems:'flex-start',gap:12,marginBottom:16}}>
@@ -372,6 +396,10 @@ function RecruiterDetail({recruiter:r,onClose,onUpdate,T}) {
               Add note
             </button>
           </div>
+          {/* ── NEW: Delete recruiter button ── */}
+          <button onClick={deleteRecruiter} style={{marginTop:8,width:'100%',padding:'9px',borderRadius:8,border:`1px solid ${T.redBorder}`,background:T.redSoft,color:T.red,fontSize:11,fontWeight:500,cursor:'pointer',fontFamily:font}}>
+            Delete recruiter
+          </button>
         </div>
       </div>
     </div>
@@ -589,7 +617,13 @@ function RecruitersTab({recruiters:init,T,showToast}) {
     if(filter==='pending')  arr=arr.filter(r=>!r.is_approved);
     return arr.sort((a,b)=>new Date(b.created_at)-new Date(a.created_at));
   },[recruiters,search,filter]);
-  const handleUpdate=(updated)=>{setRecruiters(p=>p.map(x=>x.id===updated.id?updated:x));setSelected(updated);showToast('Recruiter updated');};
+
+  // ── UPDATED: handle null (deletion) case ──
+  const handleUpdate=(updated)=>{
+    if(updated===null){setRecruiters(p=>p.filter(x=>x.id!==selected.id));setSelected(null);showToast('Recruiter deleted');}
+    else{setRecruiters(p=>p.map(x=>x.id===updated.id?updated:x));setSelected(updated);showToast('Recruiter updated');}
+  };
+
   return (
     <div style={{display:'grid',gridTemplateColumns:selected?'1fr 320px':'1fr',gap:16}}>
       <div>
@@ -947,21 +981,7 @@ function JobsTab({jobs:init,T,showToast}) {
   );
 }
 
-// ─── UPDATED PostJobForm for AdminDashboard.jsx ────────────────────────────
-// Drop this in to replace the existing PostJobForm function.
-// Adds: What You'll Do, Perks, and unlimited custom sections.
-// The submit handler passes these into the jobs.insert() call automatically.
-
-// ─── UPDATED PostJobForm for AdminDashboard.jsx ────────────────────────────
-// Drop this in to replace the existing PostJobForm function.
-// Adds: What You'll Do, Perks, and unlimited custom sections.
-// The submit handler passes these into the jobs.insert() call automatically.
-
-// ─── UPDATED PostJobForm for AdminDashboard.jsx ────────────────────────────
-// Drop this in to replace the existing PostJobForm function.
-// Adds: What You'll Do, Perks, and unlimited custom sections.
-// The submit handler passes these into the jobs.insert() call automatically.
-
+// ─── PostJobForm ──────────────────────────────────────────────────────────────
 function PostJobForm({onSuccess,onCancel,T}) {
   const LOGO_EMOJIS=['🚀','⚡','🎯','💡','🔥','🌊','🛠️','📊','🎨','🌱','⭐','🦾'];
   const [saving,setSaving]          = useState(false);
@@ -971,7 +991,7 @@ function PostJobForm({onSuccess,onCancel,T}) {
   const [whatDoInput,setWhatDoInput]= useState('');
   const [perkInput,setPerkInput]    = useState('');
   const [newSecHeading,setNewSecHeading] = useState('');
-  const [newSecItemText,setNewSecItemText] = useState({}); // keyed by section index
+  const [newSecItemText,setNewSecItemText] = useState({});
 
   const [form,setForm] = useState({
     logo:'🚀', company:'', role:'', description:'',
@@ -981,12 +1001,11 @@ function PostJobForm({onSuccess,onCancel,T}) {
     max_applicants:50,
     whatYoullDo:[],
     perks:[],
-    sections:[],  // [{heading:'', items:['',...]}]
+    sections:[],
   });
 
   const set = k => v => setForm(f=>({...f,[k]:v}));
 
-  // Required skills helpers
   const addSkill=()=>{
     const n=skillInput.trim();
     if(!n||form.required_skills.find(s=>s.name.toLowerCase()===n.toLowerCase())) return;
@@ -994,7 +1013,6 @@ function PostJobForm({onSuccess,onCancel,T}) {
     setSkillInput('');
   };
 
-  // Nice to have helpers
   const addNice=()=>{
     const n=niceInput.trim();
     if(!n||form.nice_to_have.includes(n)) return;
@@ -1002,7 +1020,6 @@ function PostJobForm({onSuccess,onCancel,T}) {
     setNiceInput('');
   };
 
-  // What you'll do helpers
   const addWhatDo=()=>{
     const n=whatDoInput.trim();
     if(!n) return;
@@ -1011,7 +1028,6 @@ function PostJobForm({onSuccess,onCancel,T}) {
   };
   const removeWhatDo=(i)=>setForm(f=>({...f,whatYoullDo:f.whatYoullDo.filter((_,idx)=>idx!==i)}));
 
-  // Perks helpers
   const addPerk=()=>{
     const n=perkInput.trim();
     if(!n||form.perks.includes(n)) return;
@@ -1020,7 +1036,6 @@ function PostJobForm({onSuccess,onCancel,T}) {
   };
   const removePerk=(i)=>setForm(f=>({...f,perks:f.perks.filter((_,idx)=>idx!==i)}));
 
-  // Custom sections helpers
   const addSection=()=>{
     const h=newSecHeading.trim();
     if(!h) return;
@@ -1071,7 +1086,6 @@ function PostJobForm({onSuccess,onCancel,T}) {
     finally{setSaving(false);}
   };
 
-  // Reusable list-item editor (shared by What You'll Do + custom section items)
   function ListEditor({items,inputVal,setInputVal,onAdd,onRemove,placeholder,T}) {
     return (
       <div>
@@ -1110,8 +1124,6 @@ function PostJobForm({onSuccess,onCancel,T}) {
       </div>
 
       <div style={{padding:20,display:'flex',flexDirection:'column',gap:14}}>
-
-        {/* Logo */}
         <div>
           <p style={{fontSize:10,color:T.muted,letterSpacing:'0.08em',textTransform:'uppercase',marginBottom:6}}>Logo</p>
           <div style={{display:'flex',flexWrap:'wrap',gap:6}}>
@@ -1119,7 +1131,6 @@ function PostJobForm({onSuccess,onCancel,T}) {
           </div>
         </div>
 
-        {/* Company + Role */}
         <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:12}}>
           <div>
             <p style={{fontSize:10,color:T.muted,letterSpacing:'0.08em',textTransform:'uppercase',marginBottom:5}}>Company *</p>
@@ -1131,7 +1142,6 @@ function PostJobForm({onSuccess,onCancel,T}) {
           </div>
         </div>
 
-        {/* Stipend + Duration + Location */}
         <div style={{display:'grid',gridTemplateColumns:'1fr 1fr 1fr',gap:12}}>
           <div>
             <p style={{fontSize:10,color:T.muted,letterSpacing:'0.08em',textTransform:'uppercase',marginBottom:5}}>Stipend *</p>
@@ -1147,13 +1157,11 @@ function PostJobForm({onSuccess,onCancel,T}) {
           </div>
         </div>
 
-        {/* Description */}
         <div>
           <p style={{fontSize:10,color:T.muted,letterSpacing:'0.08em',textTransform:'uppercase',marginBottom:5}}>Description</p>
           <textarea style={{...inp,resize:'none'}} rows={3} value={form.description} onChange={e=>set('description')(e.target.value)} placeholder="What will the intern work on?" onFocus={e=>e.target.style.borderColor=T.accent} onBlur={e=>e.target.style.borderColor=T.border}/>
         </div>
 
-        {/* ── WHAT YOU'LL DO ── */}
         <div style={{borderTop:`1px solid ${T.border}`,paddingTop:14}}>
           <p style={{fontSize:10,color:T.muted,letterSpacing:'0.08em',textTransform:'uppercase',marginBottom:5}}>What you'll do</p>
           <p style={{fontSize:11,color:T.muted,marginBottom:8}}>Add bullet points that show up in the "What you'll do" section.</p>
@@ -1164,7 +1172,6 @@ function PostJobForm({onSuccess,onCancel,T}) {
           />
         </div>
 
-        {/* ── PERKS ── */}
         <div>
           <p style={{fontSize:10,color:T.muted,letterSpacing:'0.08em',textTransform:'uppercase',marginBottom:5}}>Perks & benefits</p>
           <div style={{display:'flex',gap:8,marginBottom:8}}>
@@ -1186,19 +1193,16 @@ function PostJobForm({onSuccess,onCancel,T}) {
           )}
         </div>
 
-        {/* ── CUSTOM SECTIONS ── */}
         <div style={{borderTop:`1px solid ${T.border}`,paddingTop:14}}>
           <p style={{fontSize:10,color:T.muted,letterSpacing:'0.08em',textTransform:'uppercase',marginBottom:4}}>Custom sections</p>
           <p style={{fontSize:11,color:T.muted,marginBottom:10}}>Add any section with your own heading — "Who we're looking for", "Tech stack", "About us" — it shows as a section in the job card.</p>
 
-          {/* Existing sections */}
           {form.sections.map((sec,si)=>(
             <div key={si} style={{marginBottom:12,padding:'12px 14px',borderRadius:8,border:`1px solid ${T.border}`,background:T.surfaceAlt}}>
               <div style={{display:'flex',alignItems:'center',justifyContent:'space-between',marginBottom:8}}>
                 <span style={{fontSize:12,fontWeight:600,color:T.text}}>{sec.heading}</span>
                 <button onClick={()=>removeSection(si)} style={{background:'transparent',border:'none',cursor:'pointer',color:T.muted,display:'flex',padding:0}}><Trash2 size={12}/></button>
               </div>
-              {/* Section items */}
               {sec.items.length>0 && (
                 <div style={{display:'flex',flexDirection:'column',gap:4,marginBottom:8}}>
                   {sec.items.map((item,ii)=>(
@@ -1210,7 +1214,6 @@ function PostJobForm({onSuccess,onCancel,T}) {
                   ))}
                 </div>
               )}
-              {/* Add item to this section */}
               <div style={{display:'flex',gap:6}}>
                 <input
                   style={{...inp,flex:1,fontSize:11,padding:'6px 10px'}}
@@ -1225,7 +1228,6 @@ function PostJobForm({onSuccess,onCancel,T}) {
             </div>
           ))}
 
-          {/* New section heading input */}
           <div style={{display:'flex',gap:8}}>
             <input
               style={{...inp,flex:1}}
@@ -1241,7 +1243,6 @@ function PostJobForm({onSuccess,onCancel,T}) {
           </div>
         </div>
 
-        {/* Required skills */}
         <div style={{borderTop:`1px solid ${T.border}`,paddingTop:14}}>
           <p style={{fontSize:10,color:T.muted,letterSpacing:'0.08em',textTransform:'uppercase',marginBottom:5}}>Required skills *</p>
           <div style={{display:'flex',gap:8,marginBottom:8}}>
@@ -1259,7 +1260,6 @@ function PostJobForm({onSuccess,onCancel,T}) {
           ))}
         </div>
 
-        {/* Nice to have */}
         <div>
           <p style={{fontSize:10,color:T.muted,letterSpacing:'0.08em',textTransform:'uppercase',marginBottom:5}}>Nice to have</p>
           <div style={{display:'flex',gap:8,marginBottom:6}}>
@@ -1271,7 +1271,6 @@ function PostJobForm({onSuccess,onCancel,T}) {
           </div>
         </div>
 
-        {/* Visibility + Max applicants */}
         <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:12}}>
           <div>
             <p style={{fontSize:10,color:T.muted,letterSpacing:'0.08em',textTransform:'uppercase',marginBottom:5}}>Visibility</p>
@@ -1293,7 +1292,6 @@ function PostJobForm({onSuccess,onCancel,T}) {
           <button onClick={onCancel} style={{flex:1,padding:11,borderRadius:8,border:`1px solid ${T.border}`,background:'transparent',color:T.sub,fontSize:13,cursor:'pointer',fontFamily:font}}>Cancel</button>
           <button onClick={submit} disabled={saving} style={{flex:2,padding:11,borderRadius:8,border:'none',background:saving?T.muted:T.accent,color:'#fff',fontSize:13,fontWeight:500,cursor:saving?'default':'pointer',fontFamily:font}}>{saving?'Posting…':'Post & get link →'}</button>
         </div>
-
       </div>
     </div>
   );
@@ -1354,12 +1352,10 @@ function NotificationsTab({T, showToast}) {
   const [deletingId, setDeletingId]       = useState(null);
   const [form, setForm] = useState({ title: '', body: '', type: 'info' });
 
-  // ── NEW: marquee toggle state ──
   const [marqueeEnabled, setMarqueeEnabled] = useState(true);
   const [marqueeLoading, setMarqueeLoading] = useState(true);
   const [marqueeToggling, setMarqueeToggling] = useState(false);
 
-  // ── Fetch marquee setting on mount ──
   useEffect(() => {
     (async () => {
       const { data } = await supabase
@@ -1372,7 +1368,6 @@ function NotificationsTab({T, showToast}) {
     })();
   }, []);
 
-  // ── Toggle marquee ──
   const toggleMarquee = async () => {
     setMarqueeToggling(true);
     const newVal = !marqueeEnabled;
@@ -1389,7 +1384,6 @@ function NotificationsTab({T, showToast}) {
       setMarqueeToggling(false);
     }
   };
-  // ... rest of existing NotificationsTab code unchanged ...
 
   const fetchNotifications = useCallback(async () => {
     const { data, error } = await supabase
@@ -1434,15 +1428,12 @@ function NotificationsTab({T, showToast}) {
 
   return (
     <div style={{ display: 'grid', gridTemplateColumns: '380px 1fr', gap: 20, alignItems: 'start' }}>
-
-      {/* ── Compose panel ── */}
       <div style={{ background: T.surface, border: `1px solid ${T.border}`, borderRadius: 12, overflow: 'hidden', position: 'sticky', top: 76 }}>
         <div style={{ padding: '14px 18px 12px', borderBottom: `1px solid ${T.border}`, background: T.surfaceAlt }}>
           <p style={{ fontSize: 10, color: T.accent, letterSpacing: '0.1em', textTransform: 'uppercase', margin: 0, fontWeight: 500, fontFamily: font }}>Compose</p>
           <p style={{ fontSize: 13, fontWeight: 600, color: T.text, margin: '3px 0 0', fontFamily: font }}>Push to all students</p>
         </div>
         <div style={{ padding: 18, display: 'flex', flexDirection: 'column', gap: 14 }}>
-          {/* Type selector */}
           <div>
             <p style={{ fontSize: 10, color: T.muted, letterSpacing: '0.08em', textTransform: 'uppercase', marginBottom: 7, fontFamily: font }}>Type</p>
             <div style={{ display: 'flex', gap: 6 }}>
@@ -1458,19 +1449,16 @@ function NotificationsTab({T, showToast}) {
               })}
             </div>
           </div>
-          {/* Title */}
           <div>
             <p style={{ fontSize: 10, color: T.muted, letterSpacing: '0.08em', textTransform: 'uppercase', marginBottom: 5, fontFamily: font }}>Title *</p>
             <input style={inp} value={form.title} onChange={e => setForm(f => ({ ...f, title: e.target.value }))} placeholder="e.g. New internships dropped!" maxLength={80} onFocus={e => e.target.style.borderColor = T.accent} onBlur={e => e.target.style.borderColor = T.border}/>
             <p style={{ fontSize: 9, color: T.muted, margin: '4px 0 0', fontFamily: font, textAlign: 'right' }}>{form.title.length}/80</p>
           </div>
-          {/* Body */}
           <div>
             <p style={{ fontSize: 10, color: T.muted, letterSpacing: '0.08em', textTransform: 'uppercase', marginBottom: 5, fontFamily: font }}>Message *</p>
             <textarea style={{ ...inp, minHeight: 90 }} value={form.body} onChange={e => setForm(f => ({ ...f, body: e.target.value }))} placeholder="What do you want students to know?" maxLength={280} onFocus={e => e.target.style.borderColor = T.accent} onBlur={e => e.target.style.borderColor = T.border}/>
             <p style={{ fontSize: 9, color: T.muted, margin: '4px 0 0', fontFamily: font, textAlign: 'right' }}>{form.body.length}/280</p>
           </div>
-          {/* Preview */}
           {(form.title || form.body) && (
             <div style={{ padding: '10px 12px', borderRadius: 8, background: T.surfaceAlt, border: `1px solid ${T.border}` }}>
               <p style={{ fontSize: 9, color: T.muted, letterSpacing: '0.08em', textTransform: 'uppercase', margin: '0 0 6px', fontFamily: font }}>Preview</p>
@@ -1483,13 +1471,11 @@ function NotificationsTab({T, showToast}) {
               </div>
             </div>
           )}
-          {/* Send button */}
           <button onClick={send} disabled={sending || !form.title.trim() || !form.body.trim()}
             style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 7, padding: '11px', borderRadius: 8, border: 'none', fontFamily: font, fontSize: 13, fontWeight: 500, cursor: sending ? 'default' : 'pointer', background: sending || !form.title.trim() || !form.body.trim() ? T.muted : T.accent, color: '#fff', transition: 'background 0.15s' }}>
             <Send size={13} />
             {sending ? 'Sending…' : 'Send to all students'}
           </button>
-          {/* Target note */}
           <div style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '7px 10px', borderRadius: 7, background: T.blueSoft || T.surfaceAlt, border: `1px solid ${T.blueBorder || T.border}` }}>
             <Users size={11} style={{ color: T.blue, flexShrink: 0 }} />
             <p style={{ fontSize: 10, color: T.sub, margin: 0, fontFamily: font }}>
@@ -1499,7 +1485,6 @@ function NotificationsTab({T, showToast}) {
         </div>
       </div>
 
-      {/* ── Sent history ── */}
       <div>
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 14 }}>
           <p style={{ fontSize: 10, color: T.muted, letterSpacing: '0.1em', textTransform: 'uppercase', margin: 0, fontWeight: 500, fontFamily: font }}>Sent ({notifications.length})</p>
