@@ -122,8 +122,25 @@ export default function StudentDashboard() {
       const welcomed = localStorage.getItem(`hunt-welcomed-${profile.id}`);
       if (welcomed) { setShowWelcome(false); setShowGuide(false); }
       const activeJobs = await getActiveJobs();
+      // Backfill logo_url — getActiveJobs may not select it.
+      // Fetch logo_url for all job ids in one query and merge in.
+      let logoMap = {};
+      try {
+        const jobIds = activeJobs.map(j => j.id).filter(Boolean);
+        if (jobIds.length > 0) {
+          const { data: logoRows } = await supabase
+            .from('jobs')
+            .select('id, logo_url')
+            .in('id', jobIds);
+          if (logoRows) {
+            logoRows.forEach(r => { if (r.logo_url) logoMap[r.id] = r.logo_url; });
+          }
+        }
+      } catch (_) {}
       const jobsWithScores = activeJobs.map(job => ({
-        ...job, _match: calculateMatchScore(profile, job)
+        ...job,
+        logo_url: job.logo_url || logoMap[job.id] || null,
+        _match: calculateMatchScore(profile, job)
       }));
       setAllJobs(jobsWithScores.filter(j => j._match.score >= 30).sort((a, b) => b._match.score - a._match.score));
       setWeeklyApplications(await getWeeklyApplicationCount());
