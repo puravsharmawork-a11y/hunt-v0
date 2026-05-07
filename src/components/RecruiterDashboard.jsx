@@ -1,6 +1,6 @@
 // src/components/RecruiterDashboard.jsx
 // HUNT — RECRUITER DASHBOARD (v9 — enhanced CandidateProfileDrawer)
-// Changes: CandidateProfileDrawer now shows contact info, education, certifications, 
+// Changes: CandidateProfileDrawer now shows contact info, education, certifications,
 // awards, coding profiles, other links, real skill logos, and reviews tab.
 
 import React, { useState, useEffect, useMemo, useRef } from 'react';
