@@ -1123,9 +1123,24 @@ export default function LandingPage() {
   const [mode, setMode]           = useState('student');
   const [showPreBook, setPreBook] = useState(false);
 
+  // Student sign-in → default redirect (student onboarding/dashboard)
   const handleSignIn = async () => {
     try { await signInWithGoogle(); }
     catch (error) { console.error('Sign in error:', error); alert('Failed to sign in. Please try again.'); }
+  };
+
+  // ── FIX: Startup/recruiter sign-in → always redirect to /recruiter/onboarding ──
+  const handleRecruiterSignIn = async () => {
+    try {
+      const { error } = await supabase.auth.signInWithOAuth({
+        provider: 'google',
+        options: { redirectTo: `${window.location.origin}/recruiter/onboarding` },
+      });
+      if (error) throw error;
+    } catch (error) {
+      console.error('Recruiter sign in error:', error);
+      alert('Failed to sign in. Please try again.');
+    }
   };
 
   const handleTalkToFounder = () => {
@@ -1145,12 +1160,14 @@ export default function LandingPage() {
             {mode === 'student' ? 'Internships. Not noise.' : 'Skill-first talent. Not noise.'}
           </span>
           {mode === 'student' ? (
+            // Student nav button → student sign-in flow
             <button onClick={handleSignIn} style={{ display:'flex', alignItems:'center', gap:8, background:t.black, color:t.white, padding:'10px 20px', borderRadius:6, fontSize:13, fontWeight:400, cursor:'pointer', border:'none', fontFamily:t.sans }} onMouseOver={e=>e.currentTarget.style.opacity='0.8'} onMouseOut={e=>e.currentTarget.style.opacity='1'}>
               <GoogleIcon /> Sign in with Google
             </button>
           ) : (
-            <button onClick={()=>setPreBook(true)} style={{ display:'flex', alignItems:'center', gap:8, background:'#D85A30', color:'#fff', padding:'10px 20px', borderRadius:6, fontSize:13, fontWeight:500, cursor:'pointer', border:'none', fontFamily:t.sans }} onMouseOver={e=>e.currentTarget.style.background='#c04e28'} onMouseOut={e=>e.currentTarget.style.background='#D85A30'}>
-              Reserve Early Access
+            // ── FIX: Startup nav button → recruiter sign-in redirecting to /recruiter/onboarding ──
+            <button onClick={handleRecruiterSignIn} style={{ display:'flex', alignItems:'center', gap:8, background:'#D85A30', color:'#fff', padding:'10px 20px', borderRadius:6, fontSize:13, fontWeight:500, cursor:'pointer', border:'none', fontFamily:t.sans }} onMouseOver={e=>e.currentTarget.style.background='#c04e28'} onMouseOut={e=>e.currentTarget.style.background='#D85A30'}>
+              <GoogleIcon /> Sign in with Google
             </button>
           )}
         </nav>
