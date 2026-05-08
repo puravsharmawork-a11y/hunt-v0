@@ -16,13 +16,15 @@ export function WelcomeCard({ name, completeness, onDismiss, onTour, onCompleteP
         gap: 0,
         alignItems: 'stretch',
         width: '100%',
+        height: '100%',
+        margin: 0,
       }}
     >
       {/* Left: pixel-art ink column */}
       <div
         style={{
           flexShrink: 0,
-          width: 110,
+          width: 160,
           background: 'var(--ink)',
           position: 'relative',
           overflow: 'hidden',
@@ -52,7 +54,16 @@ export function WelcomeCard({ name, completeness, onDismiss, onTour, onCompleteP
       </div>
 
       {/* Right: copy */}
-      <div style={{ flex: 1, padding: '22px 40px 22px 24px' }}>
+      <div
+        style={{
+          flex: 1,
+          padding: 'clamp(28px, 5vw, 48px)',
+          display: 'flex',
+          flexDirection: 'column',
+          justifyContent: 'center',
+          minWidth: 0,
+        }}
+      >
         <button
           onClick={onDismiss}
           style={{
@@ -83,11 +94,11 @@ export function WelcomeCard({ name, completeness, onDismiss, onTour, onCompleteP
         <h2
           className="hunt-serif"
           style={{
-            fontSize: 24,
+            fontSize: 32,
             color: 'var(--text)',
-            marginBottom: 8,
+            marginBottom: 12,
             lineHeight: 1.1,
-            maxWidth: 480,
+            maxWidth: 390,
           }}
         >
           Hey {firstName}, let's find <em>your first shot.</em>
@@ -98,8 +109,8 @@ export function WelcomeCard({ name, completeness, onDismiss, onTour, onCompleteP
             fontSize: 13,
             color: 'var(--text-mid)',
             lineHeight: 1.5,
-            maxWidth: 500,
-            marginBottom: 16,
+            maxWidth: 390,
+            marginBottom: 20,
           }}
         >
           HUNT strips hiring down to the parts that matter — skills on skills. No college filter. No resume-screen. Five applies a week, make 'em count.
@@ -107,7 +118,7 @@ export function WelcomeCard({ name, completeness, onDismiss, onTour, onCompleteP
 
         {/* Profile completeness bar */}
         {completeness < 100 && (
-          <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 16 }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 22, flexWrap: 'wrap' }}>
             <div
               style={{
                 width: 180,
