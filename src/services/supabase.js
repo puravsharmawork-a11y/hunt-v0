@@ -193,7 +193,7 @@ export const getActiveJobs = async (limit = 50) => {
     .limit(limit);
 
   if (error) throw error;
-  return data;
+  return hydrateJobsWithRecruiterMeta(data || []);
 };
 
 export const getJobById = async (jobId) => {
@@ -204,7 +204,37 @@ export const getJobById = async (jobId) => {
     .single();
 
   if (error) throw error;
-  return data;
+  const [job] = await hydrateJobsWithRecruiterMeta(data ? [data] : []);
+  return job;
+};
+
+export const hydrateJobsWithRecruiterMeta = async (jobs = []) => {
+  const list = (jobs || []).filter(Boolean);
+  const recruiterIds = [...new Set(list.map(j => j.recruiter_id).filter(Boolean))];
+  if (recruiterIds.length === 0) return list;
+
+  try {
+    const { data: recruiters, error } = await supabase
+      .from('recruiters')
+      .select('id, response_commitment, startups(name, logo_url)')
+      .in('id', recruiterIds);
+
+    if (error || !recruiters) return list;
+
+    const recruiterMap = Object.fromEntries(recruiters.map(r => [r.id, r]));
+    return list.map(job => {
+      const recruiter = recruiterMap[job.recruiter_id];
+      const startup = Array.isArray(recruiter?.startups) ? recruiter.startups[0] : recruiter?.startups;
+      return {
+        ...job,
+        company: startup?.name || job.company,
+        logo_url: startup?.logo_url || job.logo_url || null,
+        response_commitment: Boolean(recruiter?.response_commitment),
+      };
+    });
+  } catch (_) {
+    return list;
+  }
 };
 
 // ============================================================================
@@ -251,7 +281,12 @@ export const getMyApplications = async () => {
     .order('applied_at', { ascending: false });
 
   if (error) throw error;
-  return data;
+  const jobs = await hydrateJobsWithRecruiterMeta((data || []).map(app => app.jobs).filter(Boolean));
+  const jobMap = Object.fromEntries(jobs.map(job => [job.id, job]));
+  return (data || []).map(app => ({
+    ...app,
+    jobs: app.jobs ? (jobMap[app.jobs.id] || app.jobs) : app.jobs,
+  }));
 };
 
 export const getWeeklyApplicationCount = async () => {
