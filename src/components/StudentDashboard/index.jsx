@@ -398,4 +398,7 @@ export default function StudentDashboard() {
         onUnreadChange={setUnreadCount}
         />
     )}
+    </div>
+  );
+}
 
