@@ -7,6 +7,7 @@ import { useNavigate } from 'react-router-dom';
 import {
   getStudentProfile, getActiveJobs, createApplication,
   getMyApplications, getWeeklyApplicationCount, signOut, supabase,
+  hydrateJobsWithRecruiterMeta,
 } from '../../services/supabase';
 import { calculateMatchScore, calculateHuntScore } from '../../services/matching';
 import { sendToAirtable, prepareApplicationData } from '../../services/airtable';
@@ -125,6 +126,7 @@ export default function StudentDashboard() {
       // Backfill logo_url — getActiveJobs may not select it.
       // Fetch logo_url for all job ids in one query and merge in.
       let logoMap = {};
+      let responseCommitmentMap = {};
       try {
         const jobIds = activeJobs.map(j => j.id).filter(Boolean);
         if (jobIds.length > 0) {
@@ -136,10 +138,21 @@ export default function StudentDashboard() {
             logoRows.forEach(r => { if (r.logo_url) logoMap[r.id] = r.logo_url; });
           }
         }
+        const recruiterIds = [...new Set(activeJobs.map(j => j.recruiter_id).filter(Boolean))];
+        if (recruiterIds.length > 0) {
+          const { data: recruiterRows } = await supabase
+            .from('recruiters')
+            .select('id, response_commitment')
+            .in('id', recruiterIds);
+          if (recruiterRows) {
+            recruiterRows.forEach(r => { responseCommitmentMap[r.id] = Boolean(r.response_commitment); });
+          }
+        }
       } catch (_) {}
       const jobsWithScores = activeJobs.map(job => ({
         ...job,
         logo_url: job.logo_url || logoMap[job.id] || null,
+        response_commitment: Boolean(responseCommitmentMap[job.recruiter_id]),
         _match: calculateMatchScore(profile, job)
       }));
       setAllJobs(jobsWithScores.filter(j => j._match.score >= 30).sort((a, b) => b._match.score - a._match.score));
@@ -162,7 +175,9 @@ export default function StudentDashboard() {
         .select('job_id, saved_at, jobs(*)')
         .eq('student_id', profile.id);
       if (savedRows && savedRows.length > 0) {
-        setSavedJobs(savedRows.filter(r => r.jobs).map(r => ({ ...r.jobs, savedAt: r.saved_at })));
+        const hydratedSavedJobs = await hydrateJobsWithRecruiterMeta(savedRows.map(r => r.jobs).filter(Boolean));
+        const savedAtMap = Object.fromEntries(savedRows.map(r => [r.job_id, r.saved_at]));
+        setSavedJobs(hydratedSavedJobs.map(job => ({ ...job, savedAt: savedAtMap[job.id] })));
       }
     } catch (err) { console.error(err); }
     finally { setLoading(false); }
@@ -378,23 +393,3 @@ export default function StudentDashboard() {
       {/* ── NOTIFICATION FLYOUT ── */}
       {showNotifications && (
         <NotificationFlyout
-          studentId={studentProfile?.id}
-          onClose={() => setShowNotifications(false)}
-          onUnreadChange={setUnreadCount}
-        />
-      )}
-
-      {/* ── SETTINGS SIDE PANEL ── */}
-      {showSettings && (
-        <SettingsPanel
-          onClose={() => setShowSettings(false)}
-          settingsTab={settingsTab}
-          setSettingsTab={setSettingsTab}
-          studentProfile={studentProfile}
-          initials={initials}
-          theme={theme}
-          />
-      )}
-    </div>
-  );
-}
