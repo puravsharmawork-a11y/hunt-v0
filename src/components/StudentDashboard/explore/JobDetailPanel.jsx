@@ -81,7 +81,7 @@ export function JobDetailPanel({
     `${spotsLeft} open slots`;
 
   return (
-    <div style={{ height: '100%', display: 'flex', flexDirection: 'column', background: 'var(--bg-card)', borderLeft: '1px solid var(--border-mid)', overflow: 'hidden' }}>
+    <div style={{ height: '100%', minHeight: 0, display: 'flex', flexDirection: 'column', background: 'var(--bg-card)', borderLeft: '1px solid var(--border-mid)', overflow: 'hidden' }}>
       {/* Toolbar */}
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '12px 18px', borderBottom: '1px solid var(--border-mid)', flexShrink: 0 }}>
         <span className="hunt-kicker hunt-kicker-ink">▲ listing / #{(job.id || '').toString().toUpperCase().slice(0, 8)}</span>
@@ -99,7 +99,7 @@ export function JobDetailPanel({
       </div>
 
       {/* Scroll body */}
-      <div style={{ flex: 1, overflowY: 'auto', padding: '24px 28px' }}>
+      <div style={{ flex: 1, minHeight: 0, overflowY: 'auto', padding: '24px 28px' }}>
 
         {/* HEADER */}
         <div style={{ display: 'flex', gap: 16, marginBottom: 20, alignItems: 'flex-start' }}>
