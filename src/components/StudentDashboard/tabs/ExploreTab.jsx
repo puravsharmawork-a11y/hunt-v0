@@ -40,18 +40,20 @@ export function ExploreTab({
     <div
       style={{
         flex: 1,
+        minHeight: 0,
         display: 'flex',
         flexDirection: 'column',
         overflow: 'hidden',
         animation: 'hunt-fade-in 0.3s ease',
       }}
     >
-      <div style={{ flex: 1, display: 'flex', overflow: 'hidden' }}>
+      <div style={{ flex: 1, minHeight: 0, display: 'flex', overflow: 'hidden' }}>
         {/* ── Left: list/grid panel ── */}
         {!(selectedJob && isPanelMaximized) && (
           <div
             style={{
               flex: selectedJob && !isPanelMaximized ? '0 0 55%' : 1,
+              minHeight: 0,
               display: 'flex',
               flexDirection: 'column',
               overflow: 'hidden',
@@ -254,7 +256,7 @@ export function ExploreTab({
             )}
 
             {/* Content */}
-            <div style={{ flex: 1, overflowY: 'auto', padding: viewMode === 'list' ? '0' : '0 28px 24px' }}>
+            <div style={{ flex: 1, minHeight: 0, overflowY: 'auto', padding: viewMode === 'list' ? '0' : '0 28px 24px' }}>
               {/* Welcome card — first-time / incomplete profile */}
               {shouldShowWelcome && viewMode === 'grid' && (
                 <div style={{ padding: '8px 0 0' }}>
@@ -372,6 +374,7 @@ export function ExploreTab({
           <div
             style={{
               flex: isPanelMaximized ? 1 : '0 0 45%',
+              minHeight: 0,
               overflow: 'hidden',
               transition: 'flex 0.2s ease',
             }}
