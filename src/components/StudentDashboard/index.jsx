@@ -354,6 +354,12 @@ export default function StudentDashboard() {
             applying={applying}
             canApply={canApply}
             appliedJobs={appliedJobs}
+            showWelcomeCard={showWelcome}
+            onDismissWelcome={dismissWelcome}
+            onCompleteWelcome={() => {
+              dismissWelcome();
+              setActiveTab('profile');
+            }}
           />
         )}
 
@@ -387,9 +393,3 @@ export default function StudentDashboard() {
           studentProfile={studentProfile}
           initials={initials}
           theme={theme}
-          setTheme={setTheme}
-        />
-      )}
-    </div>
-  );
-}
