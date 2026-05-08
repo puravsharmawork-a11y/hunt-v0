@@ -55,14 +55,15 @@ export function ExploreTab({
             zIndex: 1200,
             background: 'rgba(10, 10, 10, 0.58)',
             display: 'flex',
-            alignItems: 'flex-start',
+            alignItems: 'center',
             justifyContent: 'center',
-            padding: 'clamp(28px, 6vh, 72px) 24px 24px',
+            padding: '24px',
           }}
         >
           <div
             style={{
-              width: 'min(1180px, 100%)',
+              width: 'min(680px, calc(100vw - 48px), calc(100vh - 48px))',
+              aspectRatio: '1 / 1',
               boxShadow: '0 24px 70px rgba(0,0,0,0.28)',
             }}
           >
