@@ -27,14 +27,14 @@ export function ExploreTab({
   notified, setNotified,
   handleSaveToggle, isJobSaved,
   appliedJobs,
-  showWelcomeCard, setShowWelcomeCard,
+  showWelcomeCard,
+  onDismissWelcome,
+  onCompleteWelcome,
 }) {
   const isJobApplied = (jobId) => (appliedJobs || []).some(j => j.id === jobId);
   const hasSearch = (searchQuery || '').trim().length > 0;
   const hasFilters = activeFiltersCount > 0;
-  const profileComplete = (studentProfile?.profile_completeness || 0) >= 100;
-  // Show welcome card if not dismissed and profile not complete
-  const shouldShowWelcome = showWelcomeCard !== false && !profileComplete;
+  const shouldShowWelcome = showWelcomeCard === true;
 
   return (
     <div
@@ -47,8 +47,38 @@ export function ExploreTab({
         animation: 'hunt-fade-in 0.3s ease',
       }}
     >
+      {shouldShowWelcome && (
+        <div
+          style={{
+            position: 'fixed',
+            inset: 0,
+            zIndex: 1200,
+            background: 'rgba(10, 10, 10, 0.58)',
+            display: 'flex',
+            alignItems: 'flex-start',
+            justifyContent: 'center',
+            padding: 'clamp(28px, 6vh, 72px) 24px 24px',
+          }}
+        >
+          <div
+            style={{
+              width: 'min(1180px, 100%)',
+              boxShadow: '0 24px 70px rgba(0,0,0,0.28)',
+            }}
+          >
+            <WelcomeCard
+              name={studentProfile?.full_name}
+              completeness={studentProfile?.profile_completeness || 0}
+              onDismiss={onDismissWelcome}
+              onCompleteProfile={onCompleteWelcome}
+              onTour={() => alert('60-sec tour Ã‚Â· Coming soon')}
+            />
+          </div>
+        </div>
+      )}
+
       <div style={{ flex: 1, minHeight: 0, display: 'flex', overflow: 'hidden' }}>
-        {/* ── Left: list/grid panel ── */}
+        {/* â”€â”€ Left: list/grid panel â”€â”€ */}
         {!(selectedJob && isPanelMaximized) && (
           <div
             style={{
@@ -82,7 +112,7 @@ export function ExploreTab({
                 <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
                   {/* Hunt Fast */}
                   <button
-                    onClick={() => alert('Hunt-fast · Coming soon')}
+                    onClick={() => alert('Hunt-fast Â· Coming soon')}
                     title="Coming soon"
                     style={{
                       display: 'inline-flex',
@@ -188,7 +218,7 @@ export function ExploreTab({
                 <input
                   value={searchQuery}
                   onChange={e => setSearchQuery(e.target.value)}
-                  placeholder="search roles, companies, skills…"
+                  placeholder="search roles, companies, skillsâ€¦"
                   className="hunt-mono"
                   style={{
                     width: '100%',
@@ -250,25 +280,13 @@ export function ExploreTab({
                   }}
                 >
                   {displayedJobs.length} {displayedJobs.length === 1 ? 'opportunity' : 'opportunities'}
-                  {huntFastActive && <span style={{ color: 'var(--blue)', marginLeft: 8 }}>· sorted by best match</span>}
+                  {huntFastActive && <span style={{ color: 'var(--blue)', marginLeft: 8 }}>Â· sorted by best match</span>}
                 </span>
               </div>
             )}
 
             {/* Content */}
             <div style={{ flex: 1, minHeight: 0, overflowY: 'auto', padding: viewMode === 'list' ? '0' : '0 28px 24px' }}>
-              {/* Welcome card — first-time / incomplete profile */}
-              {shouldShowWelcome && viewMode === 'grid' && (
-                <div style={{ padding: '8px 0 0' }}>
-                  <WelcomeCard
-                    name={studentProfile?.full_name}
-                    completeness={studentProfile?.profile_completeness || 0}
-                    onDismiss={() => setShowWelcomeCard && setShowWelcomeCard(false)}
-                    onTour={() => alert('60-sec tour · Coming soon')}
-                  />
-                </div>
-              )}
-
               {allJobs.length === 0 ? (
                 <EmptyTargeted notified={notified} setNotified={setNotified} />
               ) : viewMode === 'list' ? (
@@ -284,14 +302,7 @@ export function ExploreTab({
                   isJobSaved={isJobSaved}
                   onSave={handleSaveToggle}
                   isJobApplied={isJobApplied}
-                  welcomeCard={shouldShowWelcome ? (
-                    <WelcomeCard
-                      name={studentProfile?.full_name}
-                      completeness={studentProfile?.profile_completeness || 0}
-                      onDismiss={() => setShowWelcomeCard && setShowWelcomeCard(false)}
-                      onTour={() => alert('60-sec tour · Coming soon')}
-                    />
-                  ) : null}
+                  welcomeCard={null}
                 />
               ) : displayedJobs.length === 0 ? (
                 <div
@@ -313,7 +324,7 @@ export function ExploreTab({
                       marginBottom: 10,
                     }}
                   >
-                    ▲ no results
+                    â–² no results
                   </div>
                   <div className="hunt-serif" style={{ fontSize: 22, color: 'var(--text)', marginBottom: 8 }}>
                     Nothing matches.
@@ -361,7 +372,7 @@ export function ExploreTab({
               {allJobs.length > 0 && viewMode === 'grid' && displayedJobs.length > 0 && (
                 <div style={{ marginTop: 36, padding: '24px 0 16px', borderTop: '1px solid var(--border)' }}>
                   <span className="hunt-mono" style={{ fontSize: 10, color: 'var(--text-faint)', letterSpacing: '0.1em', textTransform: 'uppercase' }}>
-                    no more jobs right now — check back for more
+                    no more jobs right now â€” check back for more
                   </span>
                 </div>
               )}
@@ -369,7 +380,7 @@ export function ExploreTab({
           </div>
         )}
 
-        {/* ── Right: detail panel ── */}
+        {/* â”€â”€ Right: detail panel â”€â”€ */}
         {selectedJob && (
           <div
             style={{
@@ -419,7 +430,7 @@ function EmptyTargeted({ notified, setNotified }) {
           marginBottom: 12,
         }}
       >
-        ▲ inbox empty
+        â–² inbox empty
       </div>
       <h3
         className="hunt-serif"
