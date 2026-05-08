@@ -269,11 +269,12 @@ export default function StudentDashboard() {
     <div
       className="hunt-bitmap-bg"
       style={{
-        minHeight: '100vh',
+        height: '100vh',
         display: 'flex',
         background: 'var(--bg)',
         color: 'var(--text)',
         fontFamily: "'Inter', -apple-system, BlinkMacSystemFont, sans-serif",
+        overflow: 'hidden',
       }}
     >
       <style>{`
@@ -303,7 +304,7 @@ export default function StudentDashboard() {
       />
 
       {/* ── MAIN ── */}
-      <main style={{ flex: 1, minWidth: 0, display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
+      <main style={{ flex: 1, minWidth: 0, minHeight: 0, display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
 
         {/* ── HOME ── */}
         {activeTab === 'home' && (
