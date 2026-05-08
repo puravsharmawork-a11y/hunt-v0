@@ -218,12 +218,12 @@ export const hydrateJobsWithRecruiterMeta = async (jobs = []) => {
       recruiterIds.length > 0
         ? supabase
             .from('recruiters')
-            .select('id, company_name, response_commitment, startups(name, logo_url)')
+            .select('*, startups(*)')
             .in('id', recruiterIds)
         : Promise.resolve({ data: [], error: null }),
       supabase
         .from('startups')
-        .select('name, logo_url'),
+        .select('*'),
     ]);
 
     const recruiters = recruiterResult.error ? [] : (recruiterResult.data || []);
@@ -234,12 +234,12 @@ export const hydrateJobsWithRecruiterMeta = async (jobs = []) => {
 
     startups.forEach(startup => {
       const key = normalizeName(startup.name);
-      if (key && startup.logo_url) startupByName[key] = startup;
+      if (key) startupByName[key] = startup;
     });
 
     recruiters.forEach(recruiter => {
       const startup = Array.isArray(recruiter?.startups) ? recruiter.startups[0] : recruiter?.startups;
-      if (!startup?.logo_url) return;
+      if (!startup) return;
       [startup.name, recruiter.company_name].forEach(name => {
         const key = normalizeName(name);
         if (key) startupByName[key] = startup;
@@ -250,12 +250,14 @@ export const hydrateJobsWithRecruiterMeta = async (jobs = []) => {
       const recruiter = recruiterMap[job.recruiter_id];
       const recruiterStartup = Array.isArray(recruiter?.startups) ? recruiter.startups[0] : recruiter?.startups;
       const namedStartup = startupByName[normalizeName(job.company)];
-      const startup = recruiterStartup?.logo_url ? recruiterStartup : namedStartup;
+      const startup = recruiterStartup || namedStartup;
       return {
         ...job,
         company: startup?.name || job.company,
         logo_url: startup?.logo_url || job.logo_url || null,
         response_commitment: Boolean(recruiter?.response_commitment),
+        recruiter_profile: recruiter || null,
+        startup_profile: startup || null,
       };
     });
   } catch (_) {
