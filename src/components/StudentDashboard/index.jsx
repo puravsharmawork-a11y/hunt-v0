@@ -392,4 +392,10 @@ export default function StudentDashboard() {
 
       {/* ── NOTIFICATION FLYOUT ── */}
       {showNotifications && (
-        <NotificationFlyout
+      <NotificationFlyout
+        studentId={studentProfile?.id}
+        onClose={() => setShowNotifications(false)}
+        onUnreadChange={setUnreadCount}
+        />
+    )}
+
