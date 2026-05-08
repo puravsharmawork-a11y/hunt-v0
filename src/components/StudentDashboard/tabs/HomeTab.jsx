@@ -33,7 +33,7 @@ import {
   CheckCircle2, Clock, XCircle, Phone, Award, Bell, ChevronRight,
   MessageSquare, Calendar,
 } from 'lucide-react';
-import { supabase } from '../../../services/supabase';
+import { supabase, hydrateJobsWithRecruiterMeta } from '../../../services/supabase';
 
 // ─── Status meta ─────────────────────────────────────────────────────────────
 const STATUS_META = {
@@ -135,7 +135,7 @@ export function HomeTab({
           interviewed_at,
           hired_at,
           jobs (
-            id, role, company, logo_url,
+            id, role, company, recruiter_id, logo_url,
             stipend, location, duration
           )
         `)
@@ -143,10 +143,17 @@ export function HomeTab({
         .order('applied_at', { ascending: false });
 
       if (!error && data) {
-        setLiveApps(data.filter(a => a.jobs));
+        const appsWithJobs = data.filter(a => a.jobs);
+        const hydratedJobs = await hydrateJobsWithRecruiterMeta(appsWithJobs.map(a => a.jobs));
+        const jobMap = Object.fromEntries(hydratedJobs.map(job => [job.id, job]));
+        const hydratedApps = appsWithJobs.map(app => ({
+          ...app,
+          jobs: jobMap[app.jobs.id] || app.jobs,
+        }));
+        setLiveApps(hydratedApps);
         // Sync back to parent if needed for Explore tab "already applied" guard
         if (setAppliedJobs) {
-          setAppliedJobs(data.filter(a => a.jobs).map(a => ({
+          setAppliedJobs(hydratedApps.map(a => ({
             ...a.jobs,
             matchScore: a.match_score || 0,
             appliedAt: a.applied_at,
