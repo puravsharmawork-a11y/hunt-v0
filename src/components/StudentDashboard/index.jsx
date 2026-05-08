@@ -393,3 +393,4 @@ export default function StudentDashboard() {
           studentProfile={studentProfile}
           initials={initials}
           theme={theme}
+          />
