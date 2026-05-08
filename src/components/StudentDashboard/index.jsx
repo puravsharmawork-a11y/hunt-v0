@@ -394,3 +394,7 @@ export default function StudentDashboard() {
           initials={initials}
           theme={theme}
           />
+      )}
+    </div>
+  );
+}
