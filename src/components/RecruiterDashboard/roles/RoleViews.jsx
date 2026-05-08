@@ -9,11 +9,11 @@ import {
   CheckCircle, Clock, AlertCircle, Eye, AlertTriangle, Star,
 } from 'lucide-react';
 import { getJobApplications, updateApplicationStatus } from '../services/recruiterApi';
-import { CompanyLogo, ScoreNumber, StatusPill, Avatar, HuntScoreBadge, linkChip, iconBtn, btnPrimary, btnGhost } from '../shared/ui';
+import { CompanyLogo, EmptyState, ScoreNumber, StatusPill, Avatar, HuntScoreBadge, linkChip, iconBtn, btnPrimary, btnGhost } from '../shared/ui';
 import { CandidateProfileDrawer } from '../candidates/CandidateProfileDrawer';
 import { HuntSortTrigger, HuntSortSnapshot, ApplicantSnapshot } from '../candidates/HuntSort';
 
-export function RoleCard({ job, onClick, onTogglePause, onCopyLink, onDelete, onEdit, startupLogoUrl }) {
+export function RoleCard({ job, onClick, onTogglePause, onCopyLink, onDelete, onEdit, startupLogoUrl, responseCommitment }) {
   const filled = (job.current_applicants || 0) / (job.max_applicants || 50);
   const status = job.status || (job.is_active ? 'live' : 'paused');
   const statusStyle = status === 'live'
@@ -36,6 +36,11 @@ export function RoleCard({ job, onClick, onTogglePause, onCopyLink, onDelete, on
       <div style={{ display: 'flex', gap: 12, fontSize: 10, color: 'var(--text-mid)', flexWrap: 'wrap' }}>
         <span style={{ display: 'flex', alignItems: 'center', gap: 4 }}><MapPin size={10} /> {job.location}</span>
         <span style={{ display: 'flex', alignItems: 'center', gap: 4 }}><Users size={10} /> {job.current_applicants || 0} applied</span>
+        {responseCommitment && (
+          <span style={{ display: 'flex', alignItems: 'center', gap: 4, color: 'var(--green-text)', fontWeight: 600 }}>
+            <Clock size={10} /> 48h response
+          </span>
+        )}
       </div>
       <div>
         <div style={{ height: 3, borderRadius: 2, background: 'var(--border)', overflow: 'hidden' }}>
@@ -109,7 +114,7 @@ export function RoleDetailView({ job, onBack, onCopyLink, onEdit, onTogglePause,
             <div>
               <h2 style={{ fontFamily: "'Editorial New', Georgia, serif", fontSize: 22, color: 'var(--text)', margin: 0, fontWeight: 400 }}>{job.role}</h2>
               <p style={{ fontSize: 12, color: 'var(--text-dim)', margin: '4px 0 0' }}>{job.company} · {job.location} · {job.stipend}</p>
-              <div style={{ marginTop: 6 }}>
+              <div style={{ marginTop: 6, display: 'flex', gap: 6, flexWrap: 'wrap' }}>
                 <span style={{ fontSize: 9, padding: '2px 8px', borderRadius: 10, fontWeight: 500, background: jobStatus === 'live' ? 'var(--green-tint)' : 'var(--amber-tint)', color: jobStatus === 'live' ? 'var(--green-text)' : 'var(--amber)', border: `1px solid ${jobStatus === 'live' ? 'var(--green)' : 'var(--amber)'}`, textTransform: 'uppercase', letterSpacing: '0.05em' }}>{jobStatus === 'live' ? '● Live' : '⏸ Paused'}</span>
               </div>
             </div>
