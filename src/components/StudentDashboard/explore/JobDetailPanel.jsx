@@ -398,8 +398,8 @@ function StartupProfileDrawer({ job, onClose }) {
   const cultureTags = Array.isArray(startup.culture_tags) ? startup.culture_tags : [];
 
   return (
-    <div style={{ position: 'absolute', inset: 0, zIndex: 20, display: 'flex', justifyContent: 'flex-end', background: 'rgba(10,10,10,0.22)' }}>
-      <div style={{ width: 'min(520px, 100%)', height: '100%', background: 'var(--bg-card)', borderLeft: '1px solid var(--ink)', display: 'flex', flexDirection: 'column', boxShadow: '-18px 0 50px rgba(0,0,0,0.18)' }}>
+    <div style={{ position: 'absolute', inset: 0, zIndex: 20, background: 'var(--bg-card)' }}>
+      <div style={{ width: '100%', height: '100%', background: 'var(--bg-card)', display: 'flex', flexDirection: 'column' }}>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '12px 18px', borderBottom: '1px solid var(--border-mid)', flexShrink: 0 }}>
           <span className="hunt-kicker hunt-kicker-ink">startup profile</span>
           <button onClick={onClose} title="Close profile" style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--text-dim)', padding: 6, display: 'flex', alignItems: 'center' }}>
