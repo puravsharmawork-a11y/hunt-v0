@@ -4,7 +4,8 @@ import {
   Bookmark, Maximize2, Minimize2, X,
   Briefcase, Clock, MapPin, Users,
   CheckCircle2, ChevronRight, CalendarDays,
-  Zap, Gift, ListChecks,
+  Zap, Gift, ListChecks, Eye, Building2,
+  UserRound, Globe2, Linkedin, ExternalLink,
 } from 'lucide-react';
 
 // ─── Company logo: real image if available, else ink-block with initial ───
@@ -70,6 +71,7 @@ export function JobDetailPanel({
   isSaved, onSave,
   isApplied,
 }) {
+  const [profileOpen, setProfileOpen] = React.useState(false);
   const scoreColor = s => (s >= 75 ? 'var(--blue)' : s >= 50 ? 'var(--amber)' : 'var(--red)');
   const compColor  = c => (c === 'High' ? 'var(--red)' : c === 'Medium' ? 'var(--amber)' : 'var(--blue)');
   const compTint   = c => (c === 'High' ? 'var(--red-tint)' : c === 'Medium' ? 'var(--amber-tint)' : 'var(--blue-tint)');
@@ -81,11 +83,14 @@ export function JobDetailPanel({
     `${spotsLeft} open slots`;
 
   return (
-    <div style={{ height: '100%', minHeight: 0, display: 'flex', flexDirection: 'column', background: 'var(--bg-card)', borderLeft: '1px solid var(--border-mid)', overflow: 'hidden' }}>
+    <div style={{ height: '100%', minHeight: 0, display: 'flex', flexDirection: 'column', background: 'var(--bg-card)', borderLeft: '1px solid var(--border-mid)', overflow: 'hidden', position: 'relative' }}>
       {/* Toolbar */}
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '12px 18px', borderBottom: '1px solid var(--border-mid)', flexShrink: 0 }}>
         <span className="hunt-kicker hunt-kicker-ink">▲ listing / #{(job.id || '').toString().toUpperCase().slice(0, 8)}</span>
         <div style={{ display: 'flex', gap: 4 }}>
+          <button onClick={() => setProfileOpen(true)} title="View startup profile" style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--text-dim)', padding: 6, display: 'flex', alignItems: 'center' }}>
+            <Eye size={14} />
+          </button>
           <button onClick={onToggleMaximize} title={isMaximized ? 'Minimize' : 'Maximize'} style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--text-dim)', padding: 6, display: 'flex', alignItems: 'center' }}>
             {isMaximized ? <Minimize2 size={14} /> : <Maximize2 size={14} />}
           </button>
@@ -118,12 +123,25 @@ export function JobDetailPanel({
                   </span>
                 </>
               )}
+              {job.response_commitment && (
+                <span style={{ display: 'flex', alignItems: 'center', gap: 4, color: 'var(--blue)', fontWeight: 600, letterSpacing: '0.04em' }}>
+                  <Clock size={10} />
+                  48h response
+                </span>
+              )}
             </div>
             <h1 className="hunt-serif" style={{ fontSize: 26, color: 'var(--text)', lineHeight: 1.15, marginBottom: 10 }}>
               {job.role}
             </h1>
             <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
               {job.type && <span className="hunt-chip">{job.type}</span>}
+              <button
+                onClick={() => setProfileOpen(true)}
+                className="hunt-chip"
+                style={{ display: 'inline-flex', alignItems: 'center', gap: 5, cursor: 'pointer', fontFamily: "'JetBrains Mono', monospace" }}
+              >
+                <Building2 size={10} /> View startup profile
+              </button>
               {isApplied && (
                 <span className="hunt-chip" style={{ background: 'var(--blue-tint)', border: '1px solid var(--blue)', color: 'var(--blue)', display: 'flex', alignItems: 'center', gap: 4 }}>
                   <CheckCircle2 size={10} /> Applied
@@ -364,7 +382,174 @@ export function JobDetailPanel({
           </>
         )}
       </div>
+      {profileOpen && <StartupProfileDrawer job={job} onClose={() => setProfileOpen(false)} />}
     </div>
+  );
+}
+
+function StartupProfileDrawer({ job, onClose }) {
+  const recruiter = job.recruiter_profile || {};
+  const startup = job.startup_profile || {};
+  const companyName = startup.name || job.company || recruiter.company_name || 'Startup';
+  const recruiterName = recruiter.contact_name || 'Recruiter';
+  const recruiterTitle = recruiter.title || recruiter.role_in_company?.replace('_', ' ') || 'Hiring team';
+  const founders = Array.isArray(startup.founders) ? startup.founders.filter(f => f?.name || f?.role || f?.background) : [];
+  const techStack = Array.isArray(startup.tech_stack) ? startup.tech_stack : [];
+  const cultureTags = Array.isArray(startup.culture_tags) ? startup.culture_tags : [];
+
+  return (
+    <div style={{ position: 'absolute', inset: 0, zIndex: 20, display: 'flex', justifyContent: 'flex-end', background: 'rgba(10,10,10,0.22)' }}>
+      <div style={{ width: 'min(520px, 100%)', height: '100%', background: 'var(--bg-card)', borderLeft: '1px solid var(--ink)', display: 'flex', flexDirection: 'column', boxShadow: '-18px 0 50px rgba(0,0,0,0.18)' }}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '12px 18px', borderBottom: '1px solid var(--border-mid)', flexShrink: 0 }}>
+          <span className="hunt-kicker hunt-kicker-ink">startup profile</span>
+          <button onClick={onClose} title="Close profile" style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--text-dim)', padding: 6, display: 'flex', alignItems: 'center' }}>
+            <X size={14} />
+          </button>
+        </div>
+
+        <div style={{ flex: 1, overflowY: 'auto', minHeight: 0 }}>
+          <div style={{ height: 132, background: 'var(--bg-subtle)', borderBottom: '1px solid var(--border)' }}>
+            {startup.banner_url ? (
+              <img src={startup.banner_url} alt={`${companyName} banner`} style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }} />
+            ) : (
+              <div style={{ width: '100%', height: '100%', display: 'grid', placeItems: 'center' }}>
+                <span className="hunt-kicker" style={{ color: 'var(--text-dim)' }}>company background</span>
+              </div>
+            )}
+          </div>
+
+          <div style={{ padding: '0 24px 28px' }}>
+            <div style={{ display: 'flex', alignItems: 'flex-end', gap: 14, marginTop: -30, marginBottom: 18 }}>
+              <CompanyLogoBlock name={companyName} logoUrl={startup.logo_url || job.logo_url} size={64} />
+              <div style={{ paddingBottom: 4, minWidth: 0 }}>
+                <h2 className="hunt-serif" style={{ fontSize: 28, lineHeight: 1.05, color: 'var(--text)', margin: 0 }}>{companyName}</h2>
+                <p style={{ fontSize: 12, color: 'var(--text-dim)', margin: '5px 0 0', lineHeight: 1.45 }}>{startup.tagline || startup.one_line_pitch || recruiter.company_name || 'Recruiter profile'}</p>
+              </div>
+            </div>
+
+            <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6, marginBottom: 18 }}>
+              {[startup.industry, startup.stage, startup.team_size, startup.hq_location].filter(Boolean).map(item => (
+                <span key={item} className="hunt-chip">{item}</span>
+              ))}
+              {recruiter.response_commitment && (
+                <span className="hunt-chip" style={{ background: 'var(--blue-tint)', borderColor: 'var(--blue)', color: 'var(--blue)', display: 'inline-flex', alignItems: 'center', gap: 5 }}>
+                  <Clock size={10} /> 48h response
+                </span>
+              )}
+            </div>
+
+            <ProfileSection label="About" empty="No startup description added yet.">
+              {startup.about || startup.one_line_pitch || recruiter.what_you_build || recruiter.about}
+            </ProfileSection>
+
+            <ProfileSection label="Why join" empty="No joining note added yet.">
+              {startup.why_join || recruiter.hiring_note}
+            </ProfileSection>
+
+            {(techStack.length > 0 || cultureTags.length > 0) && (
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12, marginBottom: 22 }}>
+                <MiniList label="Tech stack" items={techStack} />
+                <MiniList label="Culture" items={cultureTags} />
+              </div>
+            )}
+
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10, marginBottom: 22 }}>
+              <InfoTile label="Website" value={startup.website || recruiter.website} href={startup.website || recruiter.website} icon={<Globe2 size={11} />} />
+              <InfoTile label="Founded" value={startup.founded_year} />
+              <InfoTile label="Traction" value={startup.traction_users} />
+              <InfoTile label="Backed by" value={startup.backed_by} />
+              <InfoTile label="LinkedIn" value={startup.linkedin_url} href={startup.linkedin_url} icon={<Linkedin size={11} />} />
+              <InfoTile label="Press / customers" value={startup.press_mentions} />
+            </div>
+
+            {founders.length > 0 && (
+              <ProfileSection label="Founding team">
+                <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+                  {founders.map((founder, index) => (
+                    <div key={`${founder.name}-${index}`} style={{ padding: '11px 12px', border: '1px solid var(--border)', background: 'var(--bg-subtle)' }}>
+                      <p style={{ fontSize: 13, color: 'var(--text)', fontWeight: 600, margin: 0 }}>{founder.name || 'Founder'}{founder.role ? `, ${founder.role}` : ''}</p>
+                      {founder.background && <p style={{ fontSize: 12, color: 'var(--text-mid)', lineHeight: 1.5, margin: '4px 0 0' }}>{founder.background}</p>}
+                      {founder.linkedin_url && <ExternalAnchor href={founder.linkedin_url} label="LinkedIn" />}
+                    </div>
+                  ))}
+                </div>
+              </ProfileSection>
+            )}
+
+            <ProfileSection label="Recruiter contact">
+              <div style={{ display: 'flex', gap: 12, alignItems: 'flex-start', padding: 14, border: '1px solid var(--border-mid)', background: 'var(--bg-subtle)' }}>
+                <div style={{ width: 38, height: 38, display: 'grid', placeItems: 'center', background: 'var(--ink)', color: 'var(--cream)', flexShrink: 0 }}>
+                  <UserRound size={17} />
+                </div>
+                <div style={{ minWidth: 0 }}>
+                  <p style={{ fontSize: 13, color: 'var(--text)', fontWeight: 600, margin: 0 }}>{recruiterName}</p>
+                  <p style={{ fontSize: 12, color: 'var(--text-dim)', margin: '3px 0 0', textTransform: 'capitalize' }}>{recruiterTitle}</p>
+                  {recruiter.bio && <p style={{ fontSize: 12, color: 'var(--text-mid)', lineHeight: 1.55, margin: '9px 0 0' }}>{recruiter.bio}</p>}
+                  {recruiter.what_im_looking_for && <p style={{ fontSize: 12, color: 'var(--text-mid)', lineHeight: 1.55, margin: '9px 0 0' }}><b>Looking for:</b> {recruiter.what_im_looking_for}</p>}
+                  {recruiter.linkedin_url && <ExternalAnchor href={recruiter.linkedin_url} label="Recruiter LinkedIn" />}
+                </div>
+              </div>
+            </ProfileSection>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function ProfileSection({ label, children, empty }) {
+  const hasContent = React.isValidElement(children) || (typeof children === 'string' ? children.trim() : children);
+  if (!hasContent && !empty) return null;
+  return (
+    <div style={{ marginBottom: 22 }}>
+      <div className="hunt-kicker hunt-kicker-ink" style={{ marginBottom: 9 }}>▲ {label}</div>
+      {hasContent ? (
+        typeof children === 'string'
+          ? <p style={{ fontSize: 13, color: 'var(--text-mid)', lineHeight: 1.65, margin: 0 }}>{children}</p>
+          : children
+      ) : (
+        <p style={{ fontSize: 13, color: 'var(--text-dim)', lineHeight: 1.6, margin: 0, fontStyle: 'italic' }}>{empty}</p>
+      )}
+    </div>
+  );
+}
+
+function MiniList({ label, items }) {
+  return (
+    <div>
+      <div className="hunt-kicker" style={{ marginBottom: 8 }}>{label}</div>
+      {items.length > 0 ? (
+        <div style={{ display: 'flex', flexWrap: 'wrap', gap: 5 }}>
+          {items.map(item => <span key={item} className="hunt-chip">{item}</span>)}
+        </div>
+      ) : (
+        <p style={{ fontSize: 12, color: 'var(--text-dim)', margin: 0, fontStyle: 'italic' }}>Not added</p>
+      )}
+    </div>
+  );
+}
+
+function InfoTile({ label, value, href, icon }) {
+  if (!value) return null;
+  return (
+    <div style={{ padding: '10px 12px', border: '1px solid var(--border)', background: 'var(--bg-subtle)', minWidth: 0 }}>
+      <div className="hunt-kicker" style={{ display: 'flex', alignItems: 'center', gap: 5, marginBottom: 5 }}>
+        {icon} {label}
+      </div>
+      {href ? (
+        <ExternalAnchor href={href} label="Open link" compact />
+      ) : (
+        <p style={{ fontSize: 12, color: 'var(--text)', margin: 0, overflowWrap: 'anywhere' }}>{value}</p>
+      )}
+    </div>
+  );
+}
+
+function ExternalAnchor({ href, label, compact }) {
+  return (
+    <a href={href} target="_blank" rel="noreferrer" style={{ display: 'inline-flex', alignItems: 'center', gap: 5, marginTop: compact ? 0 : 8, fontSize: 11, color: 'var(--blue)', textDecoration: 'none', fontFamily: "'JetBrains Mono', monospace", letterSpacing: '0.04em', textTransform: 'uppercase' }}>
+      {label} <ExternalLink size={10} />
+    </a>
   );
 }
 
