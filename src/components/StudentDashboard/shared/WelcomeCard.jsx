@@ -2,19 +2,20 @@
 import React from 'react';
 import { X, Play, ArrowRight } from 'lucide-react';
 
-export function WelcomeCard({ name, completeness, onDismiss, onTour }) {
+export function WelcomeCard({ name, completeness, onDismiss, onTour, onCompleteProfile }) {
   const firstName = name?.split(' ')[0] || 'there';
 
   return (
     <div
       className="hunt-card"
       style={{
-        marginBottom: 20,
+        marginBottom: 28,
         position: 'relative',
         overflow: 'hidden',
         display: 'flex',
         gap: 0,
         alignItems: 'stretch',
+        width: '100%',
       }}
     >
       {/* Left: pixel-art ink column */}
@@ -57,18 +58,20 @@ export function WelcomeCard({ name, completeness, onDismiss, onTour }) {
           style={{
             position: 'absolute',
             top: 12,
-            right: 12,
-            background: 'none',
-            border: 'none',
-            cursor: 'pointer',
-            color: 'var(--text-dim)',
+          right: 12,
+          background: 'none',
+          border: 'none',
+          cursor: 'pointer',
+          color: 'var(--text-dim)',
             padding: 6,
-            display: 'flex',
-            alignItems: 'center',
-          }}
-        >
-          <X size={13} />
-        </button>
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+        }}
+        aria-label="Dismiss welcome card"
+      >
+        <X size={13} />
+      </button>
 
         <div
           className="hunt-kicker hunt-kicker-blue"
@@ -142,6 +145,7 @@ export function WelcomeCard({ name, completeness, onDismiss, onTour }) {
         <div style={{ display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap' }}>
           {completeness < 100 && (
             <button
+              onClick={onCompleteProfile}
               className="hunt-btn hunt-btn-primary hunt-btn-sm"
               style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }}
             >
