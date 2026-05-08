@@ -61,7 +61,7 @@ export function Avatar({ name, avatarUrl, size = 36 }) {
 }
 
 export function CompanyLogo({ name, logoUrl, startupLogoUrl, size = 40 }) {
-  const resolvedUrl = logoUrl || startupLogoUrl || null;
+  const resolvedUrl = startupLogoUrl || logoUrl || null;
   const initials = (name || '').slice(0, 2).toUpperCase() || '?';
   if (resolvedUrl) {
     return (
