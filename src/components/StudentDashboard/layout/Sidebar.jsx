@@ -85,6 +85,7 @@ export function Sidebar({
         height: '100vh',
         position: 'sticky',
         top: 0,
+        zIndex: 300,
         borderRight: '1px solid var(--border-mid)',
         background: 'var(--bg)',
         display: 'flex',
@@ -581,7 +582,7 @@ export function Sidebar({
                 background: 'var(--bg-card)',
                 border: '1px solid var(--ink)',
                 boxShadow: '4px 4px 0 0 var(--ink)',
-                zIndex: 60,
+                zIndex: 1000,
               }}
             >
               <div style={{ padding: '12px 14px', borderBottom: '1px solid var(--border-mid)' }}>
