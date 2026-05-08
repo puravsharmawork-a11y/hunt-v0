@@ -211,20 +211,46 @@ export const getJobById = async (jobId) => {
 export const hydrateJobsWithRecruiterMeta = async (jobs = []) => {
   const list = (jobs || []).filter(Boolean);
   const recruiterIds = [...new Set(list.map(j => j.recruiter_id).filter(Boolean))];
-  if (recruiterIds.length === 0) return list;
+  const normalizeName = (name = '') => name.trim().toLowerCase();
 
   try {
-    const { data: recruiters, error } = await supabase
-      .from('recruiters')
-      .select('id, response_commitment, startups(name, logo_url)')
-      .in('id', recruiterIds);
+    const [recruiterResult, startupResult] = await Promise.all([
+      recruiterIds.length > 0
+        ? supabase
+            .from('recruiters')
+            .select('id, company_name, response_commitment, startups(name, logo_url)')
+            .in('id', recruiterIds)
+        : Promise.resolve({ data: [], error: null }),
+      supabase
+        .from('startups')
+        .select('name, logo_url'),
+    ]);
 
-    if (error || !recruiters) return list;
+    const recruiters = recruiterResult.error ? [] : (recruiterResult.data || []);
+    const startups = startupResult.error ? [] : (startupResult.data || []);
 
     const recruiterMap = Object.fromEntries(recruiters.map(r => [r.id, r]));
+    const startupByName = {};
+
+    startups.forEach(startup => {
+      const key = normalizeName(startup.name);
+      if (key && startup.logo_url) startupByName[key] = startup;
+    });
+
+    recruiters.forEach(recruiter => {
+      const startup = Array.isArray(recruiter?.startups) ? recruiter.startups[0] : recruiter?.startups;
+      if (!startup?.logo_url) return;
+      [startup.name, recruiter.company_name].forEach(name => {
+        const key = normalizeName(name);
+        if (key) startupByName[key] = startup;
+      });
+    });
+
     return list.map(job => {
       const recruiter = recruiterMap[job.recruiter_id];
-      const startup = Array.isArray(recruiter?.startups) ? recruiter.startups[0] : recruiter?.startups;
+      const recruiterStartup = Array.isArray(recruiter?.startups) ? recruiter.startups[0] : recruiter?.startups;
+      const namedStartup = startupByName[normalizeName(job.company)];
+      const startup = recruiterStartup?.logo_url ? recruiterStartup : namedStartup;
       return {
         ...job,
         company: startup?.name || job.company,
