@@ -287,7 +287,10 @@ export function ExploreTab({
             )}
 
             {/* Content */}
-            <div style={{ flex: 1, minHeight: 0, overflowY: 'auto', padding: viewMode === 'list' ? '0' : '0 28px 24px' }}>
+            <div
+              className="hunt-hide-scrollbar"
+              style={{ flex: 1, minHeight: 0, overflowY: 'auto', padding: viewMode === 'list' ? '0' : '0 28px 24px' }}
+            >
               {allJobs.length === 0 ? (
                 <EmptyTargeted notified={notified} setNotified={setNotified} />
               ) : viewMode === 'list' ? (
