@@ -143,6 +143,11 @@ export const HUNT_GLOBAL_CSS = `
 ::-webkit-scrollbar-track { background: transparent; }
 ::-webkit-scrollbar-thumb { background: var(--border-mid); border-radius: 0; }
 ::-webkit-scrollbar-thumb:hover { background: var(--text-faint); }
+.hunt-hide-scrollbar {
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+}
+.hunt-hide-scrollbar::-webkit-scrollbar { display: none; }
 
 /* ─── Range input ─── */
 input[type="range"].hunt-range {
