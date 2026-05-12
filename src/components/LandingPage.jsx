@@ -88,13 +88,8 @@ function PreBookModal({ onClose }) {
     </p>
     <button
       onClick={async () => {
-        try {
-          const { data, error } = await supabase.auth.signInWithOAuth({
-            provider: 'google',
-            options: { redirectTo: `${window.location.origin}/recruiter/onboarding` }
-          });
-          if (error) throw error;
-        } catch(e) { alert('Sign in failed: ' + e.message); }
+        try { await signInWithGoogleAsRecruiter(); }
+        catch(e) { alert('Sign in failed: ' + e.message); }
       }}
       style={{ display:'flex', alignItems:'center', gap:8, background:t.ember, color:'#fff', border:'none', borderRadius:6, padding:'12px 24px', fontSize:14, fontWeight:500, cursor:'pointer', fontFamily:t.sans, margin:'0 auto 12px' }}
     >
