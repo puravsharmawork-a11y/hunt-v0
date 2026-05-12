@@ -3,6 +3,8 @@ import React, { useEffect, useState } from 'react';
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { onAuthStateChange } from './services/supabase';
 import { supabase } from './services/supabase';
+import AuthCallback from './components/AuthCallback';
+import { getExistingRole } from './services/supabase';
 import LandingPage from './components/LandingPage';
 import StudentOnboarding from './components/StudentOnboarding';
 import StudentDashboard from './components/StudentDashboard';
@@ -11,65 +13,31 @@ import RecruiterDashboard from './components/RecruiterDashboard';
 import ApplyPage from './components/ApplyPage';
 import AdminDashboard from './components/AdminDashboard';
 
-// ─── SmartRedirect ────────────────────────────────────────────────────────────
-// When a logged-in user hits "/", check if they have a recruiter profile.
-// If yes  → /recruiter/dashboard
-// If no   → /studentdashboard
-// This handles the OAuth callback landing on "/" for BOTH student and recruiter flows.
 function SmartRedirect({ user }) {
   const [destination, setDestination] = useState(null);
-
   useEffect(() => {
     if (!user) return;
-
     (async () => {
-      try {
-        const { data, error } = await supabase
-          .from('recruiters')
-          .select('id')
-          .eq('auth_id', user.id)
-          .maybeSingle();
-
-        if (!error && data) {
-          // Has a completed recruiter profile → go to recruiter dashboard
-          setDestination('/recruiter/dashboard');
-        } else {
-          // Check if they're in the recruiter waitlist (approved or not)
-          // so we can send them to recruiter onboarding instead of student dashboard
-          const { data: waitlist } = await supabase
-            .from('recruiter_waitlist')
-            .select('approved')
-            .eq('email', user.email)
-            .maybeSingle();
-
-          if (waitlist) {
-            // They registered as a recruiter — send to recruiter onboarding
-            setDestination('/recruiter/onboarding');
-          } else {
-            // No recruiter record at all → student flow
-            setDestination('/studentdashboard');
-          }
-        }
-      } catch (e) {
-        // On any error, fall back to student dashboard
-        setDestination('/studentdashboard');
-      }
+      const role = await getExistingRole(user.id, user.email);
+      if (role === 'student') setDestination('/studentdashboard');
+      else if (role === 'recruiter') setDestination('/recruiter/dashboard');
+      else if (role === 'recruiter_waitlist') setDestination('/recruiter/onboarding');
+      else setDestination('/onboarding');
     })();
   }, [user]);
-
-  if (!destination) {
-    // Still checking — show the same loading indicator
-    return (
-      <div className="min-h-screen bg-zinc-950 text-white flex items-center justify-center">
-        <div className="text-center">
-          <div className="text-6xl mb-4">🎯</div>
-          <p className="text-xl font-bold">Loading HUNT...</p>
-        </div>
-      </div>
-    );
-  }
-
+  if (!destination) return <LoadingScreen />;
   return <Navigate to={destination} replace />;
+}
+
+function LoadingScreen() {
+  return (
+    <div className="min-h-screen bg-zinc-950 text-white flex items-center justify-center">
+      <div className="text-center">
+        <div className="text-6xl mb-4">🎯</div>
+        <p className="text-xl font-bold">Loading HUNT...</p>
+      </div>
+    </div>
+  );
 }
 
 // ─── App ──────────────────────────────────────────────────────────────────────
@@ -106,6 +74,13 @@ function App() {
           path="/"
           element={user ? <SmartRedirect user={user} /> : <LandingPage />}
         />
+        
+        {/* ── OAuth callback — the ONLY place routing decisions happen after Google redirects ── */}
+        {/* Always accessible (no auth guard) because Supabase hasn't set the session yet */}
+        <Route 
+          path="/auth/callback" 
+          element={<AuthCallback />} 
+          />
 
         {/* Student routes */}
         <Route
