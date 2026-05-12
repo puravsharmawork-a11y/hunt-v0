@@ -1130,18 +1130,10 @@ export default function LandingPage() {
   };
 
   // ── FIX: Startup/recruiter sign-in → always redirect to /recruiter/onboarding ──
-  const handleRecruiterSignIn = async () => {
-    try {
-      const { error } = await supabase.auth.signInWithOAuth({
-        provider: 'google',
-        options: { redirectTo: `${window.location.origin}/recruiter/onboarding` },
-      });
-      if (error) throw error;
-    } catch (error) {
-      console.error('Recruiter sign in error:', error);
-      alert('Failed to sign in. Please try again.');
-    }
-  };
+ const handleRecruiterSignIn = async () => {
+  try { await signInWithGoogleAsRecruiter(); }
+  catch (error) { console.error('Recruiter sign in error:', error); alert('Failed to sign in. Please try again.'); }
+};
 
   const handleTalkToFounder = () => {
     window.open(FOUNDER_CALL_URL, '_blank', 'noopener,noreferrer');
