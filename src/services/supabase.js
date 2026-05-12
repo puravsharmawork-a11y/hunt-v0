@@ -17,14 +17,29 @@ export const supabase = createClient(supabaseUrl, supabaseAnonKey);
 // AUTHENTICATION HELPERS
 // ============================================================================
 
+// ── Student sign-in ──────────────────────────────────────────────────────────
+// Always redirects to /auth/callback which then reads the intended_role from
+// the URL param and routes accordingly.
 export const signInWithGoogle = async () => {
   const { data, error } = await supabase.auth.signInWithOAuth({
     provider: 'google',
     options: {
-      redirectTo: `${window.location.origin}/onboarding`,
+      redirectTo: `${window.location.origin}/auth/callback?intended_role=student`,
     },
   });
+  if (error) throw error;
+  return data;
+};
 
+// ── Recruiter sign-in ────────────────────────────────────────────────────────
+// Identical OAuth flow but stamps intended_role=recruiter in the callback URL.
+export const signInWithGoogleAsRecruiter = async () => {
+  const { data, error } = await supabase.auth.signInWithOAuth({
+    provider: 'google',
+    options: {
+      redirectTo: `${window.location.origin}/auth/callback?intended_role=recruiter`,
+    },
+  });
   if (error) throw error;
   return data;
 };
@@ -49,6 +64,50 @@ export const updateUserEmail = async (newEmail) => {
   const { data, error } = await supabase.auth.updateUser({ email: newEmail });
   if (error) throw error;
   return data;
+};
+
+// ============================================================================
+// ROLE LOOKUP HELPERS
+// Used by AuthCallback and SmartRedirect to decide where to send the user.
+// ============================================================================
+
+// Returns 'student' | 'recruiter' | null
+// Checks both tables — whichever has a row for this auth_id wins.
+export const getExistingRole = async (userId, email) => {
+  try {
+    // Check student table first
+    const { data: student } = await supabase
+      .from('students')
+      .select('id')
+      .eq('auth_id', userId)
+      .maybeSingle();
+
+    if (student) return 'student';
+
+    // Check recruiter table
+    const { data: recruiter } = await supabase
+      .from('recruiters')
+      .select('id')
+      .eq('auth_id', userId)
+      .maybeSingle();
+
+    if (recruiter) return 'recruiter';
+
+    // Check recruiter waitlist (approved but not onboarded yet)
+    if (email) {
+      const { data: waitlist } = await supabase
+        .from('recruiter_waitlist')
+        .select('approved')
+        .eq('email', email)
+        .maybeSingle();
+
+      if (waitlist) return 'recruiter_waitlist';
+    }
+
+    return null; // brand new user, no profile yet
+  } catch {
+    return null;
+  }
 };
 
 // ============================================================================
@@ -111,28 +170,19 @@ export const updateStudentProfile = async (updates) => {
 
 // ============================================================================
 // FILE UPLOAD HELPERS
-// ----------------------------------------------------------------------------
-// All uploads go to the same `student-files` bucket (already public, proven
-// to work via your existing resume uploads). Folders separate them:
-//   resumes/   →  PDFs
-//   avatars/   →  profile pictures
-//   banners/   →  cover images
+// All uploads go to the same `student-files` bucket.
 // ============================================================================
 
-// Internal helper — keeps logic identical for all 3 file types so any future
-// breakage is fixed in one place. Throws clear errors instead of cryptic ones.
 const uploadToStudentFiles = async (file, folder, opts = {}) => {
   if (!file) throw new Error('No file provided');
 
   const user = await getCurrentUser();
   if (!user) throw new Error('You must be signed in to upload files');
 
-  // Optional size guard
   if (opts.maxSizeMB && file.size > opts.maxSizeMB * 1024 * 1024) {
     throw new Error(`File too large (max ${opts.maxSizeMB}MB)`);
   }
 
-  // Optional MIME guard
   if (opts.allowedTypes && !opts.allowedTypes.some(t => file.type.startsWith(t))) {
     throw new Error(`Unsupported file type: ${file.type}`);
   }
@@ -150,7 +200,6 @@ const uploadToStudentFiles = async (file, folder, opts = {}) => {
     });
 
   if (uploadError) {
-    // Surface the actual reason instead of the generic "Upload failed"
     console.error('[uploadToStudentFiles] Supabase storage error:', uploadError);
     throw new Error(uploadError.message || 'Storage upload failed');
   }
@@ -301,10 +350,7 @@ export const getMyApplications = async () => {
 
   const { data, error } = await supabase
     .from('applications')
-    .select(`
-      *,
-      jobs (*)
-    `)
+    .select(`*, jobs (*)`)
     .eq('student_id', profile.id)
     .order('applied_at', { ascending: false });
 
@@ -335,7 +381,7 @@ export const getWeeklyApplicationCount = async () => {
 
 export const canApplyThisWeek = async () => {
   const count = await getWeeklyApplicationCount();
-  return count < 5; // Weekly limit
+  return count < 5;
 };
 
 // ============================================================================
@@ -344,37 +390,24 @@ export const canApplyThisWeek = async () => {
 
 export const calculateProfileCompleteness = (profile) => {
   let score = 0;
-
-  // Basic info (30 points)
   if (profile.full_name) score += 10;
   if (profile.college) score += 10;
   if (profile.phone) score += 5;
   if (profile.email) score += 5;
-
-  // Skills (25 points)
   const skills = profile.skills || [];
   if (skills.length >= 5) score += 25;
   else if (skills.length >= 3) score += 15;
   else if (skills.length >= 1) score += 10;
-
-  // Projects (20 points)
   const projects = profile.projects || [];
   if (projects.length >= 3) score += 20;
   else if (projects.length >= 2) score += 15;
   else if (projects.length >= 1) score += 10;
-
-  // Preferences (10 points)
   if (profile.preferred_roles && profile.preferred_roles.length > 0) score += 10;
-
-  // Links (15 points)
   if (profile.github_url) score += 5;
   if (profile.linkedin_url) score += 5;
   if (profile.resume_url) score += 5;
-
   return Math.min(score, 100);
 };
-// ─── ADD THESE FUNCTIONS TO THE BOTTOM OF YOUR supabase.js ───────────────────
-// They read/write the two new columns: github_signals, resume_signals
 
 export const getGitHubSignals = async () => {
   const user = await getCurrentUser();
@@ -398,8 +431,6 @@ export const getResumeSignals = async () => {
   return data;
 };
 
-// Merge resume-extracted skills back into the profile's skills array
-// Call this after parseResume() if you want to persist merged skills
 export const mergeAndSaveSkills = async (mergedSkills) => {
   const user = await getCurrentUser();
   const { data, error } = await supabase
