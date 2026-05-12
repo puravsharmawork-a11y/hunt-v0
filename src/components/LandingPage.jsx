@@ -1,6 +1,6 @@
 // src/components/LandingPage.jsx
 import React, { useEffect, useState } from 'react';
-import { signInWithGoogle } from '../services/supabase';
+import { signInWithGoogle, signInWithGoogleAsRecruiter } from '../services/supabase';
 import { supabase } from '../services/supabase';
 
 const FOUNDER_CALL_URL = 'https://wa.me/916367146875?text=Hi%20Purav%2C%20I%20found%20HUNT%20and%20want%20to%20hire%20an%20intern';
