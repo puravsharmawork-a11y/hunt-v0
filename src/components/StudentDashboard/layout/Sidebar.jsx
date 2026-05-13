@@ -7,6 +7,7 @@ import {
   MessageCircle, Mail, Phone, X, Edit3, Save, Plus, Trash2,
 } from 'lucide-react';
 import { HuntLogo, PixelMark } from '../shared/HuntLogo';
+import { SettingsPanel } from './SettingsPanel';
 
 const NAV_ITEMS = [
   { id: 'explore', label: 'Explore', icon: Compass },
@@ -463,6 +464,8 @@ export function Sidebar({
 
   const [confirmingSignOut, setConfirmingSignOut] = useState(false);
   const [showSupport, setShowSupport] = useState(false);
+  const [internalShowSettings, setInternalShowSettings] = useState(false);
+  const [settingsTabState, setSettingsTabState] = useState('account');
   const accountWrapRef = useRef(null);
   const SIDEBAR_W = collapsed ? 72 : 220;
 
@@ -493,10 +496,11 @@ export function Sidebar({
 
   const fillPct = Math.max(0, Math.min(100, (remainingApplications / 5) * 100));
 
-  // Safe settings opener — works even if parent forgot to wire setShowSettings
+  // Opens settings — works self-contained even if parent doesn't wire setShowSettings
   const openSettings = () => {
     setShowAccountMenu(false);
     setConfirmingSignOut(false);
+    setInternalShowSettings(true);
     if (typeof setShowSettings === 'function') {
       setShowSettings(true);
     }
@@ -1041,6 +1045,22 @@ export function Sidebar({
         <SupportPanel
           onClose={() => setShowSupport(false)}
           isAdmin={isAdmin}
+        />
+      )}
+
+      {/* ── Settings Panel (self-contained — no parent wiring needed) ── */}
+      {internalShowSettings && (
+        <SettingsPanel
+          onClose={() => {
+            setInternalShowSettings(false);
+            if (typeof setShowSettings === 'function') setShowSettings(false);
+          }}
+          settingsTab={settingsTabState}
+          setSettingsTab={setSettingsTabState}
+          studentProfile={studentProfile}
+          initials={initials}
+          theme={theme}
+          setTheme={setTheme}
         />
       )}
     </>
