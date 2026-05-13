@@ -82,62 +82,62 @@ const EditableSection = ({ title, editKey, editingKey, onRequestEdit, onSave, on
 // ── Real platform logos (same as onboarding) ──────────────────────────────────
 const PlatformLogos = {
   leetcode: () => (
-    <svg width="16" height="16" viewBox="0 0 24 24" fill="#FFA116">
+    <svg width="20" height="20" viewBox="0 0 24 24" fill="#FFA116">
       <path d="M13.483 0a1.374 1.374 0 0 0-.961.438L7.116 6.226l-3.854 4.126a5.266 5.266 0 0 0-1.209 2.104 5.527 5.527 0 0 0 .062 2.362 5.83 5.83 0 0 0 .349 1.017 5.938 5.938 0 0 0 1.271 1.818l4.277 4.193.039.038c2.248 2.165 5.852 2.133 8.063-.074l2.396-2.392c.54-.54.54-1.414.003-1.955a1.378 1.378 0 0 0-1.951-.003l-2.396 2.392a3.021 3.021 0 0 1-4.205.038l-.02-.019-4.276-4.193c-.652-.64-.972-1.469-.948-2.263a2.545 2.545 0 0 1 .619-1.164L9.13 8.114c1.058-1.134 3.204-1.27 4.43-.278l3.501 2.831c.593.48 1.461.387 1.94-.207a1.384 1.384 0 0 0-.207-1.943l-3.5-2.831c-.8-.647-1.766-1.045-2.774-1.202l2.015-2.158A1.384 1.384 0 0 0 13.483 0zm-2.866 12.815a1.38 1.38 0 0 0-1.38 1.382 1.38 1.38 0 0 0 1.38 1.382H19.79a1.38 1.38 0 0 0 1.38-1.382 1.38 1.38 0 0 0-1.38-1.382z"/>
     </svg>
   ),
   codechef: () => (
-    <svg width="16" height="16" viewBox="0 0 24 24" fill="#5B4638">
+    <svg width="20" height="20" viewBox="0 0 24 24" fill="#5B4638">
       <path d="M11.257.004C5.858-.114 1.83 4.33 1.945 9.728c-.014 2.76 1.202 5.205 3.15 6.87L4.4 18.45l1.967 2.307.87-1.02c1.54 1.024 3.394 1.615 5.396 1.615 2.003 0 3.856-.59 5.397-1.614l.87 1.02 1.966-2.308-.696-1.852c1.948-1.666 3.164-4.11 3.15-6.87.115-5.398-3.913-9.842-9.313-9.724h.25z"/>
     </svg>
   ),
   codeforces: () => (
-    <svg width="16" height="16" viewBox="0 0 24 24" fill="#1F8ACB">
+    <svg width="20" height="20" viewBox="0 0 24 24" fill="#1F8ACB">
       <path d="M4.5 7.5A1.5 1.5 0 0 1 6 9v10.5A1.5 1.5 0 0 1 4.5 21h-3A1.5 1.5 0 0 1 0 19.5V9a1.5 1.5 0 0 1 1.5-1.5h3zm9-4.5A1.5 1.5 0 0 1 15 4.5v15a1.5 1.5 0 0 1-1.5 1.5h-3A1.5 1.5 0 0 1 9 19.5v-15A1.5 1.5 0 0 1 10.5 3h3zm9 7.5A1.5 1.5 0 0 1 24 12v7.5A1.5 1.5 0 0 1 22.5 21h-3a1.5 1.5 0 0 1-1.5-1.5V12a1.5 1.5 0 0 1 1.5-1.5h3z"/>
     </svg>
   ),
   kaggle: () => (
-    <svg width="16" height="16" viewBox="0 0 24 24" fill="#20BEFF">
+    <svg width="20" height="20" viewBox="0 0 24 24" fill="#20BEFF">
       <path d="M18.825 23.859c-.022.092-.117.141-.281.141h-3.139c-.187 0-.351-.082-.492-.248l-5.178-6.589-1.448 1.374v5.111c0 .235-.117.352-.351.352H5.505c-.236 0-.354-.117-.354-.352V.353c0-.233.118-.353.354-.353h2.431c.234 0 .351.12.351.353v14.343l6.203-6.272c.165-.165.33-.246.495-.246h3.239c.144 0 .237.05.285.14.046.094.034.2-.038.32l-6.321 6.025 6.495 8.076c.086.104.1.208.073.3z"/>
     </svg>
   ),
   hackerrank: () => (
-    <svg width="16" height="16" viewBox="0 0 24 24" fill="#00EA64">
+    <svg width="20" height="20" viewBox="0 0 24 24" fill="#00EA64">
       <path d="M12 0c1.285 0 9.75 4.886 10.392 6 .645 1.115.645 11.885 0 13-.642 1.114-9.107 6-10.392 6-1.284 0-9.75-4.886-10.392-6C.963 17.885.963 7.115 1.608 6 2.25 4.886 10.715 0 12 0z"/>
     </svg>
   ),
   coding_ninjas: () => (
-    <svg width="16" height="16" viewBox="0 0 24 24" fill="#F97316">
+    <svg width="20" height="20" viewBox="0 0 24 24" fill="#F97316">
       <path d="M12 2C6.477 2 2 6.477 2 12s4.477 10 10 10 10-4.477 10-10S17.523 2 12 2zm-1.5 14.5v-9l7 4.5-7 4.5z"/>
     </svg>
   ),
   gfg: () => (
-    <svg width="16" height="16" viewBox="0 0 24 24" fill="#2F8D46">
-      <circle cx="12" cy="12" r="10"/>
+    <svg width="20" height="20" viewBox="0 0 24 24" fill="#2F8D46">
+      <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-1 13H9V9h2v6zm4 0h-2V9h2v6z"/>
     </svg>
   ),
   codestudio: () => (
-    <svg width="16" height="16" viewBox="0 0 24 24" fill="#F97316">
+    <svg width="20" height="20" viewBox="0 0 24 24" fill="#F97316">
       <path d="M12 1L3 5v6c0 5.55 3.84 10.74 9 12 5.16-1.26 9-6.45 9-12V5l-9-4z"/>
     </svg>
   ),
   codolio: () => (
-    <svg width="16" height="16" viewBox="0 0 24 24" fill="#7C3AED">
+    <svg width="20" height="20" viewBox="0 0 24 24" fill="#7C3AED">
       <path d="M12 2a10 10 0 1 0 10 10A10 10 0 0 0 12 2zm-1 14.5v-9l6 4.5z"/>
     </svg>
   ),
 };
 
 const PLATFORM_META = {
-  leetcode:      { label: 'LeetCode',      bg: '#FFA116', Logo: PlatformLogos.leetcode },
-  codechef:      { label: 'CodeChef',      bg: '#5B4638', Logo: PlatformLogos.codechef },
-  codeforces:    { label: 'Codeforces',    bg: '#1F8ACB', Logo: PlatformLogos.codeforces },
-  kaggle:        { label: 'Kaggle',        bg: '#20BEFF', Logo: PlatformLogos.kaggle },
-  hackerrank:    { label: 'HackerRank',    bg: '#00EA64', Logo: PlatformLogos.hackerrank },
-  coding_ninjas: { label: 'Coding Ninjas', bg: '#F97316', Logo: PlatformLogos.coding_ninjas },
-  gfg:           { label: 'GeeksForGeeks', bg: '#2F8D46', Logo: PlatformLogos.gfg },
-  codestudio:    { label: 'CodeStudio',    bg: '#F97316', Logo: PlatformLogos.codestudio },
-  codolio:       { label: 'Codolio',       bg: '#7C3AED', Logo: PlatformLogos.codolio },
+  leetcode:      { label: 'LeetCode',      Logo: PlatformLogos.leetcode },
+  codechef:      { label: 'CodeChef',      Logo: PlatformLogos.codechef },
+  codeforces:    { label: 'Codeforces',    Logo: PlatformLogos.codeforces },
+  kaggle:        { label: 'Kaggle',        Logo: PlatformLogos.kaggle },
+  hackerrank:    { label: 'HackerRank',    Logo: PlatformLogos.hackerrank },
+  coding_ninjas: { label: 'Coding Ninjas', Logo: PlatformLogos.coding_ninjas },
+  gfg:           { label: 'GeeksForGeeks', Logo: PlatformLogos.gfg },
+  codestudio:    { label: 'CodeStudio',    Logo: PlatformLogos.codestudio },
+  codolio:       { label: 'Codolio',       Logo: PlatformLogos.codolio },
 };
 
 // Contact field icon helpers
@@ -798,11 +798,11 @@ export function ProfileTab({ studentProfile, setStudentProfile, theme, setTheme 
             >
               {({ editing }) => (
                 <>
-                  {Object.entries(PLATFORM_META).map(([key, { label, bg, Logo }]) => {
+                  {Object.entries(PLATFORM_META).map(([key, { label, Logo }]) => {
                     const val = codingProfiles[key] || '';
                     return (
                       <div key={key} style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '9px 12px', border: '1px solid var(--border)', background: 'var(--bg-subtle)', marginBottom: 8 }}>
-                        <div style={{ width: 32, height: 32, background: bg, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                        <div style={{ width: 24, height: 24, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
                           <Logo />
                         </div>
                         <span style={{ fontSize: 12, fontWeight: 500, color: 'var(--text-mid)', width: 110, flexShrink: 0 }}>{label}</span>
