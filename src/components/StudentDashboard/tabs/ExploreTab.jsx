@@ -72,14 +72,14 @@ export function ExploreTab({
               completeness={studentProfile?.profile_completeness || 0}
               onDismiss={onDismissWelcome}
               onCompleteProfile={onCompleteWelcome}
-              onTour={() => alert('60-sec tour Ã‚Â· Coming soon')}
+              onTour={() => alert('60-sec tour · Coming soon')}
             />
           </div>
         </div>
       )}
 
       <div style={{ flex: 1, minHeight: 0, display: 'flex', overflow: 'hidden' }}>
-        {/* â”€â”€ Left: list/grid panel â”€â”€ */}
+        {/* Left: list/grid panel */}
         {!(selectedJob && isPanelMaximized) && (
           <div
             style={{
@@ -113,7 +113,7 @@ export function ExploreTab({
                 <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
                   {/* Hunt Fast */}
                   <button
-                    onClick={() => alert('Hunt-fast Â· Coming soon')}
+                    onClick={() => alert('Hunt-fast · Coming soon')}
                     title="Coming soon"
                     style={{
                       display: 'inline-flex',
@@ -219,7 +219,7 @@ export function ExploreTab({
                 <input
                   value={searchQuery}
                   onChange={e => setSearchQuery(e.target.value)}
-                  placeholder="search roles, companies, skillsâ€¦"
+                  placeholder="search roles, companies, skills..."
                   className="hunt-mono"
                   style={{
                     width: '100%',
@@ -281,7 +281,7 @@ export function ExploreTab({
                   }}
                 >
                   {displayedJobs.length} {displayedJobs.length === 1 ? 'opportunity' : 'opportunities'}
-                  {huntFastActive && <span style={{ color: 'var(--blue)', marginLeft: 8 }}>Â· sorted by best match</span>}
+                  {huntFastActive && <span style={{ color: 'var(--blue)', marginLeft: 8 }}>· sorted by best match</span>}
                 </span>
               </div>
             )}
@@ -328,7 +328,7 @@ export function ExploreTab({
                       marginBottom: 10,
                     }}
                   >
-                    â–² no results
+                    ▲ no results
                   </div>
                   <div className="hunt-serif" style={{ fontSize: 22, color: 'var(--text)', marginBottom: 8 }}>
                     Nothing matches.
@@ -376,7 +376,7 @@ export function ExploreTab({
               {allJobs.length > 0 && viewMode === 'grid' && displayedJobs.length > 0 && (
                 <div style={{ marginTop: 36, padding: '24px 0 16px', borderTop: '1px solid var(--border)' }}>
                   <span className="hunt-mono" style={{ fontSize: 10, color: 'var(--text-faint)', letterSpacing: '0.1em', textTransform: 'uppercase' }}>
-                    no more jobs right now â€” check back for more
+                    no more jobs right now — check back for more
                   </span>
                 </div>
               )}
@@ -384,7 +384,7 @@ export function ExploreTab({
           </div>
         )}
 
-        {/* â”€â”€ Right: detail panel â”€â”€ */}
+        {/* Right: detail panel */}
         {selectedJob && (
           <div
             style={{
@@ -434,7 +434,7 @@ function EmptyTargeted({ notified, setNotified }) {
           marginBottom: 12,
         }}
       >
-        â–² inbox empty
+        ▲ inbox empty
       </div>
       <h3
         className="hunt-serif"
