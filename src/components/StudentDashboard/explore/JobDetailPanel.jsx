@@ -408,6 +408,7 @@ function StartupProfileDrawer({ job, onClose }) {
         </div>
 
         <div style={{ flex: 1, overflowY: 'auto', minHeight: 0 }}>
+          {/* Banner */}
           <div style={{ height: 132, background: 'var(--bg-subtle)', borderBottom: '1px solid var(--border)' }}>
             {startup.banner_url ? (
               <img src={startup.banner_url} alt={`${companyName} banner`} style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }} />
@@ -419,12 +420,19 @@ function StartupProfileDrawer({ job, onClose }) {
           </div>
 
           <div style={{ padding: '0 24px 28px' }}>
-            <div style={{ display: 'flex', alignItems: 'flex-end', gap: 14, marginTop: -30, marginBottom: 18 }}>
-              <CompanyLogoBlock name={companyName} logoUrl={startup.logo_url || job.logo_url} size={64} />
-              <div style={{ paddingBottom: 4, minWidth: 0 }}>
-                <h2 className="hunt-serif" style={{ fontSize: 28, lineHeight: 1.05, color: 'var(--text)', margin: 0 }}>{companyName}</h2>
-                <p style={{ fontSize: 12, color: 'var(--text-dim)', margin: '5px 0 0', lineHeight: 1.45 }}>{startup.tagline || startup.one_line_pitch || recruiter.company_name || 'Recruiter profile'}</p>
+            {/* ── FIXED: logo overlaps banner edge; name+tagline sit cleanly below ── */}
+            <div style={{ marginBottom: 18 }}>
+              {/* Logo only gets the negative pull so it overlaps the banner bottom edge */}
+              <div style={{ marginTop: -28, marginBottom: 10 }}>
+                <CompanyLogoBlock name={companyName} logoUrl={startup.logo_url || job.logo_url} size={64} />
               </div>
+              {/* Name and tagline are fully below the banner — no overlap */}
+              <h2 className="hunt-serif" style={{ fontSize: 28, lineHeight: 1.05, color: 'var(--text)', margin: 0 }}>
+                {companyName}
+              </h2>
+              <p style={{ fontSize: 12, color: 'var(--text-dim)', margin: '5px 0 0', lineHeight: 1.45 }}>
+                {startup.tagline || startup.one_line_pitch || recruiter.company_name || 'Recruiter profile'}
+              </p>
             </div>
 
             <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6, marginBottom: 18 }}>
